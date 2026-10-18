@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" font-family="Segoe UI, Inter, Helvetica Neue, Arial, sans-serif" role="img" aria-labelledby="t d">
+  <title id="t">ReadyCheck</title>
+  <desc id="d">ReadyCheck: catch weak onboarding before it becomes a resignation. An AI onboarding companion where new hires get one answer card, escalate to an expert in one tap, and HR sees which problems keep coming back.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0e1a1c"/><stop offset="1" stop-color="#070c0d"/>
+    </linearGradient>
+    <radialGradient id="g1" cx="0.08" cy="0.0" r="0.6">
+      <stop offset="0" stop-color="#5fe3b5" stop-opacity=".22"/><stop offset="1" stop-color="#5fe3b5" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="g2" cx="0.92" cy="0.95" r="0.5">
+      <stop offset="0" stop-color="#ffad5c" stop-opacity=".16"/><stop offset="1" stop-color="#ffad5c" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="g3" cx="0.72" cy="0.35" r="0.35">
+      <stop offset="0" stop-color="#5fe3b5" stop-opacity=".10"/><stop offset="1" stop-color="#5fe3b5" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1.1" fill="#1c2b2f"/></pattern>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b2b2f"/><stop offset="1" stop-color="#131f22"/>
+    </linearGradient>
+    <linearGradient id="hl" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5fe3b5"/><stop offset="1" stop-color="#b6f5dc"/>
+    </linearGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#000" flood-opacity=".55"/>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <style>
+      .serif { font-family: "Instrument Serif", Georgia, "Times New Roman", serif; }
+      .mono { font-family: Consolas, "Cascadia Mono", Menlo, monospace; }
+      .card { fill: url(#glass); stroke: #2c3e42; stroke-width: 1.2; }
+      .chip { fill: #142124; stroke: #2c3e42; }
+      .chipt { fill: #dbe7e3; font-size: 15px; font-weight: 500; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <rect width="1280" height="640" fill="url(#dots)" opacity=".75"/>
+  <rect width="1280" height="640" fill="url(#g1)"/>
+  <rect width="1280" height="640" fill="url(#g2)"/>
+  <rect width="1280" height="640" fill="url(#g3)"/>
+
+  <!-- ===== Left: message ===== -->
+  <g transform="translate(72 64)">
+    <rect width="46" height="46" rx="13" fill="#5fe3b5"/>
+    <path d="M12 24l7.5 7.5L34 16" stroke="#04211a" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="62" y="33" fill="#eef5f2" font-size="32" font-weight="700" letter-spacing="-.01em">ReadyCheck</text>
+  </g>
+
+  <text x="72" y="178" fill="#5fe3b5" font-size="14" font-weight="700" letter-spacing=".18em">AI ONBOARDING COMPANION</text>
+  <text class="serif" x="68" y="242" fill="#eef5f2" font-size="54">Catch weak onboarding</text>
+  <text class="serif" x="68" y="302" fill="#eef5f2" font-size="54">before it becomes</text>
+  <text class="serif" x="68" y="364" fill="url(#hl)" font-size="54" font-style="italic">a resignation.</text>
+
+  <text x="72" y="420" fill="#a8b9b3" font-size="19">New hires get unstuck in one tap. HR sees which</text>
+  <text x="72" y="446" fill="#a8b9b3" font-size="19">onboarding problems keep coming back, and fixes them.</text>
+
+  <!-- Feature chips -->
+  <g>
+    <rect class="chip" x="72" y="492" width="164" height="36" rx="18"/>
+    <circle cx="92" cy="510" r="5" fill="#5fe3b5"/><text class="chipt" x="104" y="515">AI answer cards</text>
+    <rect class="chip" x="244" y="492" width="178" height="36" rx="18"/>
+    <circle cx="264" cy="510" r="5" fill="#ffad5c"/><text class="chipt" x="276" y="515">One-tap escalation</text>
+    <rect class="chip" x="430" y="492" width="174" height="36" rx="18"/>
+    <circle cx="450" cy="510" r="5" fill="#a3b8ff"/><text class="chipt" x="462" y="515">AI theme detection</text>
+  </g>
+
+  <text x="72" y="590" fill="#6f8682" font-size="13" font-weight="700" letter-spacing=".14em">AI FUTURE MAKERS · CHALLENGE 4 · RETAIN</text>
+  <text x="72" y="612" fill="#55696a" font-size="13">Gemini 3.5 Flash-Lite · React · Vercel</text>
+
+  <!-- ===== Right: product moment ===== -->
+  <!-- My tickets dock -->
+  <g filter="url(#sh)"><rect class="card" x="986" y="40" width="226" height="58" rx="29"/></g>
+  <rect x="1000" y="52" width="34" height="34" rx="11" fill="#0f1a1c" stroke="#2c3e42"/>
+  <path d="M1009 72v-3a8 8 0 0 1 16 0v3" fill="none" stroke="#a8b9b3" stroke-width="1.8" stroke-linecap="round"/>
+  <rect x="1007" y="71" width="5" height="7" rx="2" fill="#a8b9b3"/><rect x="1022" y="71" width="5" height="7" rx="2" fill="#a8b9b3"/>
+  <text x="1046" y="66" fill="#eef5f2" font-size="14.5" font-weight="600">My tickets</text>
+  <text x="1046" y="84" fill="#a8b9b3" font-size="12.5">1 waiting</text>
+  <circle cx="1186" cy="69" r="14" fill="#ffad5c"/>
+  <text x="1186" y="74" text-anchor="middle" fill="#2a1400" font-size="13" font-weight="800">1</text>
+  <circle cx="1186" cy="69" r="21" fill="none" stroke="#ffad5c" stroke-opacity=".35" stroke-width="2"/>
+
+  <!-- Search bar -->
+  <g filter="url(#sh)"><rect x="700" y="128" width="512" height="60" rx="30" fill="#1a292d" stroke="#5fe3b5" stroke-opacity=".7" stroke-width="1.5"/></g>
+  <circle cx="732" cy="156" r="8" fill="none" stroke="#a8b9b3" stroke-width="2"/><path d="M738 162l6 6" stroke="#a8b9b3" stroke-width="2" stroke-linecap="round"/>
+  <text x="756" y="164" fill="#eef5f2" font-size="17">My VPN says “certificate expired”</text>
+  <circle cx="1180" cy="158" r="20" fill="#5fe3b5"/>
+  <path d="M1188 150v6a4 4 0 0 1-4 4h-12M1176 155l-5 5 5 5" stroke="#04211a" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Flight arc from card to My tickets -->
+  <path d="M1036 236 C1100 236 1160 190 1176 104" fill="none" stroke="#ffad5c" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round"/>
+
+  <!-- Answer card -->
+  <g filter="url(#sh)"><rect class="card" x="700" y="214" width="336" height="262" rx="24"/></g>
+  <rect x="720" y="234" width="104" height="26" rx="13" fill="#0f1a1c" stroke="#2c3e42"/>
+  <path d="M731 243h10M731 247h10M731 251h10" stroke="#a8b9b3" stroke-width="1.6" stroke-linecap="round"/>
+  <text x="748" y="252" fill="#c9d6d2" font-size="12.5" font-weight="600">AI answer</text>
+  <text class="mono" x="1014" y="252" text-anchor="end" fill="#8fa39d" font-size="12.5">2 / 3</text>
+  <text x="720" y="290" fill="#eef5f2" font-size="18" font-weight="600">Get back on the VPN</text>
+  <rect x="720" y="304" width="296" height="4" rx="2" fill="#223236"/><rect x="720" y="304" width="197" height="4" rx="2" fill="#5fe3b5"/>
+  <g font-size="14">
+    <circle cx="732" cy="333" r="11" fill="#5fe3b5"/><path d="M727 333l3.5 3.5 6.5-7" stroke="#04211a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <text x="752" y="338" fill="#8fa39d" text-decoration="line-through">Quit GlobalConnect</text>
+    <circle cx="732" cy="367" r="11" fill="#5fe3b5"/><path d="M727 367l3.5 3.5 6.5-7" stroke="#04211a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <text x="752" y="372" fill="#8fa39d" text-decoration="line-through">Reopen and sign in</text>
+    <circle cx="732" cy="401" r="11" fill="none" stroke="#8fa39d" stroke-width="1.6"/>
+    <text x="732" y="405" text-anchor="middle" fill="#a8b9b3" font-size="11" class="mono">3</text>
+    <text x="752" y="406" fill="#eef5f2">Check it says Connected</text>
+  </g>
+  <line x1="700" y1="428" x2="1036" y2="428" stroke="#2c3e42"/>
+  <text x="720" y="457" fill="#8fa39d" font-size="13">✓ Solved</text>
+  <rect x="852" y="439" width="164" height="28" rx="14" fill="#ffad5c" fill-opacity=".14" stroke="#ffad5c" stroke-opacity=".6"/>
+  <text x="934" y="458" text-anchor="middle" fill="#ffad5c" font-size="13" font-weight="600">Need human expert</text>
+
+  <!-- Ticket chip in flight -->
+  <g transform="translate(1066 204) rotate(-10)" filter="url(#sh)">
+    <rect width="168" height="44" rx="12" fill="#ffad5c"/>
+    <circle cx="22" cy="22" r="11" fill="none" stroke="#2a1400" stroke-width="1.8"/>
+    <path d="M17 24v-2a5 5 0 0 1 10 0v2" stroke="#2a1400" stroke-width="1.6" fill="none"/>
+    <line x1="42" y1="9" x2="42" y2="35" stroke="#2a1400" stroke-opacity=".35" stroke-dasharray="3 3"/>
+    <text class="mono" x="52" y="19" fill="#2a1400" font-size="10.5" font-weight="700">RC-1061 · VPN</text>
+    <text x="52" y="34" fill="#2a1400" font-size="12.5" font-weight="700">Sent to support</text>
+  </g>
+
+  <!-- Needs you (manager) card -->
+  <g filter="url(#sh)"><rect class="card" x="930" y="466" width="290" height="160" rx="22"/></g>
+  <rect x="948" y="466" width="254" height="3" rx="1.5" fill="#ffad5c"/>
+  <circle cx="952" cy="492" r="5" fill="#ffad5c"/>
+  <circle cx="952" cy="492" r="10" fill="none" stroke="#ffad5c" stroke-opacity=".4" stroke-width="1.6"/>
+  <text x="970" y="497" fill="#ffad5c" font-size="11.5" font-weight="700" letter-spacing=".12em">NEEDS YOU · MANAGER</text>
+  <text x="950" y="524" fill="#eef5f2" font-size="18" font-weight="600">VPN &amp; remote access</text>
+  <text x="950" y="544" fill="#a8b9b3" font-size="13">3 new hires waiting · oldest 26m</text>
+  <rect x="950" y="554" width="252" height="28" rx="9" fill="#0f1a1c" stroke="#2c3e42" stroke-dasharray="3 3"/>
+  <text x="960" y="573" fill="#a3b8ff" font-size="10.5" font-weight="700" letter-spacing=".08em">AI SUMMARY</text>
+  <text x="1046" y="573" fill="#c9d6d2" font-size="12.5">Expired VPN profiles</text>
+  <rect x="950" y="590" width="128" height="28" rx="15" fill="#5fe3b5"/>
+  <circle cx="966" cy="604" r="9" fill="#04211a"/><text x="966" y="608" text-anchor="middle" fill="#5fe3b5" font-size="8.5" font-weight="700">AO</text>
+  <text x="982" y="609" fill="#04211a" font-size="13.5" font-weight="700">Assign Ana</text>
+  <text x="1090" y="609" fill="#8fa39d" font-size="12">Suggested expert</text>
+</svg>

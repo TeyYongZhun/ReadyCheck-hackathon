@@ -1,5 +1,7 @@
 # ReadyCheck
 
+![ReadyCheck: catch weak onboarding before it becomes a resignation](docs/cover.png)
+
 **An AI onboarding companion that helps new employees get unstuck, and shows HR where onboarding is failing.**
 
 Built for AI Future Makers · Challenge 4 (Retain): Early Employee Disengagement.
