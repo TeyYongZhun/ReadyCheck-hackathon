@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620" font-family="Segoe UI, Inter, Helvetica Neue, Arial, sans-serif" role="img" aria-labelledby="t d">
+  <title id="t">ReadyCheck workflow</title>
+  <desc id="d">1. A new hire asks a question. 2. AI gives one answer card; if solved, done. 3. If not, the new hire taps Need human expert and a ticket is created. 4. AI groups tickets by topic and summarises them. 5. A manager assigns an expert in one click. 6. The new hire and expert chat in a ticket room; if not fixed, a 1:1 session is offered. 7. When solved, AI writes a knowledge card. 8. The manager approves it, and the next new hire with the same question gets that card first.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1719"/>
+      <stop offset="1" stop-color="#090f11"/>
+    </linearGradient>
+    <radialGradient id="glowA" cx="0.12" cy="0.05" r="0.55">
+      <stop offset="0" stop-color="#5fe3b5" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#5fe3b5" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowB" cx="0.95" cy="1" r="0.5">
+      <stop offset="0" stop-color="#ffad5c" stop-opacity=".10"/>
+      <stop offset="1" stop-color="#ffad5c" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#1d2b2f"/>
+    </pattern>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18272b"/>
+      <stop offset="1" stop-color="#121d20"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000" flood-opacity=".45"/>
+    </filter>
+    <marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#6f8682"/>
+    </marker>
+    <marker id="aG" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5fe3b5"/>
+    </marker>
+    <marker id="aO" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#ffad5c"/>
+    </marker>
+    <style>
+      .card { fill: url(#card); stroke: #2a3b3f; stroke-width: 1.2; }
+      .title { fill: #eef5f2; font-size: 15px; font-weight: 600; }
+      .sub { fill: #9fb1ab; font-size: 12.5px; }
+      .who { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; }
+      .num { fill: #08110f; font-size: 13px; font-weight: 800; }
+      .flow { stroke: #6f8682; stroke-width: 2; fill: none; }
+      .lbl { fill: #8fa39d; font-size: 11px; }
+      .phase { fill: #6f8682; font-size: 11px; font-weight: 700; letter-spacing: .14em; }
+      .hire { fill: #5fe3b5; } .ai { fill: #a3b8ff; } .mgr { fill: #ffad5c; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="620" rx="24" fill="url(#bg)"/>
+  <rect width="1100" height="620" rx="24" fill="url(#dots)" opacity=".7"/>
+  <rect width="1100" height="620" rx="24" fill="url(#glowA)"/>
+  <rect width="1100" height="620" rx="24" fill="url(#glowB)"/>
+  <rect x=".75" y=".75" width="1098.5" height="618.5" rx="23.5" fill="none" stroke="#223236"/>
+
+  <!-- Header -->
+  <g transform="translate(48 40)">
+    <rect width="30" height="30" rx="9" fill="#5fe3b5"/>
+    <path d="M8 15.5l4.5 4.5L22 10.5" stroke="#04211a" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="44" y="21" fill="#eef5f2" font-size="22" font-weight="700">How ReadyCheck works</text>
+  </g>
+  <text x="48" y="96" fill="#9fb1ab" font-size="14">From a stuck new hire to a fix that the next new hire gets instantly.</text>
+
+  <!-- Phase labels -->
+  <text class="phase" x="48" y="140">PHASE 1 · ASK AND ESCALATE</text>
+  <line x1="262" y1="136" x2="1052" y2="136" stroke="#1f2e32"/>
+  <text class="phase" x="170" y="372">PHASE 2 · FIX AND LEARN</text>
+  <line x1="358" y1="368" x2="1052" y2="368" stroke="#1f2e32"/>
+
+  <!-- ===== Row 1 ===== -->
+  <!-- 1 -->
+  <g filter="url(#shadow)"><rect class="card" x="48" y="162" width="206" height="96" rx="16"/></g>
+  <rect x="48" y="162" width="206" height="4" rx="2" class="hire"/>
+  <circle cx="48" cy="162" r="15" class="hire" stroke="#0b1214" stroke-width="3"/>
+  <text class="num" x="48" y="167" text-anchor="middle">1</text>
+  <text class="who hire" x="66" y="194">NEW HIRE</text>
+  <text class="title" x="66" y="219">Asks a question</text>
+  <text class="sub" x="66" y="240">In plain words, files optional</text>
+
+  <!-- 2 -->
+  <g filter="url(#shadow)"><rect class="card" x="314" y="162" width="206" height="96" rx="16"/></g>
+  <rect x="314" y="162" width="206" height="4" rx="2" class="ai"/>
+  <circle cx="314" cy="162" r="15" class="ai" stroke="#0b1214" stroke-width="3"/>
+  <text class="num" x="314" y="167" text-anchor="middle">2</text>
+  <text class="who ai" x="332" y="194">AI · GEMINI</text>
+  <text class="title" x="332" y="219">Gives one answer card</text>
+  <text class="sub" x="332" y="240">Video, PDF summary or steps</text>
+
+  <!-- 3 -->
+  <g filter="url(#shadow)"><rect class="card" x="580" y="162" width="206" height="96" rx="16"/></g>
+  <rect x="580" y="162" width="206" height="4" rx="2" class="hire"/>
+  <circle cx="580" cy="162" r="15" class="hire" stroke="#0b1214" stroke-width="3"/>
+  <text class="num" x="580" y="167" text-anchor="middle">3</text>
+  <text class="who hire" x="598" y="194">NEW HIRE</text>
+  <text class="title" x="598" y="219">Asks for a person</text>
+  <text class="sub" x="598" y="240">“Need human expert” → ticket</text>
+
+  <!-- 4 -->
+  <g filter="url(#shadow)"><rect class="card" x="846" y="162" width="206" height="96" rx="16"/></g>
+  <rect x="846" y="162" width="206" height="4" rx="2" class="ai"/>
+  <circle cx="846" cy="162" r="15" class="ai" stroke="#0b1214" stroke-width="3"/>
+  <text class="num" x="846" y="167" text-anchor="middle">4</text>
+  <text class="who ai" x="864" y="194">AI · GEMINI</text>
+  <text class="title" x="864" y="219">Spots the themes</text>
+  <text class="sub" x="864" y="240">Groups tickets, summarises why</text>
+
+  <!-- Row 1 connectors -->
+  <path class="flow" d="M254 210 H306" marker-end="url(#a)"/>
+  <path class="flow" d="M520 210 H572" marker-end="url(#a)"/>
+  <text class="lbl" x="550" y="200" text-anchor="middle">not solved</text>
+  <path class="flow" d="M786 210 H838" marker-end="url(#a)"/>
+
+  <!-- Solved branch -->
+  <path d="M417 258 V290" stroke="#5fe3b5" stroke-width="2" fill="none" marker-end="url(#aG)"/>
+  <text class="lbl" x="427" y="281">solved</text>
+  <rect x="334" y="296" width="166" height="34" rx="17" fill="#5fe3b5" fill-opacity=".12" stroke="#5fe3b5" stroke-opacity=".7"/>
+  <text x="417" y="318" text-anchor="middle" fill="#5fe3b5" font-size="13.5" font-weight="600">✓ Done, no ticket needed</text>
+
+  <!-- Row 1 → Row 2 (rounded elbow) -->
+  <path class="flow" d="M1052 210 H1066 Q1076 210 1076 220 V428 Q1076 438 1066 438 H1058" marker-end="url(#a)"/>
+
+  <!-- ===== Row 2 (right to left) ===== -->
+  <!-- 5 -->
+  <g filter="url(#shadow)"><rect class="card" x="846" y="392" width="206" height="96" rx="16"/></g>
+  <rect x="846" y="392" width="206" height="4" rx="2" class="mgr"/>
+  <circle cx="846" cy="392" r="15" class="mgr" stroke="#0b1214" stroke-width="3"/>
+  <text class="num" x="846" y="397" text-anchor="middle">5</text>
+  <text class="who mgr" x="864" y="424">MANAGER / HR</text>
+  <text class="title" x="864" y="449">Assigns an expert</text>
+  <text class="sub" x="864" y="470">One click covers the topic</text>
+
+  <!-- 6 -->
+  <g filter="url(#shadow)"><rect class="card" x="580" y="392" width="206" height="96" rx="16"/></g>
+  <rect x="580" y="392" width="206" height="4" rx="2" class="hire"/>
+  <circle cx="580" cy="392" r="15" class="hire" stroke="#0b1214" stroke-width="3"/>
+  <text class="num" x="580" y="397" text-anchor="middle">6</text>
+  <text class="who hire" x="598" y="424">NEW HIRE + EXPERT</text>
+  <text class="title" x="598" y="449">Solve it in a ticket room</text>
+  <text class="sub" x="598" y="470">Chat until it works</text>
+
+  <!-- 7 -->
+  <g filter="url(#shadow)"><rect class="card" x="314" y="392" width="206" height="96" rx="16"/></g>
+  <rect x="314" y="392" width="206" height="4" rx="2" class="ai"/>
+  <circle cx="314" cy="392" r="15" class="ai" stroke="#0b1214" stroke-width="3"/>
+  <text class="num" x="314" y="397" text-anchor="middle">7</text>
+  <text class="who ai" x="332" y="424">AI · GEMINI</text>
+  <text class="title" x="332" y="449">Drafts a knowledge card</text>
+  <text class="sub" x="332" y="470">From the solved conversation</text>
+
+  <!-- 8 -->
+  <g filter="url(#shadow)"><rect class="card" x="48" y="392" width="206" height="96" rx="16"/></g>
+  <rect x="48" y="392" width="206" height="4" rx="2" class="mgr"/>
+  <circle cx="48" cy="392" r="15" class="mgr" stroke="#0b1214" stroke-width="3"/>
+  <text class="num" x="48" y="397" text-anchor="middle">8</text>
+  <text class="who mgr" x="66" y="424">MANAGER / HR</text>
+  <text class="title" x="66" y="449">Approves the card</text>
+  <text class="sub" x="66" y="470">Or edits / discards it</text>
+
+  <!-- Row 2 connectors -->
+  <path class="flow" d="M846 440 H794" marker-end="url(#a)"/>
+  <path class="flow" d="M580 440 H528" marker-end="url(#a)"/>
+  <text class="lbl" x="550" y="430" text-anchor="middle">solved</text>
+  <path class="flow" d="M314 440 H262" marker-end="url(#a)"/>
+
+  <!-- Not fixed branch -->
+  <path d="M683 488 V520" stroke="#ffad5c" stroke-width="2" fill="none" marker-end="url(#aO)"/>
+  <text class="lbl" x="693" y="511">not fixed</text>
+  <rect x="608" y="526" width="150" height="34" rx="17" fill="#ffad5c" fill-opacity=".12" stroke="#ffad5c" stroke-opacity=".7"/>
+  <text x="683" y="548" text-anchor="middle" fill="#ffad5c" font-size="13.5" font-weight="600">Book a 1:1 session</text>
+
+  <!-- Learning loop: 8 → 1 -->
+  <path d="M151 392 V266" stroke="#5fe3b5" stroke-width="2" stroke-dasharray="6 6" fill="none" marker-end="url(#aG)"/>
+  <rect x="166" y="292" width="140" height="58" rx="12" fill="#0b1214" fill-opacity=".85" stroke="#5fe3b5" stroke-opacity=".35"/>
+  <text x="178" y="313" fill="#5fe3b5" font-size="12.5" font-weight="700">The loop closes</text>
+  <text x="178" y="331" fill="#9fb1ab" font-size="12">Next new hire with this</text>
+  <text x="178" y="345" fill="#9fb1ab" font-size="12">question gets the card</text>
+
+  <!-- Footer -->
+  <line x1="48" y1="580" x2="1052" y2="580" stroke="#1f2e32"/>
+  <g font-size="12.5" fill="#cfdcd7">
+    <circle cx="56" cy="600" r="5.5" class="hire"/><text x="68" y="604">New hire</text>
+    <circle cx="146" cy="600" r="5.5" class="ai"/><text x="158" y="604">AI (Gemini)</text>
+    <circle cx="256" cy="600" r="5.5" class="mgr"/><text x="268" y="604">Manager / HR</text>
+  </g>
+  <text x="1052" y="604" text-anchor="end" fill="#8fa39d" font-size="12.5">employee feedback → AI finds themes → HR reviews → support action</text>
+</svg>

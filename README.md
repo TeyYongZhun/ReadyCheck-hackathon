@@ -1,112 +1,178 @@
 # ReadyCheck
 
-A hackathon project built during the AI Bootcamp.
+**An AI onboarding companion that helps new employees get unstuck, and shows HR where onboarding is failing.**
 
-## Overview
+Built for AI Future Makers · Challenge 4 (Retain): Early Employee Disengagement.
 
-ReadyCheck is an internal support tool that gets new employees ready. It has two views in one site, switched by the **Employee | Manager** control in the side menu:
+**Live demo:**[[ready-check-hackathon.vercel.app](https://ready-check-hackathon.vercel.app/)]
 
-- **Employee: Dynamic Knowledge Canvas.** Ask once in the omni bar and get one answer card (video, PDF summary or steps). Each card ends with **Solved** or **Need human expert**. Escalating flies the card to the Manager Dashboard as a ticket.
-- **Manager: Theme Command Center.** Home overview, **Needs you** (stuck themes, with one-click Assign), **Ticket room**, **Trends**, **Knowledge base** (review AI summaries) and **Expert team**.
+---
 
-Assigning an expert opens a **Ticket Room** where the expert and the employee talk. When the room is solved, an AI summary goes to the knowledge base for review.
+## The problem
 
-## Tech Stack
+New employees get stuck on small things in their first weeks: the VPN doesn't work, they don't know who their buddy is, they're unsure how to claim an expense.
 
-- React 18 + TypeScript, built with Vite
-- Plain CSS driven by design tokens (CSS custom properties), dark ("Spatial Night") and light ("Daylight") themes
-- Google Gemini (`@google/genai`), called only from server functions on Vercel (`api/`), so the key never reaches the browser
+- They don't know who to ask, so many questions never get asked.
+- Each question is small, so HR never sees the pattern.
+- A new hire who stays stuck feels unsupported and starts to disengage.
+- HR often only finds out in the exit interview, when it's too late.
 
-## Where Gemini is used
+### This is a real, common problem
 
-| Feature | Endpoint | What Gemini does |
-|---|---|---|
-| Answering a question | `POST /api/answer` | Picks the best card from the library (or an approved expert card), or writes a new steps card labelled "AI answer". Also classifies the theme so escalations land in the right place. |
-| Expert in a ticket room | `POST /api/room-reply` | Plays the assigned expert (demo stand-in). Messages are labelled "AI expert (demo)". When the employee confirms it works, ReadyCheck asks "Did … solve your problem?". |
-| Room summary | `POST /api/summarize-room` | Turns a solved room into a knowledge-base draft. A manager still has to approve it. |
-| Needs you summaries | `POST /api/theme-summary` | One-line summary of why people are stuck on each theme. |
+| Finding | Source |
+|---|---|
+| Only **12%** of employees strongly agree their organisation does a great job of onboarding new employees. | [Gallup](https://www.gallup.com/workplace/247172/problems-onboarding-program.aspx) |
+| Up to **20%** of employee turnover happens in the **first 45 days**. | O.C. Tanner research, reported by [SHRM](https://www.shrm.org/in/topics-tools/news/hr-magazine/original-onboarding-options-4-hr-leaders) |
+| **31%** of people surveyed had quit a job within the **first six months**. Clearer responsibilities (23%) and better training (21%) were among the changes that would have kept them. | BambooHR survey, reported by [HR Dive](https://hrdive.com/news/many-employees-quit-early-due-to-poor-onboarding-survey-says/405359) |
+| When managers take an active role in onboarding, employees are **3.4×** as likely to say their onboarding was exceptional. | [Gallup](https://www.gallup.com/workplace/247172/problems-onboarding-program.aspx) |
 
-If Gemini fails or no key is set, the app keeps working: answers fall back to keyword matching and say "Offline answer (AI unavailable)". Home and Trends numbers are still sample data.
+These studies are a few years old and mostly from the US, but they point the same way as the challenge brief: new hires leave early because of unclear expectations, weak onboarding and too little support, and those problems are visible long before they resign.
 
-## Getting Started
+## Our solution
 
-### Prerequisites
+ReadyCheck is one website with two views.
 
-- Node.js 18 or newer
+**For new employees**
+- Ask a question in plain words.
+- AI gives **one answer card**: a short video, a policy summary, or a step-by-step checklist.
+- If it doesn't help, tap **Need human expert**. The question becomes a ticket.
+- Chat with the assigned expert in a **ticket room**. If it's still not fixed, book a **1:1 session**.
 
-### Installation
+**For managers and HR**
+- **Needs you:** questions are grouped into topics (for example "VPN" or "Payroll"), with an AI summary of why people are stuck.
+- **One click** assigns an expert to everyone stuck on that topic.
+- **Knowledge base:** when a problem is solved, AI writes a new answer card. A manager approves it, so the next new hire gets the answer instantly.
+- **Home and Trends:** see which topics come up most, by day, week or month.
 
+## Workflow
+
+![How ReadyCheck works: 8 steps from a new hire asking a question to an approved knowledge card](docs/workflow.svg)
+
+1. **New hire** asks a question.
+2. **AI** gives one answer card. If it helps, done.
+3. If not, the **new hire** taps *Need human expert* and a ticket is created.
+4. **AI** groups tickets by topic and summarises why people are stuck.
+5. **Manager / HR** assigns an expert in one click.
+6. The **new hire and expert** solve it in a ticket room. If it's still not fixed, they book a 1:1.
+7. **AI** drafts a knowledge card from the solved conversation.
+8. **Manager / HR** approves it, so the next new hire with the same question gets the answer straight away.
+
+This matches the challenge's required flow: **employee feedback → AI finds themes → HR/manager reviews → support action**.
+
+## How we use AI
+
+We use **Google Gemini 3.5 Flash-Lite**: fast, low-cost, and good at short structured answers.
+
+| What AI does | What a person still decides |
+|---|---|
+| Picks or writes the best answer card for a question | The employee says if it helped |
+| Groups tickets into topics and summarises each topic | The manager decides who to assign |
+| Turns a solved chat into a new knowledge card | The manager approves, edits or discards it |
+| Plays the expert in the demo chat (labelled "AI expert (demo)") | In real use, real experts reply |
+
+**Responsible by design**
+- Uses only questions employees **choose** to ask. No monitoring, no emotion detection.
+- Every AI output is **labelled** in the app.
+- Nothing AI writes reaches employees until a **manager approves** it.
+- The API key stays on the server, never in the browser.
+
+## Tech stack
+
+| Part | Technology |
+|---|---|
+| Front end | React 18, TypeScript, Vite |
+| Styling | CSS with design tokens (dark and light themes) |
+| AI | Google Gemini 3.5 Flash-Lite via the Gemini API (`@google/genai`) |
+| Back end | Vercel serverless functions |
+| Hosting | Vercel |
+| Design | Claude Design |
+
+## Architecture
+
+![ReadyCheck architecture: users → React web app → Vercel serverless API → Google Gemini](docs/architecture.svg)
+
+- **Browser:** the React web app has both the employee and manager views.
+- **Vercel:** serves the website and runs one serverless API. The Gemini API key is stored only here.
+- **Google Gemini:** receives a prompt with a JSON schema and returns structured JSON the app can use directly.
+
+| API endpoint | What it does |
+|---|---|
+| `/api/answer` | Finds the best answer card for a question |
+| `/api/theme-summary` | Summarises why people are stuck on a topic |
+| `/api/room-reply` | Writes the expert's reply in the demo chat |
+| `/api/summarize-room` | Turns a solved chat into a knowledge card |
+
+If Gemini is unavailable, the app still works using simple keyword matching.
+
+## Run it locally
+
+**You need:** Node.js 18+ and a free Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey).
+
+**1. Install**
 ```bash
 git clone <repository-url>
 cd ReadyCheck-hackathon
 npm install
 ```
 
-### Running the Project
+**2. Add your API key**
 
-1. Copy `.env.example` to `.env` and paste your Gemini API key (from https://aistudio.google.com/apikey):
-
-   ```
-   GEMINI_API_KEY=your-key
-   GEMINI_MODEL=gemini-2.5-flash
-   ```
-
-2. Run it:
-
-   ```bash
-   npm run dev        # http://localhost:5173 (add #manager for the manager view); /api/* runs locally too
-   npm run build      # type-check, then production build to dist/
-   npm run typecheck
-   ```
-
-### Deploying to Vercel
-
-1. Push the repo to GitHub and import it at https://vercel.com/new (framework: Vite; `vercel.json` sets the rest).
-2. In the project, open **Settings → Environment Variables** and add `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`).
-3. Deploy. The site is served from `dist/`, and `api/[route].ts` handles every `/api/*` call.
-
-Never commit `.env`; it is already in `.gitignore`.
-
-## Project structure
-
+Create a file named `.env` in the project folder:
 ```
-api/[route].ts               Vercel function: routes /api/<name> to server/
-server/                      Gemini client, prompts and handlers (server-only)
-design/                      Claude Design export (source of truth for visuals)
-  readycheck-export.html     the full exported prototype; open it in a browser to compare
-  tokens.json                colour, spacing, radius, type tokens
-  component-types.d.ts       the export's component prop types
-  DESIGN.md                  design-system notes
-src/
-  styles/                    export CSS, split in cascade order (index.css imports them in order)
-  types.ts                   domain types (tickets, rooms, themes, knowledge)
-  api-types.ts               request/response shapes shared with the server
-  lib/api.ts, lib/answer.ts  browser calls to /api/* and the offline fallback
-  data/                      sample scenarios and manager data (all illustrative)
-  state/AppState.tsx         shared state: escalations, assignments, rooms, knowledge
-  components/
-    primitives/              Icon, GlassPanel, avatars, toast, attachments
-    cards/                   ActionCard + Video/Doc/Checklist cards, escalation flight, receipt, dock
-    shell/                   ModeSwitch, TicketRoom, KbCard
-  views/
-    employee/                KnowledgeCanvas, OmniBar, HistorySidebar
-    manager/                 CommandCenter + one file per tab
+GEMINI_API_KEY=your-key-here
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
-## Still to build
+**3. Start**
+```bash
+npm run dev
+```
 
-These parts are stubbed with sample data and marked `TODO` in the code:
+**4. Open**
+- Employee view: http://localhost:5173
+- Manager view: http://localhost:5173/#manager
 
-- The answer library is the sample content in `src/data/scenarios.ts`. Replace it with your real documents (see `server/library.ts`).
-- "Book a 1:1" option when a room isn't solved.
-- Knowledge base "New material" form and Expert team "Add expert team" form.
-- Persistence: state is in memory. The export saves to `localStorage` key `readycheck.session.v1`.
-- Home and Trends numbers are sample data.
+## Deploy to Vercel
 
-## Team
+1. Push the project to GitHub.
+2. Import it at [vercel.com/new](https://vercel.com/new).
+3. Add `GEMINI_API_KEY` in **Settings → Environment Variables**.
+4. Click **Deploy**.
 
-- _Team member names_
+## Try it (2-minute demo)
 
-## License
+1. On the employee view, click **Access issue** and press Enter. An answer card appears.
+2. Click **Need human expert**. The ticket flies to **My tickets**.
+3. Switch to **Manager → Needs you**. Click **Assign Ana**.
+4. Open the ticket room and click **▶ Play sample conversation**.
+5. Answer **"Did Ana solve your problem?"**. Yes creates a knowledge card; Not yet offers a 1:1.
+6. In **Knowledge base**, approve the new card.
 
-_Add a license, or state that the project is unlicensed._
+## Repository structure
+
+```
+ReadyCheck-hackathon/
+├── api/
+│   └── [route].ts             # Vercel serverless entry for all /api calls
+├── server/                    # Back end: Gemini prompts (API key stays here)
+│   ├── answer.ts              # Picks or writes the answer card
+│   ├── themeSummary.ts        # Summarises why new hires are stuck on a topic
+│   └── room.ts                # AI expert replies + knowledge card from a solved chat
+├── src/                       # Front end (React + TypeScript)
+│   ├── views/
+│   │   ├── employee/          # Ask a question, answer cards, My tickets
+│   │   └── manager/           # Home, Needs you, Ticket room, Trends, Knowledge base, Expert team
+│   ├── components/            # Answer cards, ticket room chat, shared UI
+│   ├── state/AppState.tsx     # Shared data: tickets, rooms, knowledge cards
+│   └── data/                  # Sample answers, topics, experts, demo chats
+├── docs/                      # Workflow and architecture diagrams
+├── .env.example               # Template for the Gemini API key
+├── vercel.json                # Vercel deployment settings
+└── package.json               # Scripts and dependencies
+```
+
+## Limitations
+
+- This is a prototype. Charts and counts use **sample data**.
+- Data resets when the page is refreshed (no database or login yet).
+- In the demo, AI plays the expert in chats.

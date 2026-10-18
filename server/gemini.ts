@@ -18,7 +18,7 @@ export class HttpError extends Error {
 /** One Gemini call with a JSON Schema-constrained response, parsed. */
 export async function generateJson<T>(opts: { system: string; prompt: string; schema: object; temperature?: number }): Promise<T> {
   const res = await gemini().models.generateContent({
-    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
     contents: opts.prompt,
     config: {
       systemInstruction: opts.system,
