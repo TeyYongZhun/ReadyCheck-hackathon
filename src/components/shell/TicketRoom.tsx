@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { KbItem, Mode } from '../../types';
 import type { RoomRecord } from '../../state/AppState';
 import { cx } from '../../lib/util';
-import { AttachChips, Icon, PicAvatar, Person } from '../primitives';
+import { AttachChips, BrandMark, Icon, PicAvatar, Person } from '../primitives';
 import { KbCard } from './KbCard';
 
 interface TicketRoomProps {
@@ -12,19 +12,21 @@ interface TicketRoomProps {
   onClose: () => void;
   onSend: (text: string) => void;
   onResolve: () => void;
+  onFeedback: (solved: boolean) => void;
   onReopen: () => void;
   onApproveKb?: (id: string) => void;
 }
 
 /** The side sheet where the expert and the employee talk. Opens over either view. */
-export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve, onReopen, onApproveKb }: TicketRoomProps) {
+export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve, onFeedback, onReopen, onApproveKb }: TicketRoomProps) {
   const { room, pic, employee, ticket } = rec;
   const me = viewer === 'manager' ? 'pic' : 'employee', isEmp = viewer === 'employee';
   const resolved = room.status === 'resolved';
+  const asking = !resolved && rec.feedback === 'ask' && !rec.typing;
   const listRef = useRef<HTMLOListElement>(null), inputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState('');
 
-  useEffect(() => { const el = listRef.current; if (el) el.scrollTop = el.scrollHeight; }, [rec.messages.length, rec.typing]);
+  useEffect(() => { const el = listRef.current; if (el) el.scrollTop = el.scrollHeight; }, [rec.messages.length, rec.typing, rec.feedback]);
   useEffect(() => { inputRef.current?.focus({ preventScroll: true }); }, [room.id]);
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } };
@@ -77,16 +79,38 @@ export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve,
               <li key={m.id} className={cx('rc-msg', m.from === me && 'is-me', 'is-' + m.from)}>
                 {w.el}
                 <div className="rc-msg-b">
-                  <div className="rc-msg-meta"><b>{m.from === me ? 'You' : w.name.split(' ')[0]}</b> · {m.t}</div>
+                  <div className="rc-msg-meta">
+                    <b>{m.from === me ? 'You' : w.name.split(' ')[0]}</b> · {m.t}
+                    {m.ai ? <> · <span className="rc-ai-label" title="Written by Gemini standing in for the expert">AI expert (demo)</span></> : null}
+                  </div>
                   <div className="rc-msg-text">{m.text}</div>
                 </div>
               </li>
             );
           })}
           {rec.typing ? (
-            <li className="rc-msg-typing"><span className="rc-dots" aria-hidden><i /><i /><i /></span>{(rec.typing === 'employee' ? employee.first : pic.first) + ' is typing'}</li>
+            <li className={cx('rc-msg-typing', rec.typing === 'ai' && 'is-ai')}>
+              <span className="rc-dots" aria-hidden><i /><i /><i /></span>
+              {rec.typing === 'ai' ? 'ReadyCheck AI is summarising this room' : (rec.typing === 'employee' ? employee.first : pic.first) + ' is typing'}
+            </li>
           ) : null}
-          {/* TODO: end-of-room feedback ("Did Ana solve your problem?" → AI summary / book a 1:1), see rc-ask styles. */}
+          {asking ? (
+            <li className="rc-msg-ask">
+              <div className="rc-ask">
+                <div className="rc-ask-k"><BrandMark small />ReadyCheck</div>
+                <p className="rc-ask-q">Did {pic.first} solve your problem?</p>
+                {isEmp ? (
+                  <>
+                    <p className="rc-ask-s">If yes, ReadyCheck AI will summarise this room into a card, so the next new hire with this problem gets the answer straight away.</p>
+                    <div className="rc-ask-act">
+                      <button type="button" className="rc-btn-primary is-sm" onClick={() => onFeedback(true)}><Icon name="check" size={15} strokeWidth={2.2} />Yes, it’s solved</button>
+                      <button type="button" className="rc-btn-ghost is-sm" onClick={() => onFeedback(false)}>Not yet</button>
+                    </div>
+                  </>
+                ) : <p className="rc-ask-s">Waiting for {employee.first}’s answer.</p>}
+              </div>
+            </li>
+          ) : null}
         </ol>
 
         {resolved ? (

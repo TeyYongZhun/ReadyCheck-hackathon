@@ -4,7 +4,8 @@
 import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Attachment, CardKind, HistoryEntry, KbItem, Message, Mode, Pic, QueueTicket, Room, ThemeKey } from '../types';
 import { PICS, QUEUE, ROOMS, SEED_KB, THEMES_BY_KEY } from '../data/command';
-import { SCEN_THEME } from '../data/scenarios';
+import { askRoomReply, askSummary } from '../lib/api';
+import type { ChatLine, PicPersona, TicketContext } from '../api-types';
 import { clock, slugify, uid } from '../lib/util';
 
 export interface Assignment { roomId: string; roomName: string; pic: Pic; status: 'live' | 'resolved' }
@@ -15,11 +16,13 @@ export interface RoomRecord {
   employee: { name: string; first: string; initials: string };
   ticket: QueueTicket | null;
   messages: Message[];
-  typing: false | 'pic' | 'employee';
+  typing: false | 'pic' | 'employee' | 'ai';
+  /** "ask": the expert thinks it's fixed, so the employee is asked to confirm. */
+  feedback?: 'ask' | null;
 }
 
 export interface EscalationInput {
-  id: string; title: string; query: string; kind: CardKind; scenario: keyof typeof SCEN_THEME; entryId: string | null;
+  id: string; title: string; query: string; kind: CardKind; theme: ThemeKey; entryId: string | null;
   files: Pick<Attachment, 'name' | 'kind'>[];
 }
 
@@ -35,6 +38,7 @@ function useAppStateValue() {
   const [knowledge, setKnowledge] = useState<KbItem[]>(() => SEED_KB.map((k) => ({ ...k })));
   const [experts, setExperts] = useState<Pic[]>(PICS);
   const [openRoom, setOpenRoom] = useState<{ id: string; viewer: Mode } | null>(null);
+  const roomsRef = useRef(rooms); roomsRef.current = rooms;
   const timers = useRef<number[]>([]);
   const later = (fn: () => void, ms: number) => { timers.current.push(window.setTimeout(fn, ms)); };
 
@@ -50,10 +54,26 @@ function useAppStateValue() {
   function setTyping(roomId: string, typing: RoomRecord['typing']) {
     setRooms((s) => s[roomId] ? { ...s, [roomId]: { ...s[roomId], typing } } : s);
   }
+  function setFeedback(roomId: string, feedback: RoomRecord['feedback']) {
+    setRooms((s) => s[roomId] ? { ...s, [roomId]: { ...s[roomId], feedback } } : s);
+  }
+
+  /** Gemini writes the expert's next message from the conversation so far (demo stand-in for a real expert). */
+  async function expertTurn(roomId: string, messages: Message[]) {
+    const rec = roomsRef.current[roomId]; if (!rec) return;
+    setTyping(roomId, 'pic');
+    const res = await askRoomReply({ pic: persona(rec.pic), employee: employeeName(rec), ticket: ticketContext(rec.ticket), messages: chatLines(messages) });
+    if (!res) {
+      push(roomId, { from: 'system', text: 'AI expert unavailable right now. Try sending again in a moment.' });
+      return;
+    }
+    push(roomId, { from: 'pic', text: res.reply, ai: true });
+    if (res.solved) setFeedback(roomId, 'ask');
+  }
 
   /** Employee tapped "Need human expert". */
   function escalate(e: EscalationInput) {
-    const theme = (SCEN_THEME[e.scenario] ?? 'onb') as ThemeKey;
+    const theme = e.theme;
     const t: QueueTicket = {
       id: e.id, title: e.title, ...ME, theme, wait: 0, isNew: true, from: e.kind + ' card',
       slug: theme + '-' + slugify(ME.first) + '-' + e.id.replace(/\D/g, '').slice(-2),
@@ -90,31 +110,41 @@ function useAppStateValue() {
     }));
     const ours = ids.filter((id) => mine.includes(id));
     if (ours.length) setAssignments((a) => ({ ...a, ...Object.fromEntries(ours.map((id) => [id, { roomId: room.id, roomName: room.name, pic, status: 'live' as const }])) }));
-    // TODO: real expert messages. The export plays per-theme scripted dialogues (DIALOGUES) here.
-    later(() => push(room.id, { from: 'pic', text: `Hi ${first.first}, ${pic.first} from ${pic.team}. I’ve read your question and the card you were shown. What do you see right now?` }), 1400);
+    // Wait a tick so roomsRef sees the new room before Gemini writes the opening message.
+    later(() => void expertTurn(room.id, []), 400);
     return room;
   }
 
   function send(roomId: string, viewer: Mode, text: string) {
     const rec = rooms[roomId]; if (!rec) return;
-    push(roomId, { from: viewer === 'manager' ? 'pic' : 'employee', text });
-    if (viewer === 'employee') {
-      setTyping(roomId, 'pic');
-      // TODO: replace the canned reply with the expert's real response channel.
-      later(() => push(roomId, { from: 'pic', text: 'Thanks, that helps. Give me a moment to check on my side.' }), 1600);
-    }
+    const msg: Message = { id: uid('m'), t: clock(), from: viewer === 'manager' ? 'pic' : 'employee', text };
+    setRooms((s) => s[roomId] ? { ...s, [roomId]: { ...s[roomId], feedback: null, messages: [...s[roomId].messages, msg] } } : s);
+    // Only the employee gets an automatic expert reply; when the manager types, they are the expert.
+    if (viewer === 'employee') void expertTurn(roomId, [...rec.messages, msg]);
   }
 
-  function resolve(roomId: string, by: string) {
+  /** Employee's answer to "Did {expert} solve your problem?". */
+  function answerFeedback(roomId: string, solved: boolean) {
     const rec = rooms[roomId]; if (!rec) return;
-    setRooms((s) => ({ ...s, [roomId]: { ...s[roomId], room: { ...s[roomId].room, status: 'resolved' } } }));
+    if (solved) { void resolve(roomId, employeeName(rec)); return; }
+    send(roomId, 'employee', 'Not yet, it’s still not working.');
+  }
+
+  /** Close the room, then have Gemini turn the conversation into a knowledge-base draft for manager review. */
+  async function resolve(roomId: string, by: string) {
+    const rec = rooms[roomId]; if (!rec) return;
+    setRooms((s) => ({ ...s, [roomId]: { ...s[roomId], feedback: null, room: { ...s[roomId].room, status: 'resolved' } } }));
     push(roomId, { from: 'system', text: 'Marked solved by ' + by });
     setAssignments((a) => Object.fromEntries(Object.entries(a).map(([k, v]) => [k, v.roomId === roomId ? { ...v, status: 'resolved' as const } : v])));
-    // TODO: call the AI summariser. For now a draft card is built from the ticket.
+    setTyping(roomId, 'ai');
+    const sum = await askSummary({ roomName: rec.room.name, pic: persona(rec.pic), employee: employeeName(rec), ticket: ticketContext(rec.ticket), messages: chatLines(rec.messages) });
+    if (!sum) {
+      push(roomId, { from: 'system', text: 'AI summary unavailable, so nothing was added to the knowledge base.' });
+      return;
+    }
     const kb: KbItem = {
-      id: uid('kb'), roomId, roomName: rec.room.name, theme: rec.room.theme, title: 'Updated steps from ' + rec.pic.first,
-      problem: rec.ticket?.q ?? 'Solved in ' + rec.room.name, steps: ['Follow the card up to the step that fails', 'Ask ' + rec.pic.team + ' to update your access', 'Try again'],
-      pic: rec.pic, employee: rec.employee.first, status: 'review', at: clock(),
+      id: uid('kb'), roomId, roomName: rec.room.name, theme: rec.room.theme, title: sum.title, problem: sum.problem, steps: sum.steps,
+      pic: rec.pic, employee: employeeName(rec), status: 'review', at: clock(),
     };
     setKnowledge((l) => [kb, ...l]);
     push(roomId, { from: 'system', kind: 'kb', kbId: kb.id, text: 'AI summary added to the knowledge base' });
@@ -148,8 +178,15 @@ function useAppStateValue() {
 
   return {
     mode, go, queue, mine, assignments, rooms, roomList, load, history: history_, historyItems: history, knowledge, kb,
-    experts, setExperts, openRoom, setOpenRoom, escalate, assignTheme, send, resolve, reopen,
+    experts, setExperts, openRoom, setOpenRoom, escalate, assignTheme, send, answerFeedback, resolve, reopen,
   };
+}
+
+function persona(p: Pic): PicPersona { return { name: p.name, first: p.first, team: p.team, skills: p.skills }; }
+function employeeName(r: RoomRecord): string { return r.employee.first === 'there' ? r.employee.name : r.employee.first; }
+function ticketContext(t: QueueTicket | null): TicketContext | null { return t ? { q: t.q, from: t.from } : null; }
+function chatLines(ms: Message[]): ChatLine[] {
+  return ms.flatMap((m) => (m.from === 'system' ? [] : [{ from: m.from, text: m.text }]));
 }
 
 function seedRecord(r: Room): RoomRecord {

@@ -72,7 +72,11 @@ export interface Room {
 }
 
 export type MessageFrom = 'pic' | 'employee' | 'system';
-export interface Message { id: string; from: MessageFrom; t: string; text: string; kind?: 'kb' | 'booked'; kbId?: string }
+export interface Message {
+  id: string; from: MessageFrom; t: string; text: string; kind?: 'kb' | 'booked'; kbId?: string;
+  /** Written by Gemini standing in for the expert. */
+  ai?: boolean;
+}
 
 export type KbStatus = 'review' | 'live' | 'discarded';
 export interface KbItem {
@@ -82,8 +86,19 @@ export interface KbItem {
   files?: Pick<Attachment, 'name' | 'kind' | 'size'>[];
 }
 
+/** What the canvas shows for one question: one card, plus who handles it if escalated. */
+export interface CanvasAnswer {
+  heading: string;
+  theme: ThemeKey;
+  queue: string;
+  expert: Expert;
+  card: CardSpec;
+  /** "ai": Gemini chose or wrote it. "offline": keyword fallback because the AI call failed. */
+  source: 'ai' | 'offline';
+}
+
 export interface HistoryEntry {
-  id: string; query: string; scen: string; cardType: CardKind; title: string; heading: string; at: string;
+  id: string; query: string; answer: CanvasAnswer; cardType: CardKind; title: string; heading: string; at: string;
   state: 'viewed' | 'solved' | 'escalated'; ticketId?: string; files?: Pick<Attachment, 'name' | 'kind'>[];
 }
 

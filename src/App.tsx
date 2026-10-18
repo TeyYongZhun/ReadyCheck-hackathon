@@ -19,7 +19,8 @@ function Shell() {
         <TicketRoom key={rec.room.id} rec={rec} viewer={open.viewer} knowledge={kbById}
           onClose={() => app.setOpenRoom(null)}
           onSend={(t) => app.send(rec.room.id, open.viewer, t)}
-          onResolve={() => app.resolve(rec.room.id, rec.employee.first)}
+          onResolve={() => void app.resolve(rec.room.id, rec.employee.first)}
+          onFeedback={(solved) => app.answerFeedback(rec.room.id, solved)}
           onReopen={() => app.reopen(rec.room.id, open.viewer === 'manager' ? 'Rachel' : rec.employee.first)}
           onApproveKb={app.kb.approve} />
       ) : null}

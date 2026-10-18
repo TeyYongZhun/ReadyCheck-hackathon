@@ -4,7 +4,11 @@ import { SLA_MINUTES } from '../../data/command';
 import { cx, plural } from '../../lib/util';
 import { AiLabel, Footnote, Icon, PicAvatar, Person } from '../../components/primitives';
 
-export interface NeedsGroup { theme: Theme; tickets: QueueTicket[]; active: number; oldest: number; overdue: boolean; leaving: boolean }
+export interface NeedsGroup {
+  theme: Theme; tickets: QueueTicket[]; active: number; oldest: number; overdue: boolean; leaving: boolean;
+  /** Gemini's summary of the waiting questions; falls back to the theme's sample summary. */
+  summary?: string;
+}
 
 function ExpertMenu({ pics, load, suggested, onPick }: { pics: Pic[]; load: Record<string, number>; suggested: string; onPick: (p: Pic) => void }) {
   const list = useRef<HTMLUListElement>(null), first = useRef<HTMLButtonElement>(null);
@@ -68,7 +72,10 @@ export function NeedsCard({ group: g, suggested, pics, load, onAssign }: { group
         </div>
         {g.overdue ? <span className="rc-need-badge">Overdue</span> : null}
       </header>
-      <div className="rc-need-ai"><AiLabel>AI summary</AiLabel><p className="rc-need-sum" title={t.summary}>{t.summary}</p></div>
+      <div className="rc-need-ai">
+        <AiLabel>{g.summary ? 'AI summary' : 'Sample summary'}</AiLabel>
+        <p className="rc-need-sum" title={g.summary ?? t.summary}>{g.summary ?? t.summary}</p>
+      </div>
       <ul className="rc-need-people" aria-label="People waiting">
         {g.tickets.map((q) => (
           <li key={q.id} className={cx('rc-need-p', q.isNew && 'is-new')}>

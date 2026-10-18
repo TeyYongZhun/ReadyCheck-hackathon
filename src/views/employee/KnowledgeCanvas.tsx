@@ -1,9 +1,10 @@
 // Design View 1 — the employee's Dynamic Knowledge Canvas.
 // At rest: greeting, omni bar, starters. Asking: bar rises, skeleton. Answered: one card. Esc clears.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type { Attachment, CardSpec, CardState, DashboardItem, HistoryEntry, Scenario } from '../../types';
+import type { Attachment, CanvasAnswer, CardSpec, CardState, DashboardItem, HistoryEntry } from '../../types';
 import { useApp } from '../../state/AppState';
-import { DEFAULT_SUGGEST, SCENARIOS, SCEN_THEME, pickScenario } from '../../data/scenarios';
+import { DEFAULT_SUGGEST } from '../../data/scenarios';
+import { resolveAnswer } from '../../lib/answer';
 import { clock, cx, greeting, uid } from '../../lib/util';
 import { Brand, Icon, Toast, toAttachment } from '../../components/primitives';
 import { ChecklistCard, DocSummaryCard, VideoCard } from '../../components/cards/ActionCard';
@@ -12,9 +13,7 @@ import { OmniBar } from './OmniBar';
 import { HistorySidebar, type HistoryItem } from './HistorySidebar';
 
 const USER = { first: 'Mira', last: 'Tan', role: 'Day 3 · Product Design' };
-const ASSEMBLE_MS = 950;
-
-interface Flight { id: string; from: Rect; to: Rect; card: CardSpec; scen: Scenario; query: string; files: Attachment[]; entryId: string | null }
+interface Flight { id: string; from: Rect; to: Rect; card: CardSpec; ans: CanvasAnswer; query: string; files: Attachment[]; entryId: string | null }
 
 export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   const app = useApp();
@@ -22,11 +21,12 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   const cardEls = useRef<Record<string, HTMLElement | null>>({});
   const tickets = useRef<Record<string, string>>({});
   const seq = useRef(1061);
+  const askNo = useRef(0); // ignores answers that arrive after the canvas moved on
 
   const [phase, setPhase] = useState<'idle' | 'loading' | 'results'>('idle');
   const [draft, setDraft] = useState('');
   const [query, setQuery] = useState('');
-  const [scen, setScen] = useState<Scenario | null>(null);
+  const [ans, setAns] = useState<CanvasAnswer | null>(null);
   const [cs, setCs] = useState<Record<string, CardState>>({});
   const [files, setFiles] = useState<Attachment[]>([]);
   const [sent, setSent] = useState<Attachment[]>([]);
@@ -47,24 +47,26 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
 
   const setCard = (id: string, v: CardState) => setCs((s) => ({ ...s, [id]: v }));
 
-  function run(q: string) {
-    setDraft(q); setQuery(q); setPhase('loading'); setCs({}); setScen(null); setSent(files); setFiles([]);
-    // TODO: replace the regex scenario picker with a real retrieval/LLM call.
-    window.setTimeout(() => {
-      const s = pickScenario(q), c0 = cardsFor(s)[0], id = uid('h');
-      setScen(s); setPhase('results'); setEntryId(id);
-      app.history.add({ id, query: q, scen: s.key, cardType: c0.type, title: c0.props.title, heading: s.heading, at: clock(), state: 'viewed', files: files.map(({ name, kind }) => ({ name, kind })) });
-    }, ASSEMBLE_MS);
+  async function run(q: string) {
+    const no = ++askNo.current, mine = files;
+    setDraft(q); setQuery(q); setPhase('loading'); setCs({}); setAns(null); setSent(mine); setFiles([]);
+    const a = await resolveAnswer(q, mine.map((f) => f.name), app.knowledge);
+    if (no !== askNo.current) return;
+    const id = uid('h');
+    setAns(a); setPhase('results'); setEntryId(id);
+    app.history.add({ id, query: q, answer: a, cardType: a.card.type, title: a.card.props.title, heading: a.heading, at: clock(), state: 'viewed', files: mine.map(({ name, kind }) => ({ name, kind })) });
   }
 
   function clear() {
     if (flight) return;
-    setPhase('idle'); setQuery(''); setDraft(''); setScen(null); setCs({}); setSent([]); setEntryId(null);
+    askNo.current++;
+    setPhase('idle'); setQuery(''); setDraft(''); setAns(null); setCs({}); setSent([]); setEntryId(null);
   }
 
   function restore(e: HistoryEntry) {
-    const s = SCENARIOS.find((x) => x.key === e.scen) ?? pickScenario(e.query), c0 = cardsFor(s)[0];
-    setDraft(e.query); setQuery(e.query); setScen(s); setPhase('results'); setEntryId(e.id);
+    askNo.current++;
+    const c0 = e.answer.card;
+    setDraft(e.query); setQuery(e.query); setAns(e.answer); setPhase('results'); setEntryId(e.id);
     if (e.ticketId) { tickets.current[c0.id] = e.ticketId; setCs({ [c0.id]: 'escalated' }); }
     else setCs(e.state === 'solved' ? { [c0.id]: 'solved' } : {});
   }
@@ -75,21 +77,13 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
     return () => window.removeEventListener('keydown', k);
   });
 
-  /** Approved knowledge for this theme is shown first, marked "From an expert". */
-  function cardsFor(s: Scenario): CardSpec[] {
-    const theme = SCEN_THEME[s.key as keyof typeof SCEN_THEME];
-    const live = app.knowledge.find((k) => k.status === 'live' && k.theme === theme);
-    if (!live) return s.cards;
-    return [{ id: 'learned-' + live.id, type: 'steps', props: { title: live.title, kindLabel: 'From an expert', source: `AI summary of ${live.roomName} · solved by ${live.pic.first}, approved by Rachel`, steps: live.steps.map((label) => ({ label })) } }, ...s.cards];
-  }
-
   function escalate(card: CardSpec) {
     const el = cardEls.current[card.id];
-    if (flight || !el || !root.current || !dock.current || !scen) return;
+    if (flight || !el || !root.current || !dock.current || !ans) return;
     const id = 'RC-' + seq.current++;
     tickets.current[card.id] = id;
     setCard(card.id, 'escalating');
-    setFlight({ id, from: rectWithin(el, root.current), to: rectWithin(dock.current, root.current), card, scen, query, files: sent, entryId });
+    setFlight({ id, from: rectWithin(el, root.current), to: rectWithin(dock.current, root.current), card, ans, query, files: sent, entryId });
   }
 
   function arrive() {
@@ -99,13 +93,13 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
     setCard(fl.card.id, 'routing');
     setDockOpen(true);
     setToast(fl.id);
-    app.escalate({ id: fl.id, title: fl.card.props.title, query: fl.query, kind: fl.card.type, scenario: fl.scen.key as keyof typeof SCEN_THEME, entryId: fl.entryId, files: fl.files.map(({ name, kind }) => ({ name, kind })) });
+    app.escalate({ id: fl.id, title: fl.card.props.title, query: fl.query, kind: fl.card.type, theme: fl.ans.theme, entryId: fl.entryId, files: fl.files.map(({ name, kind }) => ({ name, kind })) });
     window.setTimeout(() => setDockOpen(false), 4200);
     window.setTimeout(() => setToast((t) => (t === fl.id ? null : t)), 5600);
   }
 
   const active = phase !== 'idle';
-  const cards = scen ? cardsFor(scen).slice(0, 1) : [];
+  const cards = ans ? [ans.card] : [];
   const dockItems = esc.map((x) => {
     const a = app.assignments[x.id];
     return a ? { ...x, status: a.status === 'resolved' ? 'Solved' : a.pic.first, assigned: true } : x;
@@ -121,7 +115,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
 
   return (
     <div ref={root} className={cx('rc-canvas', active && 'is-active', 'is-single', 'has-side')}
-      style={{ height, '--rc-head-top': 172 + (files.length ? 44 : 0) + 'px', '--rc-grid-top': 214 + (files.length ? 44 : 0) + (scen && sent.length ? 26 : 0) + 'px' } as React.CSSProperties}>
+      style={{ height, '--rc-head-top': 172 + (files.length ? 44 : 0) + 'px', '--rc-grid-top': 214 + (files.length ? 44 : 0) + (ans && sent.length ? 26 : 0) + (ans?.source === 'offline' ? 22 : 0) + 'px' } as React.CSSProperties}>
       <div className="rc-canvas-orb rc-canvas-orb-a" aria-hidden />
       <div className="rc-canvas-orb rc-canvas-orb-b" aria-hidden />
 
@@ -160,9 +154,10 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
         {active ? (
           <div className="rc-results-head">
             <div>
-              <span className="rc-results-h">{scen ? scen.heading : 'Looking across policies, videos and how-tos'}</span>
-              {scen ? <span className="rc-results-n">Best match for “{query}”</span> : null}
-              {scen && sent.length ? <span className="rc-results-files"><Icon name="clip" size={13} />{sent.length === 1 ? '1 attachment: ' : sent.length + ' attachments: '}{sent.map((f) => f.name).join(', ')}</span> : null}
+              <span className="rc-results-h">{ans ? ans.heading : 'Looking across policies, videos and how-tos'}</span>
+              {ans ? <span className="rc-results-n">Best match for “{query}”</span> : null}
+              {ans?.source === 'offline' ? <span className="rc-results-files">Offline answer (AI unavailable): matched by keywords.</span> : null}
+              {ans && sent.length ? <span className="rc-results-files"><Icon name="clip" size={13} />{sent.length === 1 ? '1 attachment: ' : sent.length + ' attachments: '}{sent.map((f) => f.name).join(', ')}</span> : null}
             </div>
             <button type="button" className="rc-quiet" onClick={clear}>Clear canvas<kbd className="rc-kbd">Esc</kbd></button>
           </div>
@@ -176,8 +171,8 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
                 const tid = tickets.current[card.id], a = app.assignments[tid];
                 return (
                   <div key={card.id} className="rc-grid-item">
-                    <EscalatedReceipt id={tid} title={card.props.title} queue={a ? a.pic.team : scen!.queue}
-                      expert={a ? { name: a.pic.name, initials: a.pic.initials, eta: 'a few min' } : scen!.expert}
+                    <EscalatedReceipt id={tid} title={card.props.title} queue={a ? a.pic.team : ans!.queue}
+                      expert={a ? { name: a.pic.name, initials: a.pic.initials, eta: 'a few min' } : ans!.expert}
                       status={a ? (a.status === 'resolved' ? 'resolved' : 'picked') : 'routing'} roomName={a?.roomName}
                       onOpenRoom={a ? () => app.setOpenRoom({ id: a.roomId, viewer: 'employee' }) : undefined} onOpenDashboard={() => app.go('manager')} />
                   </div>
@@ -202,7 +197,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
         ) : null}
 
         {flight ? (
-          <EscalationFlight key={flight.id} from={flight.from} to={flight.to} ticket={{ id: flight.id, title: flight.card.props.title, queue: flight.scen.queue }}
+          <EscalationFlight key={flight.id} from={flight.from} to={flight.to} ticket={{ id: flight.id, title: flight.card.props.title, queue: flight.ans.queue }}
             card={{ kind: flight.card.type, title: flight.card.props.title }} onArrive={arrive} onDone={() => setFlight(null)} />
         ) : null}
 

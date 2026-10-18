@@ -1,5 +1,6 @@
 // Design View 2 — the manager's Theme Command Center. Answers "what needs me right now?".
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { askThemeSummary } from '../../lib/api';
 import type { ManagerTab, Pic, Theme } from '../../types';
 import { useApp } from '../../state/AppState';
 import { SLA_MINUTES, SUGGEST, THEMES } from '../../data/command';
@@ -31,6 +32,23 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
     return [{ theme: t, tickets: tk.slice().sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0) || b.wait - a.wait), active: act.length, oldest, overdue: oldest >= SLA_MINUTES, leaving: !act.length }];
   }).sort((a, b) => (b.overdue ? 1 : 0) - (a.overdue ? 1 : 0) || b.oldest - a.oldest);
   const openGroups = groups.filter((g) => !g.leaving).length;
+
+  // Gemini summarises each stuck theme from its waiting questions; refreshed when that set changes.
+  const [aiSummary, setAiSummary] = useState<Record<string, { sig: string; text: string | null }>>({});
+  const asking = useRef<Record<string, string>>({});
+  const wanted = groups.filter((g) => !g.leaving).map((g) => ({ g, sig: g.tickets.filter((q) => !q.leaving).map((q) => q.id).sort().join(',') }));
+  useEffect(() => {
+    if (app.mode !== 'manager') return;
+    wanted.forEach(({ g, sig }) => {
+      const key = g.theme.key;
+      if (aiSummary[key]?.sig === sig || asking.current[key] === sig) return;
+      asking.current[key] = sig;
+      void askThemeSummary({ theme: g.theme.name, questions: g.tickets.map((q) => q.q) }).then((r) => {
+        setAiSummary((s) => ({ ...s, [key]: { sig, text: r?.summary ?? null } }));
+      });
+    });
+  }, [app.mode, wanted.map((w) => w.g.theme.key + ':' + w.sig).join('|')]);
+  groups.forEach((g) => { const s = aiSummary[g.theme.key]?.text; if (s) g.summary = s; });
   const handledByCards = THEMES.filter((t) => !queue.some((q) => q.theme === t.key) && !app.roomList.some((r) => r.theme === t.key && r.status !== 'resolved')).sort((a, b) => b.count - a.count);
 
   /** Least-busy expert who covers the topic; falls back to the default owner. */
