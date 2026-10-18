@@ -110,9 +110,7 @@ interface NeedsYouProps {
 export function NeedsYou({ groups, pics, load, suggestFor, onAssign }: NeedsYouProps) {
   return (
     <div className="rc-needs" role="tabpanel" id="rc-pane-needs" aria-labelledby="rc-tab-needs">
-      <section className="rc-needs-main" aria-labelledby="rc-stuck-h">
-        <h2 className="rc-sec-h" id="rc-stuck-h"><i className="rc-state-dot is-waiting" />Where new hires are stuck</h2>
-        <p className="rc-sec-s">Overdue first, then longest wait. One click puts an expert in a room with them.</p>
+      <section className="rc-needs-main" aria-labelledby="rc-needs-h">
         {groups.length ? (
           <div className="rc-need-list">
             {groups.map((g) => <NeedsCard key={g.theme.key} group={g} suggested={suggestFor(g.theme)} pics={pics} load={load} onAssign={(pic) => onAssign(g.theme, pic)} />)}

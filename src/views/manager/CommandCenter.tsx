@@ -5,7 +5,7 @@ import type { ManagerTab, Pic, Theme } from '../../types';
 import { useApp } from '../../state/AppState';
 import { SLA_MINUTES, SUGGEST, THEMES } from '../../data/command';
 import { cx, initialsOf, plural } from '../../lib/util';
-import { Brand, Icon, Toast } from '../../components/primitives';
+import { Brand, Icon, PageHead, Toast } from '../../components/primitives';
 import { HomeOverview } from './HomeOverview';
 import { NeedsYou, type NeedsGroup } from './NeedsYou';
 import { TicketRooms } from './TicketRooms';
@@ -100,10 +100,25 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
         </dl>
 
         {tab === 'home' ? <HomeOverview pics={app.experts} waiting={waiting.length} onOpenNeeds={() => setTab('needs')} />
-          : tab === 'needs' ? <NeedsYou groups={groups} pics={app.experts} load={app.load} suggestFor={suggestFor} onAssign={assign} />
+          : tab === 'needs' ? (
+            <div className="rc-home">
+              <PageHead id="rc-needs-h" title="Needs you" sub="Where new hires are stuck. Overdue first, then longest wait. One click puts an expert in a room with them." />
+              <NeedsYou groups={groups} pics={app.experts} load={app.load} suggestFor={suggestFor} onAssign={assign} />
+            </div>
+          )
           : tab === 'rooms' ? <TicketRooms rooms={app.roomList} pics={app.experts} onOpen={(r) => app.setOpenRoom({ id: r.id, viewer: 'manager' })} />
-          : tab === 'trends' ? <ThemeTrends />
-          : tab === 'knowledge' ? <KnowledgeBase />
+          : tab === 'trends' ? (
+            <div className="rc-home">
+              <PageHead title="Trends" sub="What new hires ask about, grouped by theme. Switch the time frame to see how it changes." />
+              <ThemeTrends />
+            </div>
+          )
+          : tab === 'knowledge' ? (
+            <div className="rc-home">
+              <PageHead title="Knowledge base" sub="The cards new hires get as answers. Review AI drafts from solved rooms and keep live cards up to date." />
+              <KnowledgeBase />
+            </div>
+          )
           : <ExpertTeam pics={app.experts} load={app.load} onAddExpert={(team, name) => {
               const x: Pic = { id: 'x' + Date.now().toString(36), name, first: name.split(/\s+/)[0], initials: initialsOf(name), team: team.name, skills: plural(team.covers.length, 'topic', 'topics'), covers: team.covers, custom: true };
               app.setExperts((l) => [...l, x]);

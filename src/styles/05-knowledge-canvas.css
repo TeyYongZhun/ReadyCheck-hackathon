@@ -24,7 +24,7 @@
 .rc-canvas.is-active .rc-hello { opacity: 0; transform: translateY(-40px) scale(.98); pointer-events: none; }
 
 .rc-omni-wrap { position: absolute; left: 50%; top: 360px; width: 720px; margin-left: -360px; z-index: var(--z-omni); transition: top 680ms var(--rc-ease-out), width 680ms var(--rc-ease-out), margin 680ms var(--rc-ease-out); }
-.rc-canvas.is-active .rc-omni-wrap { top: 92px; width: 640px; margin-left: -320px; }
+.rc-canvas.is-active .rc-omni-wrap { top: 120px; width: 640px; margin-left: -320px; }
 
 .rc-results-head { position: absolute; z-index: 2; left: 50%; top: var(--rc-head-top, 172px); width: 1120px; margin-left: -560px; display: flex; justify-content: space-between; align-items: center; animation: rc-fade 420ms var(--rc-ease) both; }
 .rc-results-h { font: 600 15px/22px var(--font-sans); color: var(--ink); }

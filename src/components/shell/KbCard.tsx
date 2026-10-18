@@ -56,14 +56,14 @@ export function KbCard({ kb: k, compact, onApprove, onEdit, onDiscard, onRestore
 
   if (mode === 'discard' && onDiscard) {
     return (
-      <div className="rc-kb is-review is-discarding">
+      <div className={cx('rc-kb', 'is-' + k.status, 'is-discarding')}>
         {head}
         <h3 className="rc-kb-t">{k.title}</h3>
         <p className="rc-kb-q" id={'rc-why-' + k.id}>Why discard this card?</p>
         <div className="rc-kb-reasons" role="radiogroup" aria-labelledby={'rc-why-' + k.id}>
           {REASONS.map((r) => <button key={r} type="button" role="radio" aria-checked={reason === r} className={cx('rc-kb-reason', reason === r && 'is-on')} onClick={() => setReason(r)}>{r}</button>)}
         </div>
-        <p className="rc-kb-m">It moves to Discarded. You can restore it later.</p>
+        <p className="rc-kb-m">{isLive ? 'New hires stop seeing it straight away. It moves to Discarded, and you can restore it later.' : 'It moves to Discarded. You can restore it later.'}</p>
         <div className="rc-kb-act">
           <button type="button" className="rc-btn-ghost is-sm" disabled={!reason} onClick={() => { onDiscard(k.id, reason); setMode('view'); setReason(''); }}>Discard card</button>
           <button type="button" className="rc-quiet" onClick={() => { setMode('view'); setReason(''); }}>Keep it</button>
@@ -87,7 +87,12 @@ export function KbCard({ kb: k, compact, onApprove, onEdit, onDiscard, onRestore
           {onRestore ? <button type="button" className="rc-btn-ghost is-sm" onClick={() => onRestore(k.id)}><Icon name="undo" size={15} />Restore</button> : null}
         </div>
       ) : null}
-      {isLive && onEdit ? <div className="rc-kb-act"><button type="button" className="rc-btn-ghost is-sm" onClick={startEdit}><Icon name="edit" size={15} />Edit</button></div> : null}
+      {isLive && (onEdit || onDiscard) ? (
+        <div className="rc-kb-act">
+          {onEdit ? <button type="button" className="rc-btn-ghost is-sm" onClick={startEdit}><Icon name="edit" size={15} />Edit</button> : null}
+          {onDiscard ? <button type="button" className="rc-btn-ghost is-sm" onClick={() => setMode('discard')}>Discard</button> : null}
+        </div>
+      ) : null}
       {reviewing && onApprove ? (
         <div className="rc-kb-act">
           <button type="button" className="rc-btn-primary is-sm" onClick={() => onApprove(k.id)}><Icon name="check" size={15} strokeWidth={2.2} />{k.manual ? 'Publish' : 'Approve'}</button>

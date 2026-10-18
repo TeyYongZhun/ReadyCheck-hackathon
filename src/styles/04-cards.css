@@ -263,3 +263,16 @@
 
 /* Cards without a feedback bar (e.g. a small-talk reply) need their own bottom padding. */
 .rc-card:not(:has(.rc-fb)) { padding-bottom: var(--space-5); }
+
+/* "My tickets" dock (employee): the head toggles the drawer, rows open their room. */
+.rc-dock-toggle { width: 100%; padding: 0; border: 0; background: none; cursor: pointer; text-align: left; color: inherit; font: inherit; }
+.rc-dock-toggle .rc-dock-text { display: grid; }
+.rc-dock-item { width: 100%; border: 0; background: none; color: var(--ink); text-align: left; border-radius: var(--radius-sm); }
+.rc-dock-link { cursor: pointer; padding-left: 4px; padding-right: 4px; transition: background var(--rc-dur-2); }
+.rc-dock-link:hover { background: var(--glass-100); }
+.rc-dock-dot.is-live { background: var(--ready); }
+.rc-dock-dot.is-solved { background: var(--ink-faint); }
+.rc-dock-st.is-live { color: var(--ready); }
+.rc-dock-st.is-solved { color: var(--ink-muted); }
+.rc-dock-empty b { font-weight: 600; color: var(--ink); }
+.rc-receipt-actions .rc-receipt-sub { align-self: center; }

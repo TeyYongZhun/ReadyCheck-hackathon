@@ -98,7 +98,7 @@ export function EscalationFlight({ from: f, to: t, ticket, card, onArrive, onDon
         <div ref={ticketL} className="rc-flight-ticket"><TicketChip {...ticket} /></div>
       </div>
       <span ref={ring} className="rc-flight-ring" style={{ left: ex, top: ey }} />
-      <span className="rc-sr">Escalating {ticket.title} to the Manager Dashboard</span>
+      <span className="rc-sr">Sending {ticket.title} to the support team</span>
     </div>
   );
 }
@@ -107,7 +107,7 @@ interface ReceiptProps {
   id: string; title: string; queue?: string; expert?: Expert;
   status: 'routing' | 'picked' | 'resolved';
   roomName?: string;
-  onAddContext?: () => void; onOpenRoom?: () => void; onOpenDashboard?: () => void;
+  onAddContext?: () => void; onOpenRoom?: () => void;
 }
 
 /** What stays in the card's slot after it flies away. */
@@ -121,7 +121,7 @@ export function EscalatedReceipt(p: ReceiptProps) {
   return (
     <div className={cx('rc-receipt', p.roomName && !done && 'has-room', done && 'is-done')} role="status">
       <div className="rc-receipt-head">
-        <span className="rc-receipt-tag"><Icon name="route" size={15} />Sent to Manager Dashboard</span>
+        <span className="rc-receipt-tag"><Icon name="route" size={15} />Sent to the support team</span>
         <span className="rc-receipt-id">{p.id}</span>
       </div>
       <div className="rc-receipt-title">{p.title}</div>
@@ -141,45 +141,70 @@ export function EscalatedReceipt(p: ReceiptProps) {
         <button type="button" className="rc-quiet" onClick={p.onAddContext}><Icon name="plus" size={14} />Add context</button>
         {p.onOpenRoom ? (
           <button type="button" className={cx('rc-room-btn', done && 'is-done')} onClick={p.onOpenRoom}>{done ? 'View room' : 'Open room'}<Icon name="chevron" size={14} /></button>
-        ) : p.onOpenDashboard ? (
-          <button type="button" className="rc-quiet" onClick={p.onOpenDashboard}>Track<Icon name="chevron" size={14} /></button>
-        ) : null}
+        ) : <span className="rc-receipt-sub">Tracked in My tickets, top right</span>}
       </div>
     </div>
   );
 }
 
-interface DockProps { items: DashboardItem[]; team?: string; open?: boolean; pulse?: number; onClick?: () => void }
+interface DockProps { items: DashboardItem[]; open?: boolean; pulse?: number; onOpenRoom?: (roomId: string) => void }
 
-/** The Manager Dashboard dock, top-right of the employee canvas. Escalations land here. */
+function dockSummary(items: DashboardItem[]): string {
+  if (!items.length) return 'None yet · help from a person';
+  const waiting = items.filter((i) => i.state === 'waiting').length, live = items.filter((i) => i.state === 'live').length;
+  const parts = [waiting ? `${waiting} waiting` : '', live ? `${live} with an expert` : ''].filter(Boolean);
+  return parts.length ? parts.join(' · ') : 'All solved';
+}
+
+/** "My tickets": the employee's own escalations, top-right of the canvas. Tickets fly here; live ones open their room. */
 export const DashboardDock = forwardRef<HTMLElement, DockProps>(function DashboardDock(p, ref) {
   const [hover, setHover] = useState(false);
-  const open = p.open || hover;
+  const [pinned, setPinned] = useState(false);
+  const open = p.open || hover || pinned;
+  const openCount = p.items.filter((i) => i.state !== 'solved').length;
+  const box = useRef<HTMLElement | null>(null);
+  // A click-opened drawer (touch screens, keyboard) closes on any tap or click outside it.
+  useEffect(() => {
+    if (!pinned) return;
+    const off = (e: PointerEvent) => { if (!box.current?.contains(e.target as Node)) setPinned(false); };
+    document.addEventListener('pointerdown', off);
+    return () => document.removeEventListener('pointerdown', off);
+  }, [pinned]);
   return (
-    <aside ref={ref} aria-label="Manager Dashboard" className={cx('rc-dock rc-glass rc-glass-2', open && 'is-open', p.onClick && 'is-clickable')}
-      onClick={p.onClick} title={p.onClick ? 'Open the Manager Dashboard' : undefined}
-      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-      <div className="rc-dock-head">
-        <span className="rc-dock-icon"><Icon name="grid" size={16} /></span>
-        <div className="rc-dock-text">
-          <div className="rc-dock-title">Manager Dashboard</div>
-          <div className="rc-dock-sub">{p.team ?? '3 experts on shift'}</div>
-        </div>
-        <span key={'c' + p.items.length} className={cx('rc-dock-count', !p.items.length && 'is-zero')}>{p.items.length}</span>
-      </div>
+    <aside ref={(el) => { box.current = el; if (typeof ref === 'function') ref(el); else if (ref) ref.current = el; }}
+      aria-label="My tickets" className={cx('rc-dock rc-glass rc-glass-2', open && 'is-open')}
+      // Moving the cursor away always closes it, even if it was opened by a click.
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => { setHover(false); setPinned(false); }}>
+      <button type="button" className="rc-dock-head rc-dock-toggle" aria-expanded={open} onClick={() => setPinned(!pinned)}>
+        <span className="rc-dock-icon"><Icon name="expert" size={16} /></span>
+        <span className="rc-dock-text">
+          <span className="rc-dock-title">My tickets</span>
+          <span className="rc-dock-sub">{dockSummary(p.items)}</span>
+        </span>
+        <span key={'c' + openCount} className={cx('rc-dock-count', !openCount && 'is-zero')} aria-label={openCount + ' open'}>{openCount}</span>
+      </button>
       <div className="rc-dock-drawer">
         {p.items.length ? (
           <ul className="rc-dock-list">
-            {p.items.slice(0, 4).map((it) => (
-              <li key={it.id} className="rc-dock-item">
-                <span className={cx('rc-dock-dot', it.assigned && 'is-assigned')} />
-                <span className="rc-dock-id">{it.id}</span>
-                <span className="rc-dock-it">{it.title}</span>
-                <span className={cx('rc-dock-st', it.assigned && 'is-assigned')}>{it.status ?? 'Routing'}</span>
-              </li>
-            ))}
+            {p.items.slice(0, 5).map((it) => {
+              const row = (
+                <>
+                  <span className={cx('rc-dock-dot', 'is-' + it.state)} />
+                  <span className="rc-dock-id">{it.id}</span>
+                  <span className="rc-dock-it">{it.title}</span>
+                  <span className={cx('rc-dock-st', 'is-' + it.state)}>{it.status}</span>
+                </>
+              );
+              return (
+                <li key={it.id}>
+                  {it.roomId && p.onOpenRoom
+                    ? <button type="button" className="rc-dock-item rc-dock-link" onClick={() => p.onOpenRoom!(it.roomId!)} title="Open the room">{row}</button>
+                    : <div className="rc-dock-item">{row}</div>}
+                </li>
+              );
+            })}
           </ul>
-        ) : <div className="rc-dock-empty">No open escalations. Everything here is self-served.</div>}
+        ) : <div className="rc-dock-empty">No tickets yet. If a card doesn’t solve it, tap <b>Need human expert</b> and it lands here.</div>}
       </div>
       <span key={'r' + (p.pulse ?? 0)} className={cx('rc-dock-ring', p.pulse && 'is-hit')} aria-hidden />
     </aside>

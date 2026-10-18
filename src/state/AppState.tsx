@@ -5,6 +5,7 @@ import { createContext, useContext, useMemo, useRef, useState, type ReactNode } 
 import type { Attachment, CardKind, HistoryEntry, KbItem, Message, Mode, Pic, QueueTicket, Room, ThemeKey } from '../types';
 import { PICS, QUEUE, ROOMS, SEED_KB, THEMES_BY_KEY } from '../data/command';
 import { askRoomReply, askSummary } from '../lib/api';
+import { dialogueFor, fillLine } from '../data/dialogues';
 import type { ChatLine, PicPersona, TicketContext } from '../api-types';
 import { clock, slugify, uid } from '../lib/util';
 
@@ -17,8 +18,11 @@ export interface RoomRecord {
   ticket: QueueTicket | null;
   messages: Message[];
   typing: false | 'pic' | 'employee' | 'ai';
-  /** "ask": the expert thinks it's fixed, so the employee is asked to confirm. */
-  feedback?: 'ask' | null;
+  /** "ask": the expert thinks it's fixed, so the employee is asked to confirm.
+   *  "ask1v1": the employee said it isn't fixed, so they're offered a 1:1 with the expert. "booked": a 1:1 is booked. */
+  feedback?: 'ask' | 'ask1v1' | 'booked' | null;
+  /** The scripted sample conversation is playing. */
+  demo?: boolean;
 }
 
 export interface EscalationInput {
@@ -123,11 +127,59 @@ function useAppStateValue() {
     if (viewer === 'employee') void expertTurn(roomId, [...rec.messages, msg]);
   }
 
+  /** Play the scripted sample conversation for this room's theme, one line at a time with typing, then ask "Did … solve it?". */
+  function playDemo(roomId: string) {
+    const rec = roomsRef.current[roomId]; if (!rec || rec.demo || rec.room.status === 'resolved') return;
+    const lines = dialogueFor(rec.room.theme);
+    // The expert has usually already said hello, so start from the employee's first reply.
+    const start = rec.messages.some((m) => m.from === 'pic') ? Math.max(0, lines.findIndex((l) => l[0] === 'employee')) : 0;
+    const names = { first: employeeName(rec), pic: rec.pic.first, team: rec.pic.team };
+    setRooms((s) => s[roomId] ? { ...s, [roomId]: { ...s[roomId], demo: true, feedback: null } } : s);
+    const step = (i: number) => {
+      const cur = roomsRef.current[roomId];
+      if (!cur || !cur.demo || cur.room.status === 'resolved') return;
+      if (i >= lines.length) {
+        setRooms((s) => s[roomId] ? { ...s, [roomId]: { ...s[roomId], demo: false, typing: false, feedback: 'ask' } } : s);
+        return;
+      }
+      const [who, text] = lines[i];
+      setTyping(roomId, who);
+      later(() => {
+        if (!roomsRef.current[roomId]?.demo) return;
+        push(roomId, { from: who, text: fillLine(text, names), scripted: true });
+        later(() => step(i + 1), 450);
+      }, who === 'pic' ? 1600 : 1100);
+    };
+    later(() => step(start), 150);
+  }
+
+  function stopDemo(roomId: string) {
+    setRooms((s) => s[roomId] ? { ...s, [roomId]: { ...s[roomId], demo: false, typing: false } } : s);
+  }
+
   /** Employee's answer to "Did {expert} solve your problem?". */
   function answerFeedback(roomId: string, solved: boolean) {
     const rec = rooms[roomId]; if (!rec) return;
     if (solved) { void resolve(roomId, employeeName(rec)); return; }
-    send(roomId, 'employee', 'Not yet, it’s still not working.');
+    // Not fixed: offer a 1:1 with the expert before carrying on in chat.
+    const msg: Message = { id: uid('m'), t: clock(), from: 'employee', text: 'Not yet, it’s still not working.' };
+    setRooms((s) => s[roomId] ? { ...s, [roomId]: { ...s[roomId], feedback: 'ask1v1', messages: [...s[roomId].messages, msg] } } : s);
+  }
+
+  /** Employee's answer to "Would a 1:1 with {expert} help?". */
+  function answer1v1(roomId: string, book: boolean) {
+    const rec = rooms[roomId]; if (!rec) return;
+    if (book) {
+      const slot = nextSlot();
+      const msg: Message = { id: uid('m'), t: clock(), from: 'employee', text: 'Yes, please book a 1:1.' };
+      const booked: Message = { id: uid('m'), t: clock(), from: 'system', kind: 'booked', text: ` with ${rec.pic.name} · Today ${slot} · ${rec.pic.team} desk, or join on Meet` };
+      setRooms((s) => s[roomId] ? { ...s, [roomId]: { ...s[roomId], feedback: 'booked', typing: 'pic', messages: [...s[roomId].messages, msg, booked] } } : s);
+      later(() => push(roomId, { from: 'pic', text: `Booked for ${slot.split('–')[0]}. I’ll bring your case so we can fix it together. Keep writing here until then if anything changes.` }), 1400);
+      return;
+    }
+    const msg: Message = { id: uid('m'), t: clock(), from: 'employee', text: 'No, let’s keep chatting.' };
+    setRooms((s) => s[roomId] ? { ...s, [roomId]: { ...s[roomId], feedback: null, messages: [...s[roomId].messages, msg] } } : s);
+    void expertTurn(roomId, [...rec.messages, msg]);
   }
 
   /** Close the room, then have Gemini turn the conversation into a knowledge-base draft for manager review. */
@@ -178,8 +230,17 @@ function useAppStateValue() {
 
   return {
     mode, go, queue, mine, assignments, rooms, roomList, load, history: history_, historyItems: history, knowledge, kb,
-    experts, setExperts, openRoom, setOpenRoom, escalate, assignTheme, send, answerFeedback, resolve, reopen,
+    experts, setExperts, openRoom, setOpenRoom, escalate, assignTheme, send, answerFeedback, answer1v1, playDemo, stopDemo, resolve, reopen,
   };
+}
+
+/** The next half-hour slot at least 30 minutes away, e.g. "13:30–14:00". */
+function nextSlot(): string {
+  const s = new Date(Date.now() + 30 * 60000);
+  s.setMinutes(s.getMinutes() < 30 ? 30 : 60, 0, 0);
+  const e = new Date(s.getTime() + 30 * 60000);
+  const f = (d: Date) => d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+  return f(s) + '–' + f(e);
 }
 
 function persona(p: Pic): PicPersona { return { name: p.name, first: p.first, team: p.team, skills: p.skills }; }

@@ -10,7 +10,7 @@
   .rc-hello { position: relative; left: auto; top: auto; width: auto; margin: 56px 0 32px; }
   .rc-canvas.is-active .rc-hello { display: none; }
   .rc-omni-wrap, .rc-canvas.is-active .rc-omni-wrap { position: relative; left: auto; top: auto; width: 100%; max-width: 720px; margin: 0 auto; }
-  .rc-canvas.is-active .rc-omni-wrap { margin-top: 20px; }
+  .rc-canvas.is-active .rc-omni-wrap { margin-top: 32px; }
   .rc-results-head { position: relative; left: auto; top: auto; width: auto; margin: 24px 0 12px; flex-wrap: wrap; gap: 8px; }
   .rc-grid { position: relative; left: auto; top: auto; width: auto; margin: 0; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
   .rc-canvas.is-single .rc-grid, .rc-canvas.is-single .rc-results-head { width: 100%; max-width: 560px; margin-left: auto; margin-right: auto; }

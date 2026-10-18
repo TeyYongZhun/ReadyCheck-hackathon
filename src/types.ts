@@ -30,7 +30,14 @@ export interface Scenario {
   cards: CardSpec[];
 }
 
-export interface DashboardItem { id: string; title: string; status?: string; assigned?: boolean }
+/** One of the employee's own tickets, as the "My tickets" dock shows it. */
+export interface DashboardItem {
+  id: string; title: string;
+  state: 'waiting' | 'live' | 'solved';
+  /** "Waiting for an expert", "With Ana", "Solved". */
+  status: string;
+  roomId?: string;
+}
 
 export type ThemeKey = 'db' | 'vpn' | 'onb' | 'exp' | 'pay' | 'mfa' | 'leave' | 'hw' | 'ben';
 
@@ -77,6 +84,8 @@ export interface Message {
   id: string; from: MessageFrom; t: string; text: string; kind?: 'kb' | 'booked'; kbId?: string;
   /** Written by Gemini standing in for the expert. */
   ai?: boolean;
+  /** Part of the "Play sample conversation" demo script. */
+  scripted?: boolean;
 }
 
 export type KbStatus = 'review' | 'live' | 'discarded';

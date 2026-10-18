@@ -17,7 +17,7 @@ export function KnowledgeBase() {
       {list.map((k) => (
         <li key={k.id}>
           <KbCard kb={k} onApprove={mode === 'review' ? kb.approve : undefined} onEdit={mode !== 'gone' ? kb.edit : undefined}
-            onDiscard={mode === 'review' ? kb.discard : undefined} onRestore={mode === 'gone' ? kb.restore : undefined} />
+            onDiscard={mode !== 'gone' ? kb.discard : undefined} onRestore={mode === 'gone' ? kb.restore : undefined} />
         </li>
       ))}
     </ul>

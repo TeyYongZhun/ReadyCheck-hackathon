@@ -30,6 +30,16 @@ export function Person({ initials, className }: { initials: string; className?: 
   return <span className={cx('rc-avatar rc-person', className)}>{initials}</span>;
 }
 
+/** Big serif page title + one-line description, the same on every manager tab. */
+export function PageHead({ id, title, sub, children }: { id?: string; title: string; sub: string; children?: ReactNode }) {
+  return (
+    <header className="rc-home-head">
+      <div><h2 className="rc-home-h" id={id}>{title}</h2><p className="rc-home-s">{sub}</p></div>
+      {children}
+    </header>
+  );
+}
+
 export function AiLabel({ children }: { children: ReactNode }) {
   return <span className="rc-ai-label">{children}</span>;
 }

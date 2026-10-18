@@ -21,6 +21,9 @@ function Shell() {
           onSend={(t) => app.send(rec.room.id, open.viewer, t)}
           onResolve={() => void app.resolve(rec.room.id, rec.employee.first)}
           onFeedback={(solved) => app.answerFeedback(rec.room.id, solved)}
+          on1v1={(book) => app.answer1v1(rec.room.id, book)}
+          onDemo={() => app.playDemo(rec.room.id)}
+          onStopDemo={() => app.stopDemo(rec.room.id)}
           onReopen={() => app.reopen(rec.room.id, open.viewer === 'manager' ? 'Rachel' : rec.employee.first)}
           onApproveKb={app.kb.approve} />
       ) : null}

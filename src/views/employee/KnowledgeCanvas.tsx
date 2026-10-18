@@ -40,6 +40,18 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   // Closed by default so the first screen stays clear; the count on "Your questions" still updates.
   const [sideOpen, setSideOpen] = useState(false);
   const [winH, setHeight] = useState(() => window.innerHeight);
+  // Bottom edge of the answer card, so the canvas (which clips its children) grows with it and the page can scroll.
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [contentBottom, setContentBottom] = useState(0);
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el) { setContentBottom(0); return; }
+    const measure = () => setContentBottom(el.offsetTop + el.offsetHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
 
   useEffect(() => {
     const r = () => setHeight(window.innerHeight);
@@ -96,7 +108,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   function arrive() {
     const fl = flight; if (!fl) return;
     setPulse((n) => n + 1);
-    setEsc((l) => [{ id: fl.id, title: fl.card.props.title, status: 'Routing' }, ...l]);
+    setEsc((l) => [{ id: fl.id, title: fl.card.props.title, state: 'waiting', status: 'Waiting for an expert' }, ...l]);
     setCard(fl.card.id, 'routing');
     setDockOpen(true);
     setToast(fl.id);
@@ -107,11 +119,13 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
 
   const active = phase !== 'idle';
   // At rest the canvas fits the window exactly (no scroll); with a card on it, leave room for the card.
-  const height = active ? Math.max(820, winH) : Math.max(560, winH);
+  const height = active ? Math.max(820, winH, contentBottom + 64) : Math.max(560, winH);
   const cards = ans ? [ans.card] : [];
-  const dockItems = esc.map((x) => {
+  const dockItems: DashboardItem[] = esc.map((x) => {
     const a = app.assignments[x.id];
-    return a ? { ...x, status: a.status === 'resolved' ? 'Solved' : a.pic.first, assigned: true } : x;
+    if (!a) return x;
+    const solved = a.status === 'resolved' || app.rooms[a.roomId]?.room.status === 'resolved';
+    return { ...x, state: solved ? 'solved' : 'live', status: solved ? 'Solved' : 'With ' + a.pic.first, roomId: a.roomId };
   });
 
   const historyItems: HistoryItem[] = app.historyItems.map((e) => {
@@ -124,7 +138,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
 
   return (
     <div ref={root} className={cx('rc-canvas', active && 'is-active', 'is-single', 'has-side')}
-      style={{ height, '--rc-head-top': 172 + (files.length ? 44 : 0) + 'px', '--rc-grid-top': 214 + (files.length ? 44 : 0) + (ans && sent.length ? 26 : 0) + (ans?.source === 'offline' ? 22 : 0) + 'px' } as React.CSSProperties}>
+      style={{ height, '--rc-head-top': 200 + (files.length ? 44 : 0) + 'px', '--rc-grid-top': 242 + (files.length ? 44 : 0) + (ans && sent.length ? 26 : 0) + (ans?.source === 'offline' ? 22 : 0) + 'px' } as React.CSSProperties}>
       <div className="rc-canvas-orb rc-canvas-orb-a" aria-hidden />
       <div className="rc-canvas-orb rc-canvas-orb-b" aria-hidden />
 
@@ -143,7 +157,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
         <header className="rc-topbar">
           <div className="rc-topbar-right">
             <div className="rc-dock-slot">
-              <DashboardDock ref={dock} items={dockItems} pulse={pulse} open={dockOpen} team="Routed escalations · live" onClick={() => app.go('manager')} />
+              <DashboardDock ref={dock} items={dockItems} pulse={pulse} open={dockOpen} onOpenRoom={(id) => app.setOpenRoom({ id, viewer: 'employee' })} />
             </div>
           </div>
         </header>
@@ -174,7 +188,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
         ) : null}
 
         {active ? (
-          <div className="rc-grid">
+          <div className="rc-grid" ref={gridRef}>
             {phase === 'loading' ? <div className="rc-grid-item rc-skel"><span /><span /><span /></div> : chat ? (
               <div className="rc-grid-item">
                 <ActionCard kind="answer" kindLabel={chat.source === 'ai' ? 'AI reply' : 'ReadyCheck'} title={chat.message} feedback={false}
@@ -189,7 +203,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
                     <EscalatedReceipt id={tid} title={card.props.title} queue={a ? a.pic.team : ans!.queue}
                       expert={a ? { name: a.pic.name, initials: a.pic.initials, eta: 'a few min' } : ans!.expert}
                       status={a ? (a.status === 'resolved' ? 'resolved' : 'picked') : 'routing'} roomName={a?.roomName}
-                      onOpenRoom={a ? () => app.setOpenRoom({ id: a.roomId, viewer: 'employee' }) : undefined} onOpenDashboard={() => app.go('manager')} />
+                      onOpenRoom={a ? () => app.setOpenRoom({ id: a.roomId, viewer: 'employee' }) : undefined} />
                   </div>
                 );
               }
@@ -218,7 +232,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
 
         {toast ? (
           <Toast onClose={() => setToast(null)}>
-            <span className="rc-toast-id">{toast}</span> is on the Manager Dashboard. A manager will assign the right expert, and you’ll chat with them in a room here.
+            <span className="rc-toast-id">{toast}</span> is with the support team. They’ll pick the right expert, and you’ll chat in a room from My tickets.
           </Toast>
         ) : null}
       </div>
