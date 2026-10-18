@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { THEMES, TREND_FRAMES } from '../../data/command';
+import { THEMES, TREND_FRAMES, type TrendFrame } from '../../data/command';
 import { cx, plural } from '../../lib/util';
 import { AiLabel, Footnote } from '../../components/primitives';
 
@@ -8,9 +8,9 @@ function niceStep(max: number): number {
   return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * pw;
 }
 
-/** Questions by theme: one bar per theme, Daily / Monthly / All. Sample data. */
+/** Questions by theme: one bar per theme, Daily / Weekly / Monthly / All. Sample data. */
 export function ThemeTrends() {
-  const [frame, setFrame] = useState<'daily' | 'monthly' | 'all'>('monthly');
+  const [frame, setFrame] = useState<TrendFrame>('monthly');
   const fr = TREND_FRAMES.find((x) => x.key === frame)!;
   const rows = THEMES.map((t) => ({ t, n: fr.data[t.key] ?? 0 })).sort((a, b) => b.n - a.n);
   const total = rows.reduce((s, r) => s + r.n, 0);

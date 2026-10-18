@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Pic } from '../../types';
-import { HOME } from '../../data/command';
+import { DEFAULT_WEEK, addDays, isoDate, rangeLabel, weekData, weekStart } from '../../data/homeWeeks';
 import { cx } from '../../lib/util';
 import { AiLabel, Footnote, Icon, PicAvatar } from '../../components/primitives';
 
@@ -46,22 +46,70 @@ function OpenIssuesChart({ id, data, labels, label }: { id: string; data: number
   );
 }
 
-const STATS: [string, string, string, string, string][] = [
-  ['Open tickets', '21', 'Unresolved', 'doc', ''],
-  ['Overdue', '4', 'Past agreed date', 'clock', 'is-hot'],
-  ['Employee-confirmed resolved', '72%', '18 of 25 cohort tickets', 'check', ''],
-  ['Awaiting confirmation', '7', 'Not counted as resolved', 'users', ''],
-];
+/** The date pill: opens a week picker (quick picks, previous/next, or any date). Weeks run Monday to Sunday. */
+function WeekPicker({ start, onChange }: { start: Date; onChange: (d: Date) => void }) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null), btn = useRef<HTMLButtonElement>(null);
+  const latest = weekStart(new Date());
+  useEffect(() => {
+    if (!open) return;
+    const off = (e: PointerEvent) => { if (!wrap.current?.contains(e.target as Node)) setOpen(false); };
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { setOpen(false); btn.current?.focus(); } };
+    document.addEventListener('pointerdown', off); window.addEventListener('keydown', k);
+    return () => { document.removeEventListener('pointerdown', off); window.removeEventListener('keydown', k); };
+  }, [open]);
+  const pick = (d: Date) => { onChange(weekStart(d)); setOpen(false); };
+  const step = (n: number) => { const d = addDays(start, n * 7); if (d.getTime() <= latest.getTime()) onChange(d); };
+  const quick: [string, Date][] = [['This week', latest], ['Last week', addDays(latest, -7)], ['2 weeks ago', addDays(latest, -14)], ['Sample week', DEFAULT_WEEK]];
+  return (
+    <div className="rc-week" ref={wrap}>
+      <button ref={btn} type="button" className="rc-home-date rc-week-btn" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <Icon name="calendar" size={16} />{rangeLabel(start)}<Icon name="chevron" size={14} className={open ? 'rc-chev-up' : 'rc-chev-down'} />
+      </button>
+      {open ? (
+        <div className="rc-week-pop rc-menu rc-glass rc-glass-3" role="dialog" aria-label="Choose a week">
+          <div className="rc-week-nav">
+            <button type="button" className="rc-team-x" aria-label="Previous week" onClick={() => step(-1)}><Icon name="chevron" size={14} className="rc-week-prev" /></button>
+            <span className="rc-week-cur">{rangeLabel(start)}</span>
+            <button type="button" className="rc-team-x" aria-label="Next week" disabled={start.getTime() >= latest.getTime()} onClick={() => step(1)}><Icon name="chevron" size={14} /></button>
+          </div>
+          <ul className="rc-week-list">
+            {quick.map(([label, d]) => (
+              <li key={label}>
+                <button type="button" className={cx('rc-menu-i rc-week-opt', d.getTime() === start.getTime() && 'is-on')} onClick={() => pick(d)}>
+                  <span className="rc-menu-n">{label}</span><span className="rc-menu-l">{rangeLabel(d)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <label className="rc-kb-lab rc-week-date">Or pick any date
+            <input type="date" className="rc-kb-input is-plain" value={isoDate(start)} max={isoDate(new Date())}
+              onChange={(e) => { if (e.target.value) { const [y, m, d] = e.target.value.split('-').map(Number); pick(new Date(y, m - 1, d)); } }} />
+          </label>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 /** Manager Home: the weekly overview. All figures are sample data (labelled). TODO: compute from real tickets. */
 export function HomeOverview({ pics, waiting, onOpenNeeds }: { pics: Pic[]; waiting: number; onOpenNeeds: () => void }) {
   const [span, setSpan] = useState<'daily' | 'weekly'>('daily');
+  const [week, setWeek] = useState<Date>(DEFAULT_WEEK);
+  const W = weekData(week);
   const byId = Object.fromEntries(pics.map((x) => [x.id, x]));
+  const catMax = Math.max(10, ...W.cats.map((c) => c[1]));
+  const STATS: [string, string, string, string, string][] = [
+    ['Open tickets', String(W.stats.open), 'Unresolved', 'doc', ''],
+    ['Overdue', String(W.stats.overdue), 'Past agreed date', 'clock', 'is-hot'],
+    ['Employee-confirmed resolved', W.stats.resolvedPct + '%', `${W.stats.resolved} of ${W.stats.cohort} cohort tickets`, 'check', ''],
+    ['Awaiting confirmation', String(W.stats.awaiting), 'Not counted as resolved', 'users', ''],
+  ];
   return (
     <div className="rc-home" role="tabpanel" id="rc-pane-home" aria-labelledby="rc-tab-home">
       <header className="rc-home-head">
         <div><h1 className="rc-home-h">Home</h1><p className="rc-home-s">A clear view of support across your team</p></div>
-        <div className="rc-home-meta"><AiLabel>Sample data</AiLabel><span className="rc-home-date"><Icon name="calendar" size={16} />{HOME.range}</span></div>
+        <div className="rc-home-meta"><AiLabel>Sample data</AiLabel><WeekPicker start={week} onChange={setWeek} /></div>
       </header>
 
       {waiting ? (
@@ -91,7 +139,7 @@ export function HomeOverview({ pics, waiting, onOpenNeeds }: { pics: Pic[]; wait
             {(['daily', 'weekly'] as const).map((v) => <button key={v} type="button" role="tab" aria-selected={span === v} className={cx(span === v && 'is-on')} onClick={() => setSpan(v)}>{v === 'daily' ? 'Daily' : 'Weekly'}</button>)}
           </div>
         </header>
-        <OpenIssuesChart id={span} data={span === 'daily' ? HOME.daily : HOME.weekly} labels={span === 'daily' ? HOME.days : HOME.weeks} label={'Open tickets, ' + span} />
+        <OpenIssuesChart key={W.range} id={span} data={span === 'daily' ? W.daily : W.weekly} labels={span === 'daily' ? W.days : W.weeks} label={'Open tickets, ' + span} />
         <p className="rc-home-note">Illustrative sample data — not measured results</p>
       </section>
 
@@ -100,8 +148,8 @@ export function HomeOverview({ pics, waiting, onOpenNeeds }: { pics: Pic[]; wait
           <h2 className="rc-panel-h" id="rc-cic-h">Common issue categories</h2>
           <p className="rc-panel-s">Current open tickets</p>
           <ul className="rc-bars">
-            {HOME.cats.map(([label, n]) => (
-              <li key={label}><span className="rc-bars-l">{label}</span><span className="rc-bars-t" aria-hidden><i style={{ width: (n / 10) * 100 + '%' }} /></span><span className="rc-bars-n">{n}</span></li>
+            {W.cats.map(([label, n]) => (
+              <li key={label}><span className="rc-bars-l">{label}</span><span className="rc-bars-t" aria-hidden><i style={{ width: (n / catMax) * 100 + '%' }} /></span><span className="rc-bars-n">{n}</span></li>
             ))}
           </ul>
         </section>
@@ -109,7 +157,7 @@ export function HomeOverview({ pics, waiting, onOpenNeeds }: { pics: Pic[]; wait
           <h2 className="rc-panel-h" id="rc-pic-h">Open tickets by expert</h2>
           <p className="rc-panel-s">Who is carrying the load</p>
           <ul className="rc-bypic">
-            {HOME.byPic.map(([id, n]) => (
+            {W.byPic.map(([id, n]) => (
               <li key={id}><PicAvatar pic={byId[id]} size={32} /><span className="rc-bypic-n">{byId[id]?.name}</span><span className="rc-bypic-t">{byId[id]?.team}</span><b>{n}</b></li>
             ))}
           </ul>

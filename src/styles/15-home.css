@@ -65,3 +65,20 @@
 }
 
 
+
+/* Week picker on the date pill */
+.rc-week { position: relative; }
+.rc-week-btn { cursor: pointer; transition: background var(--rc-dur-2), border-color var(--rc-dur-2); }
+.rc-week-btn:hover, .rc-week-btn[aria-expanded="true"] { background: var(--glass-200); border-color: var(--glass-edge); }
+.rc-week-btn .rc-icon:last-child { color: var(--ink-muted); }
+.rc-week-pop.rc-menu { left: auto; right: 0; width: min(320px, calc(100vw - 32px)); padding: 10px; display: grid; gap: 8px; }
+.rc-week-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 2px 8px; border-bottom: 1px solid var(--hairline); }
+.rc-week-cur { font: 600 14px/20px var(--font-sans); color: var(--ink); }
+.rc-week-prev { transform: rotate(180deg); }
+.rc-week-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.rc-week-opt { grid-template-columns: minmax(0, 1fr) auto; padding: 9px 10px; }
+.rc-week-opt .rc-menu-n { font-size: 14px; }
+.rc-week-opt.is-on { background: var(--ready-soft); }
+.rc-week-opt.is-on .rc-menu-n { color: var(--ready); }
+.rc-week-date { padding: 8px 2px 2px; border-top: 1px solid var(--hairline); }
+.rc-week-date input { color-scheme: inherit; }

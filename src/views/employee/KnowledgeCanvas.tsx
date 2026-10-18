@@ -37,11 +37,12 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   const [pulse, setPulse] = useState(0);
   const [dockOpen, setDockOpen] = useState(false);
   const [entryId, setEntryId] = useState<string | null>(null);
-  const [sideOpen, setSideOpen] = useState(() => window.innerWidth > 900);
-  const [height, setHeight] = useState(() => Math.max(820, window.innerHeight));
+  // Closed by default so the first screen stays clear; the count on "Your questions" still updates.
+  const [sideOpen, setSideOpen] = useState(false);
+  const [winH, setHeight] = useState(() => window.innerHeight);
 
   useEffect(() => {
-    const r = () => setHeight(Math.max(820, window.innerHeight));
+    const r = () => setHeight(window.innerHeight);
     window.addEventListener('resize', r);
     return () => window.removeEventListener('resize', r);
   }, []);
@@ -105,6 +106,8 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   }
 
   const active = phase !== 'idle';
+  // At rest the canvas fits the window exactly (no scroll); with a card on it, leave room for the card.
+  const height = active ? Math.max(820, winH) : Math.max(560, winH);
   const cards = ans ? [ans.card] : [];
   const dockItems = esc.map((x) => {
     const a = app.assignments[x.id];

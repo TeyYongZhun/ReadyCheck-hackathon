@@ -32,3 +32,13 @@
 }
 
 
+
+/* Wide screens: pin the employee menu to the window (like the manager's), so the user card at the
+   bottom is always visible and the menu never runs past the fold on shorter screens or higher zoom. */
+@media (min-width: 1220px) {
+  .rc-side-emp {
+    position: fixed; top: var(--space-4); bottom: auto;
+    left: calc(max(16px, env(safe-area-inset-left, 0px)) + var(--space-4));
+    height: calc(100vh - 2 * var(--space-4)); min-height: 0;
+  }
+}

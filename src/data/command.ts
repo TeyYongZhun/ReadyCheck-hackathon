@@ -84,8 +84,11 @@ export const HOME = {
 };
 
 /** Trends tab, sample data: questions per theme for each time frame. */
-export const TREND_FRAMES: { key: 'daily' | 'monthly' | 'all'; label: string; caption: string; data: Record<ThemeKey, number> }[] = [
+export type TrendFrame = 'daily' | 'weekly' | 'monthly' | 'all';
+export const TREND_FRAMES: { key: TrendFrame; label: string; caption: string; data: Record<ThemeKey, number> }[] = [
   { key: 'daily', label: 'Daily', caption: 'Today, 18 Oct 2026', data: { db: 2, vpn: 1, onb: 1, exp: 2, pay: 1, mfa: 0, leave: 1, hw: 1, ben: 0 } },
+  // Same totals as THEMES[].count, which are this week's numbers.
+  { key: 'weekly', label: 'Weekly', caption: 'This week, 12–18 Oct 2026', data: { db: 5, vpn: 9, onb: 8, exp: 7, pay: 6, mfa: 4, leave: 4, hw: 3, ben: 2 } },
   { key: 'monthly', label: 'Monthly', caption: 'October 2026, so far', data: { db: 14, vpn: 31, onb: 22, exp: 19, pay: 15, mfa: 11, leave: 10, hw: 8, ben: 5 } },
   { key: 'all', label: 'All', caption: 'All time, since 1 Sep 2026', data: { db: 23, vpn: 64, onb: 58, exp: 37, pay: 29, mfa: 26, leave: 21, hw: 15, ben: 12 } },
 ];
