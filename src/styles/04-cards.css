@@ -260,3 +260,6 @@
 .rc-dock-ring.is-hit { animation: rc-hit 900ms var(--rc-ease-out); }
 @keyframes rc-hit { 0% { box-shadow: 0 0 0 0 var(--escalate); } 100% { box-shadow: 0 0 0 18px transparent; } }
 
+
+/* Cards without a feedback bar (e.g. a small-talk reply) need their own bottom padding. */
+.rc-card:not(:has(.rc-fb)) { padding-bottom: var(--space-5); }

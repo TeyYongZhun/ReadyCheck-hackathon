@@ -49,7 +49,6 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
     });
   }, [app.mode, wanted.map((w) => w.g.theme.key + ':' + w.sig).join('|')]);
   groups.forEach((g) => { const s = aiSummary[g.theme.key]?.text; if (s) g.summary = s; });
-  const handledByCards = THEMES.filter((t) => !queue.some((q) => q.theme === t.key) && !app.roomList.some((r) => r.theme === t.key && r.status !== 'resolved')).sort((a, b) => b.count - a.count);
 
   /** Least-busy expert who covers the topic; falls back to the default owner. */
   function suggestFor(t: Theme): Pic {
@@ -101,7 +100,7 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
         </dl>
 
         {tab === 'home' ? <HomeOverview pics={app.experts} waiting={waiting.length} onOpenNeeds={() => setTab('needs')} />
-          : tab === 'needs' ? <NeedsYou groups={groups} handledByCards={handledByCards} pics={app.experts} load={app.load} suggestFor={suggestFor} onAssign={assign} />
+          : tab === 'needs' ? <NeedsYou groups={groups} pics={app.experts} load={app.load} suggestFor={suggestFor} onAssign={assign} />
           : tab === 'rooms' ? <TicketRooms rooms={app.roomList} pics={app.experts} onOpen={(r) => app.setOpenRoom({ id: r.id, viewer: 'manager' })} />
           : tab === 'trends' ? <ThemeTrends />
           : tab === 'knowledge' ? <KnowledgeBase />

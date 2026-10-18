@@ -1,13 +1,13 @@
 // Design View 1 — the employee's Dynamic Knowledge Canvas.
 // At rest: greeting, omni bar, starters. Asking: bar rises, skeleton. Answered: one card. Esc clears.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type { Attachment, CanvasAnswer, CardSpec, CardState, DashboardItem, HistoryEntry } from '../../types';
+import type { Attachment, CanvasAnswer, CardSpec, CardState, ChatReply, DashboardItem, HistoryEntry } from '../../types';
 import { useApp } from '../../state/AppState';
 import { DEFAULT_SUGGEST } from '../../data/scenarios';
-import { resolveAnswer } from '../../lib/answer';
+import { isChat, resolveAnswer } from '../../lib/answer';
 import { clock, cx, greeting, uid } from '../../lib/util';
 import { Brand, Icon, Toast, toAttachment } from '../../components/primitives';
-import { ChecklistCard, DocSummaryCard, VideoCard } from '../../components/cards/ActionCard';
+import { ActionCard, ChecklistCard, DocSummaryCard, VideoCard } from '../../components/cards/ActionCard';
 import { DashboardDock, EscalatedReceipt, EscalationFlight, rectWithin, type Rect } from '../../components/cards/Escalation';
 import { OmniBar } from './OmniBar';
 import { HistorySidebar, type HistoryItem } from './HistorySidebar';
@@ -27,6 +27,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   const [draft, setDraft] = useState('');
   const [query, setQuery] = useState('');
   const [ans, setAns] = useState<CanvasAnswer | null>(null);
+  const [chat, setChat] = useState<ChatReply | null>(null);
   const [cs, setCs] = useState<Record<string, CardState>>({});
   const [files, setFiles] = useState<Attachment[]>([]);
   const [sent, setSent] = useState<Attachment[]>([]);
@@ -49,9 +50,14 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
 
   async function run(q: string) {
     const no = ++askNo.current, mine = files;
-    setDraft(q); setQuery(q); setPhase('loading'); setCs({}); setAns(null); setSent(mine); setFiles([]);
+    setDraft(q); setQuery(q); setPhase('loading'); setCs({}); setAns(null); setChat(null); setSent(mine); setFiles([]);
     const a = await resolveAnswer(q, mine.map((f) => f.name), app.knowledge);
     if (no !== askNo.current) return;
+    if (isChat(a)) {
+      // Small talk: a short reply, no card, not saved to "Your questions". Empty the bar for their real question.
+      setChat(a); setPhase('results'); setEntryId(null); setDraft('');
+      return;
+    }
     const id = uid('h');
     setAns(a); setPhase('results'); setEntryId(id);
     app.history.add({ id, query: q, answer: a, cardType: a.card.type, title: a.card.props.title, heading: a.heading, at: clock(), state: 'viewed', files: mine.map(({ name, kind }) => ({ name, kind })) });
@@ -60,13 +66,13 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   function clear() {
     if (flight) return;
     askNo.current++;
-    setPhase('idle'); setQuery(''); setDraft(''); setAns(null); setCs({}); setSent([]); setEntryId(null);
+    setPhase('idle'); setQuery(''); setDraft(''); setAns(null); setChat(null); setCs({}); setSent([]); setEntryId(null);
   }
 
   function restore(e: HistoryEntry) {
     askNo.current++;
     const c0 = e.answer.card;
-    setDraft(e.query); setQuery(e.query); setAns(e.answer); setPhase('results'); setEntryId(e.id);
+    setDraft(e.query); setQuery(e.query); setAns(e.answer); setChat(null); setPhase('results'); setEntryId(e.id);
     if (e.ticketId) { tickets.current[c0.id] = e.ticketId; setCs({ [c0.id]: 'escalated' }); }
     else setCs(e.state === 'solved' ? { [c0.id]: 'solved' } : {});
   }
@@ -154,8 +160,9 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
         {active ? (
           <div className="rc-results-head">
             <div>
-              <span className="rc-results-h">{ans ? ans.heading : 'Looking across policies, videos and how-tos'}</span>
+              <span className="rc-results-h">{ans ? ans.heading : chat ? chat.heading : 'Looking across policies, videos and how-tos'}</span>
               {ans ? <span className="rc-results-n">Best match for “{query}”</span> : null}
+              {chat ? <span className="rc-results-n">Reply to “{query}”</span> : null}
               {ans?.source === 'offline' ? <span className="rc-results-files">Offline answer (AI unavailable): matched by keywords.</span> : null}
               {ans && sent.length ? <span className="rc-results-files"><Icon name="clip" size={13} />{sent.length === 1 ? '1 attachment: ' : sent.length + ' attachments: '}{sent.map((f) => f.name).join(', ')}</span> : null}
             </div>
@@ -165,7 +172,12 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
 
         {active ? (
           <div className="rc-grid">
-            {phase === 'loading' ? <div className="rc-grid-item rc-skel"><span /><span /><span /></div> : cards.map((card) => {
+            {phase === 'loading' ? <div className="rc-grid-item rc-skel"><span /><span /><span /></div> : chat ? (
+              <div className="rc-grid-item">
+                <ActionCard kind="answer" kindLabel={chat.source === 'ai' ? 'AI reply' : 'ReadyCheck'} title={chat.message} feedback={false}
+                  source="Describe a work issue in the bar above and I’ll find the right card for you." />
+              </div>
+            ) : cards.map((card) => {
               const st = cs[card.id] ?? 'idle';
               if (st === 'routing' || st === 'escalated') {
                 const tid = tickets.current[card.id], a = app.assignments[tid];

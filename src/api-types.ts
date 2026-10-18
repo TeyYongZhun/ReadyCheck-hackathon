@@ -15,7 +15,9 @@ export interface AnswerResponse {
   heading: string;
   theme: ThemeKey;
   queue: string;
-  choice: 'library' | 'learned' | 'generated';
+  /** "chat": not a work issue (a greeting, thanks, small talk); `message` holds a short reply and there is no card. */
+  choice: 'chat' | 'library' | 'learned' | 'generated';
+  message?: string;
   /** Library card id or learned KB id, when choice isn't "generated". */
   cardId?: string;
   card?: { title: string; steps: { label: string; detail?: string }[] };

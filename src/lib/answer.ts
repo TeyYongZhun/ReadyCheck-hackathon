@@ -1,5 +1,5 @@
 // Turns a question into the one card the canvas shows: Gemini first, keyword fallback if the API fails.
-import type { CanvasAnswer, CardSpec, Expert, KbItem, ThemeKey } from '../types';
+import type { CanvasAnswer, CardSpec, ChatReply, Expert, KbItem, ThemeKey } from '../types';
 import { SCENARIOS, SCEN_THEME, pickScenario } from '../data/scenarios';
 import { PICS } from '../data/command';
 import { askAnswer } from './api';
@@ -18,9 +18,20 @@ function learnedCard(k: KbItem): CardSpec {
   };
 }
 
-export async function resolveAnswer(query: string, files: string[], knowledge: KbItem[]): Promise<CanvasAnswer> {
+/** Offline guess at "not a work issue": short greetings, thanks and test messages. */
+const SMALL_TALK = /^\s*(hi+|hello|hey|yo|hai|helo|good (morning|afternoon|evening)|thanks?|thank you|ty|ok(ay)?|test(ing)?)\b[\s\w!,.?']{0,30}$/i;
+
+export function isChat(a: CanvasAnswer | ChatReply): a is ChatReply {
+  return 'message' in a;
+}
+
+export async function resolveAnswer(query: string, files: string[], knowledge: KbItem[]): Promise<CanvasAnswer | ChatReply> {
   const live = knowledge.filter((k) => k.status === 'live');
   const res = await askAnswer({ query, files, learned: live.map((k) => ({ id: k.id, theme: k.theme, title: k.title, steps: k.steps })) });
+  if (res?.choice === 'chat' && res.message) return { heading: res.heading, message: res.message, source: 'ai' };
+  if (!res && !files.length && SMALL_TALK.test(query)) {
+    return { heading: 'Hello there', message: 'Hi! Tell me what you need help with, like an access problem, a policy question or something for your first week.', source: 'offline' };
+  }
   if (res) {
     const base = { heading: res.heading, theme: res.theme, queue: res.queue, expert: expertFor(res.theme), source: 'ai' as const };
     if (res.choice === 'library') {

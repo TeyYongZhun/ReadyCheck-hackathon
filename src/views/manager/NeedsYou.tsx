@@ -100,7 +100,6 @@ export function NeedsCard({ group: g, suggested, pics, load, onAssign }: { group
 
 interface NeedsYouProps {
   groups: NeedsGroup[];
-  handledByCards: Theme[];
   pics: Pic[];
   load: Record<string, number>;
   suggestFor: (theme: Theme) => Pic;
@@ -108,7 +107,7 @@ interface NeedsYouProps {
 }
 
 /** "Where new hires are stuck": one card per theme with people waiting, overdue first. */
-export function NeedsYou({ groups, handledByCards, pics, load, suggestFor, onAssign }: NeedsYouProps) {
+export function NeedsYou({ groups, pics, load, suggestFor, onAssign }: NeedsYouProps) {
   return (
     <div className="rc-needs" role="tabpanel" id="rc-pane-needs" aria-labelledby="rc-tab-needs">
       <section className="rc-needs-main" aria-labelledby="rc-stuck-h">
@@ -123,12 +122,6 @@ export function NeedsYou({ groups, handledByCards, pics, load, suggestFor, onAss
         )}
       </section>
       <div className="rc-needs-foot">
-        <section className="rc-panel2 rc-panel2-quiet" aria-labelledby="rc-cards-h">
-          <h2 className="rc-sec-h is-small" id="rc-cards-h"><i className="rc-state-dot is-calm" />Handled by cards</h2>
-          {handledByCards.length ? (
-            <div className="rc-cardchips">{handledByCards.map((t) => <span key={t.key} className="rc-cardchip">{t.short}<b>{t.count}</b></span>)}</div>
-          ) : <p className="rc-sec-empty">Every theme needs a person today.</p>}
-        </section>
         <Footnote>Themes are built only from questions employees chose to ask. No monitoring. Rooms with an expert are in Ticket room.</Footnote>
       </div>
     </div>

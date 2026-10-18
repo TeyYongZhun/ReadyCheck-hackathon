@@ -98,6 +98,13 @@ export interface CanvasAnswer {
   source: 'ai' | 'offline';
 }
 
+/** A short conversational reply when the message isn't a work issue (e.g. "hi"). No card, nothing to escalate. */
+export interface ChatReply {
+  heading: string;
+  message: string;
+  source: 'ai' | 'offline';
+}
+
 export interface HistoryEntry {
   id: string; query: string; answer: CanvasAnswer; cardType: CardKind; title: string; heading: string; at: string;
   state: 'viewed' | 'solved' | 'escalated'; ticketId?: string; files?: Pick<Attachment, 'name' | 'kind'>[];
