@@ -1,0 +1,50 @@
+/* Extracted verbatim from design/readycheck-export.html (lines 128-176). Edit here, not in the export. */
+/* ReadyCheck — components. Every colour, radius, shadow and blur is a token from tokens.json. */
+:root {
+  --rc-ease: cubic-bezier(.2, .8, .2, 1);
+  --rc-ease-out: cubic-bezier(.16, 1, .3, 1);
+  --rc-dur-1: 160ms;
+  --rc-dur-2: 280ms;
+  --rc-dur-3: 560ms;
+}
+.rc-canvas, .rc-canvas *, .rc-stage, .rc-stage *, .rc-flight, .rc-flight *, .rc-cc, .rc-cc *, .rc-cc2, .rc-cc2 * { box-sizing: border-box; }
+.rc-icon { flex: none; display: block; }
+.rc-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:where(.rc-canvas, .rc-stage, .rc-cc, .rc-cc2) button { font: inherit; color: inherit; }
+.rc-canvas :focus-visible, .rc-stage :focus-visible, .rc-cc :focus-visible, .rc-cc2 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* ---------- Glass ---------- */
+.rc-glass {
+  background: var(--glass-200);
+  -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(1.5);
+  backdrop-filter: blur(var(--blur-glass)) saturate(1.5);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--shadow-card);
+}
+.rc-glass-1 { background: var(--glass-100); box-shadow: none; }
+.rc-glass-3 {
+  background: var(--glass-300);
+  -webkit-backdrop-filter: blur(var(--blur-heavy)) saturate(1.6);
+  backdrop-filter: blur(var(--blur-heavy)) saturate(1.6);
+  box-shadow: var(--shadow-float);
+}
+
+/* A neutral stage for previews: the canvas ground, dot grid and ambient light. */
+.rc-stage {
+  position: relative; overflow: hidden; isolation: isolate;
+  padding: var(--space-6); min-height: 100vh;
+  background: var(--ground); color: var(--ink); font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+.rc-stage::before, .rc-canvas::before, .rc-cc::before, .rc-cc2::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background-image: radial-gradient(var(--haze) 1.1px, transparent 1.4px);
+  background-size: 24px 24px;
+}
+.rc-stage::after {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  width: 520px; height: 520px; left: -160px; top: -220px; border-radius: 50%;
+  background: var(--orb-a); filter: blur(90px);
+}
+.rc-stage-row { display: flex; flex-wrap: wrap; gap: var(--space-5); align-items: flex-start; }
+

@@ -1,0 +1,67 @@
+/* Extracted verbatim from design/readycheck-export.html (lines 1207-1272). Edit here, not in the export. */
+/* ---------- Home ---------- */
+.rc-home { display: grid; gap: var(--space-4); padding-top: var(--space-5); }
+.rc-home-head { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--space-4); flex-wrap: wrap; }
+.rc-home-h { margin: 0; font: 400 48px/52px var(--font-display); letter-spacing: -0.01em; color: var(--ink); }
+.rc-home-s { margin: 4px 0 0; font: 400 16px/22px var(--font-sans); color: var(--ink-muted); }
+.rc-home-meta { display: flex; align-items: center; gap: 12px; }
+.rc-home-date { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: var(--radius-pill); border: 1px solid var(--hairline); background: var(--glass-100); font: 500 14px/1 var(--font-sans); color: var(--ink); }
+.rc-home-wait { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--escalate); background: var(--escalate-soft); cursor: pointer; text-align: left; font: 400 15px/22px var(--font-sans); color: var(--ink); transition: background var(--rc-dur-2); }
+.rc-home-wait:hover { background: var(--glass-200); }
+.rc-home-wait b { font-weight: 600; color: var(--escalate); margin-right: 4px; }
+.rc-home-wait-go { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-weight: 500; color: var(--ink-muted); white-space: nowrap; }
+.rc-home-stats { margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }
+.rc-home-stat { position: relative; padding: 16px 18px 16px; border-radius: var(--radius-md); background: var(--glass-100); border: 1px solid var(--hairline); min-width: 0; }
+.rc-home-stat dt { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; font: 400 14px/20px var(--font-sans); color: var(--ink-muted); }
+.rc-home-ic { flex: none; width: 36px; height: 36px; margin: -4px -4px 0 0; border-radius: 50%; display: grid; place-items: center; background: var(--glass-200); border: 1px solid var(--hairline); color: var(--ink-muted); }
+.rc-home-stat dd { margin: 2px 0 0; font: 600 34px/40px var(--font-sans); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--ink); }
+.rc-home-stat p { margin: 2px 0 0; font: 400 13.5px/18px var(--font-sans); color: var(--ink-muted); }
+.rc-home-stat.is-hot { background: var(--escalate-soft); border-color: var(--escalate); }
+.rc-home-stat.is-hot dd, .rc-home-stat.is-hot .rc-home-ic { color: var(--escalate); }
+.rc-home-card { padding: var(--space-5); border-radius: var(--radius-lg); min-width: 0; }
+.rc-home-card .rc-panel-h { font-size: 17px; line-height: 24px; }
+.rc-home-note { margin: 4px 0 0; text-align: right; font: 400 12px/16px var(--font-mono); color: var(--ink-muted); }
+.rc-home-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.rc-chart { width: 100%; margin-top: var(--space-3); }
+.rc-chart-svg { display: block; max-width: 100%; overflow: visible; }
+.rc-chart-grid { stroke: var(--hairline); stroke-width: 1; stroke-dasharray: 3 5; }
+.rc-chart-vg { stroke: var(--hairline); stroke-width: 1; opacity: .5; }
+.rc-chart-y, .rc-chart-x, .rc-chart-yt { font: 400 11.5px/1 var(--font-mono); fill: var(--ink-muted); }
+.rc-chart-s1 { stop-color: var(--ready); stop-opacity: .34; }
+.rc-chart-s2 { stop-color: var(--ready); stop-opacity: 0; }
+.rc-chart-line { fill: none; stroke: var(--ready); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 0; animation: rc-draw 900ms var(--rc-ease-out) backwards; }
+@keyframes rc-draw { from { stroke-dashoffset: 1; } }
+.rc-chart-area { animation: rc-fade 900ms var(--rc-ease) backwards; }
+.rc-chart-dot { fill: var(--ground); stroke: var(--ready); stroke-width: 2.5; transition: r var(--rc-dur-1) var(--rc-ease); }
+.rc-chart-hit { fill: transparent; }
+.rc-chart-v { font: 500 12.5px/1 var(--font-sans); fill: var(--ink); font-variant-numeric: tabular-nums; }
+.rc-chart-pt { outline: none; cursor: default; }
+.rc-chart-pt:hover .rc-chart-dot, .rc-chart-pt:focus-visible .rc-chart-dot { r: 6.5; fill: var(--ready); }
+.rc-bars, .rc-bypic { list-style: none; margin: var(--space-4) 0 0; padding: 0; display: grid; }
+.rc-bars { gap: 14px; }
+.rc-bars li { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.5fr) 28px; align-items: center; gap: 14px; font: 400 14.5px/20px var(--font-sans); color: var(--ink); }
+.rc-bars-l { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rc-bars-t { height: 8px; border-radius: 4px; background: var(--haze); overflow: hidden; }
+.rc-bars-t i { display: block; height: 100%; border-radius: 4px; background: var(--ready); animation: rc-grow 800ms var(--rc-ease-out) backwards; transform-origin: left; }
+@keyframes rc-grow { from { transform: scaleX(0); } }
+.rc-bars-n { text-align: right; font: 500 15px/20px var(--font-sans); font-variant-numeric: tabular-nums; }
+.rc-bypic li { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto 28px; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--hairline); font: 400 14.5px/20px var(--font-sans); }
+.rc-bypic li:first-child { border-top: 0; }
+.rc-bypic-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.rc-bypic-t { color: var(--ink-muted); white-space: nowrap; font-size: 13.5px; }
+.rc-bypic b { text-align: right; font: 500 15px/20px var(--font-sans); font-variant-numeric: tabular-nums; }
+@media (max-width: 1180px) { .rc-home-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 980px) { .rc-home-pair { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) {
+  .rc-home-h { font-size: 40px; line-height: 44px; }
+  .rc-home-card { padding: var(--space-4); }
+  .rc-home-stat { padding: 14px; }
+  .rc-home-stat dd { font-size: 30px; line-height: 36px; }
+  .rc-home-ic { display: none; }
+  .rc-home-wait { flex-wrap: wrap; }
+  .rc-bars li { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 24px; gap: 10px; font-size: 14px; }
+  .rc-bypic-t { display: none; }
+  .rc-bypic li { grid-template-columns: 32px minmax(0, 1fr) 28px; }
+}
+
+

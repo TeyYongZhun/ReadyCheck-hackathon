@@ -1,0 +1,33 @@
+/* Extracted verbatim from design/readycheck-export.html (lines 839-870). Edit here, not in the export. */
+/* ================= Your questions (employee history sidebar) ================= */
+@keyframes rc-hist-in { from { opacity: 0; transform: translateX(-12px); } }
+.rc-hist-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; margin: 0 -6px; padding: 0 6px; }
+.rc-hist-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.rc-hist-li { border-radius: var(--radius-md); border: 1px solid transparent; transition: background var(--rc-dur-2), border-color var(--rc-dur-2); animation: rc-room-in 380ms var(--rc-ease-out) backwards; }
+.rc-hist-li:hover { background: var(--glass-100); }
+.rc-hist-li.is-active { background: var(--glass-200); border-color: var(--glass-edge); }
+.rc-hist-item { width: 100%; display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 10px; border: 0; background: none; text-align: left; cursor: pointer; color: var(--ink); }
+.rc-hist-ic { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; background: var(--glass-100); border: 1px solid var(--hairline); color: var(--ink-muted); }
+.rc-hist-body { min-width: 0; display: grid; gap: 2px; }
+.rc-hist-q { font: 500 13px/18px var(--font-sans); color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rc-hist-meta { font: 400 11.5px/15px var(--font-sans); color: var(--ink-muted); }
+.rc-hist-ok { width: 20px; height: 20px; margin-top: 4px; border-radius: 50%; display: grid; place-items: center; background: var(--ready-soft); color: var(--ready); }
+.rc-hist-room { width: auto; max-width: none; overflow: hidden; margin: -2px 10px 10px 48px; display: flex; align-items: center; gap: 6px; min-height: 28px; padding: 4px 8px 4px 9px; border-radius: var(--radius-pill); border: 1px solid var(--hairline); background: var(--glass-100); cursor: pointer; font: 500 11.5px/14px var(--font-sans) !important; color: var(--ink) !important; text-align: left; }
+.rc-hist-room:disabled { cursor: default; }
+.rc-hist-room .rc-hist-dot { width: 7px; height: 7px; flex: none; border-radius: 50%; }
+.rc-hist-room.is-live { border-color: var(--ready); background: var(--ready-soft); }
+.rc-hist-room.is-live .rc-hist-dot { background: var(--ready); animation: rc-breathe 1.6s ease-in-out infinite; }
+.rc-hist-room.is-waiting { border-color: var(--escalate); background: var(--escalate-soft); color: var(--escalate) !important; }
+.rc-hist-room.is-waiting .rc-hist-dot { background: var(--escalate); }
+.rc-hist-room.is-solved { color: var(--ready) !important; }
+.rc-hist-room:not(:disabled):hover { background: var(--glass-200); }
+.rc-hist-rl { white-space: nowrap; }
+.rc-hist-rn { min-width: 0; flex: 1; font: 400 11px/14px var(--font-mono); color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-hist-room .rc-icon { margin-left: auto; color: var(--ink-muted); }
+.rc-hist-unread { min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--radius-pill); display: inline-grid; place-items: center; background: var(--ready); color: var(--ready-ink); font: 600 10.5px/1 var(--font-mono); animation: rc-pop 420ms var(--rc-ease-out) both; }
+.rc-hist-empty { display: grid; justify-items: start; gap: 8px; margin-top: var(--space-3); padding: 14px; border-radius: var(--radius-md); border: 1px dashed var(--hairline); font: 400 12.5px/18px var(--font-sans); color: var(--ink-muted); }
+.rc-hist-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 4px 0; margin-top: 8px; border-top: 1px solid var(--hairline); font: 400 11.5px/16px var(--font-sans); color: var(--ink-faint); }
+.rc-hist-foot .rc-quiet { margin: 0 -6px 0 0; height: 26px; font-size: 12px !important; }
+.rc-quiet.is-warn { color: var(--escalate) !important; }
+
+

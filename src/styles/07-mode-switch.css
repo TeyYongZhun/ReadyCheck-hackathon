@@ -1,0 +1,13 @@
+/* Extracted verbatim from design/readycheck-export.html (lines 754-765). Edit here, not in the export. */
+/* ---------- Mode switch (Employee / Manager) ---------- */
+.rc-mode { display: inline-flex; padding: 3px; margin-left: 6px; border-radius: var(--radius-pill); background: var(--glass-100); border: 1px solid var(--glass-edge); -webkit-backdrop-filter: blur(var(--blur-glass)); backdrop-filter: blur(var(--blur-glass)); }
+.rc-mode-b { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 14px 0 12px; border: 0; border-radius: var(--radius-pill); background: none; cursor: pointer; font: 500 13px/1 var(--font-sans) !important; color: var(--ink-muted) !important; transition: background var(--rc-dur-2), color var(--rc-dur-2); }
+.rc-mode-b:hover { color: var(--ink) !important; }
+.rc-mode-b.is-on { background: var(--ink); color: var(--ground) !important; }
+.rc-mode-badge { min-width: 18px; height: 18px; padding: 0 5px; margin-left: 2px; border-radius: var(--radius-pill); display: inline-grid; place-items: center; background: var(--escalate); color: var(--escalate-ink); font: 600 11px/1 var(--font-mono); animation: rc-pop 420ms var(--rc-ease-out) both; }
+.rc-dock.is-clickable { cursor: pointer; }
+.rc-dock.is-clickable:hover { box-shadow: var(--shadow-lift); }
+.rc-qitem.is-new { box-shadow: 0 0 0 3px var(--escalate-soft); border-color: var(--escalate); animation: rc-room-in 560ms var(--rc-ease-out) backwards; }
+.rc-new { margin-right: 8px; padding: 1px 6px; border-radius: var(--radius-pill); background: var(--escalate); color: var(--escalate-ink); font: 600 10px/14px var(--font-sans); letter-spacing: .02em; }
+.rc-mode-view { animation: rc-fade 360ms var(--rc-ease) both; }
+

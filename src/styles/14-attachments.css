@@ -1,0 +1,34 @@
+/* Extracted verbatim from design/readycheck-export.html (lines 1174-1206). Edit here, not in the export. */
+/* Attachments and the add button */
+.rc-omni-add { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px 0 10px; border-radius: var(--radius-pill); border: 1px solid var(--glass-edge); background: var(--glass-100); color: var(--ink); cursor: pointer; font: 500 13px/1 var(--font-sans); transition: background var(--rc-dur-2), transform var(--rc-dur-1) var(--rc-ease); }
+.rc-omni-add:hover { background: var(--glass-200); transform: translateY(-1px); }
+.rc-omni-add:focus-visible { outline: 2px solid var(--ready); outline-offset: 2px; }
+.rc-att { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.rc-att-i { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; height: 34px; padding: 0 8px 0 5px; border-radius: var(--radius-pill); border: 1px solid var(--glass-edge); background: var(--glass-100); font: 400 13px/18px var(--font-sans); color: var(--ink); }
+.rc-att-th { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex: none; }
+.rc-att-ic { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--glass-200); color: var(--ink-muted); }
+.rc-att-n { min-width: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rc-att-s { font: 400 11.5px/16px var(--font-mono); color: var(--ink-muted); white-space: nowrap; }
+.rc-att-x { width: 22px; height: 22px; flex: none; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--ink-muted); cursor: pointer; }
+.rc-att-x:hover { background: var(--glass-200); color: var(--ink); }
+.rc-att-bar { margin-top: 10px; justify-content: center; }
+.rc-results-files { display: flex; align-items: center; gap: 6px; margin-top: 4px; font: 400 12.5px/16px var(--font-sans); color: var(--ink-muted); }
+.rc-need-files { margin: 2px 0 0; display: flex; align-items: center; gap: 6px; min-width: 0; font: 400 12.5px/16px var(--font-sans); color: var(--ink-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rc-att-ctx, .rc-att-kb { margin-top: 6px; }
+.rc-att-kb .rc-att-i, .rc-att-ctx .rc-att-i { height: 30px; font-size: 12.5px; }
+.rc-att-kb .rc-att-n, .rc-att-ctx .rc-att-n { max-width: 160px; }
+@media (max-width: 560px) { .rc-omni-add-t { display: none; } .rc-omni-add { width: 34px; padding: 0; justify-content: center; } }
+
+/* New material */
+.rc-sec-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.rc-kb-newwrap { max-width: 640px; margin-bottom: var(--space-4); }
+.rc-kb-new { padding: var(--space-5); }
+.rc-kb-st.is-new { color: var(--ready); }
+.rc-kb-st.is-new i { background: var(--ready); }
+.rc-kb-input.is-select { font-weight: 400; appearance: auto; }
+.rc-kb-files { display: grid; gap: 10px; justify-items: start; margin-top: 2px; }
+.rc-results-head > div { min-width: 0; flex: 1; }
+.rc-results-head .rc-quiet { white-space: nowrap; flex: none; }
+.rc-canvas.is-single .rc-results-n, .rc-results-files { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 560px) { .rc-kb-files .rc-omni-add { width: auto; padding: 0 12px 0 10px; } .rc-kb-files .rc-omni-add-t { display: inline; } }
+

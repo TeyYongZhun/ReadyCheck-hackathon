@@ -1,0 +1,44 @@
+/* Extracted verbatim from design/readycheck-export.html (lines 1131-1173). Edit here, not in the export. */
+/* ---------- Knowledge base tab ---------- */
+.rc-kbase { display: grid; gap: var(--space-7); }
+.rc-kb-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--space-4); }
+.rc-kb-grid .rc-kb { height: 100%; padding: var(--space-5); align-content: start; animation: rc-room-in 420ms var(--rc-ease-out) backwards; }
+.rc-kb-grid .rc-kb.is-review { border-color: var(--escalate); }
+.rc-kb-grid .rc-kb.is-discarded { opacity: .6; }
+.rc-kb-grid .rc-kb-t { font-size: 18px; line-height: 24px; }
+.rc-kb-grid .rc-kb-p { font-size: 15px; line-height: 22px; }
+.rc-kb-grid .rc-kb-steps li { font-size: 15px; line-height: 22px; }
+.rc-kb-grid .rc-kb-act { margin-top: 6px; }
+@media (max-width: 560px) { .rc-kb-grid { grid-template-columns: minmax(0, 1fr); } }
+
+@media (max-width: 640px) {
+  .rc-heat-row { grid-template-columns: 112px repeat(7, minmax(0, 1fr)) 34px; gap: 3px; padding: 3px 2px; }
+  .rc-heat-cell { height: 28px; border-radius: 5px; }
+  .rc-heat-n { font-size: 11px; }
+  .rc-heat-w { display: none; }
+  .rc-heat-name { font-size: 12.5px; gap: 6px; }
+  .rc-heat-head { font-size: 10px; }
+  .rc-heat-tot { font-size: 11px; }
+}
+
+/* Knowledge base: edit, discard reason, restore */
+.rc-kb.is-editing, .rc-kb.is-discarding { border-color: var(--ink-muted); box-shadow: 0 0 0 3px var(--glass-100), var(--shadow-card); }
+.rc-kb-lab { display: grid; gap: 6px; font: 500 12.5px/16px var(--font-sans); color: var(--ink-muted); }
+.rc-kb-hint { font: 400 12px/16px var(--font-sans); color: var(--ink-faint); margin-top: -4px; }
+.rc-kb-input, .rc-kb-area { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--glass-edge); background: var(--ground-raised); color: var(--ink); font: 400 15px/22px var(--font-sans); outline: none; resize: vertical; }
+.rc-kb-input { font-weight: 600; }
+.rc-kb-input:focus-visible, .rc-kb-area:focus-visible { border-color: var(--ready); box-shadow: 0 0 0 3px var(--ready-soft); }
+.rc-kb-input[aria-invalid="true"], .rc-kb-area[aria-invalid="true"] { border-color: var(--escalate); }
+.rc-kb-q { margin: 0; font: 500 14px/20px var(--font-sans); color: var(--ink); }
+.rc-kb-reasons { display: flex; flex-wrap: wrap; gap: 8px; }
+.rc-kb-reason { padding: 7px 14px; border-radius: var(--radius-pill); border: 1px solid var(--glass-edge); background: var(--glass-100); color: var(--ink); cursor: pointer; font: 400 14px/20px var(--font-sans); }
+.rc-kb-reason:hover { background: var(--glass-200); }
+.rc-kb-reason.is-on { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+.rc-kb-gone { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; font: 400 13.5px/20px var(--font-sans); color: var(--ink-muted); }
+.rc-kb-gone b { font-weight: 600; color: var(--ink); }
+.rc-kb-saved { margin: 0; display: flex; align-items: center; gap: 6px; font: 500 13px/18px var(--font-sans); color: var(--ready); }
+.rc-kb-grid .rc-kb.is-discarded { opacity: 1; }
+.rc-kb-grid .rc-kb.is-discarded > :not(.rc-kb-gone):not(.rc-kb-top) { opacity: .62; }
+.rc-kb-act .rc-quiet { height: 38px; padding: 0 10px; font: 400 14px/20px var(--font-sans); color: var(--ink-muted); display: inline-flex; align-items: center; }
+.rc-kb-act .rc-quiet:hover { color: var(--ink); }
+

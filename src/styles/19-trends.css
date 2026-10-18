@@ -1,0 +1,70 @@
+/* Extracted verbatim from design/readycheck-export.html (lines 1434-1502). Edit here, not in the export. */
+/* ---------- Trends: theme bar chart ---------- */
+.rc-trends2 { display: grid; gap: var(--space-4); }
+.rc-tbars-card, .rc-tday-card { padding: var(--space-5); display: grid; gap: var(--space-4); }
+.rc-tbars-card .rc-home-note { margin: 0; text-align: right; }
+.rc-tbars-card .rc-tbar-b { height: calc(var(--v, 0) * 1%); }
+.rc-tbars-cols { animation: rc-fade-in 240ms var(--rc-ease-out); }
+@keyframes rc-fade-in { from { opacity: 0; } }
+.rc-tkey { display: flex; gap: 16px; margin: 0; font: 400 13px/18px var(--font-sans); color: var(--ink-muted); flex-wrap: wrap; }
+.rc-tkey span { display: inline-flex; align-items: center; gap: 7px; }
+.rc-tkey i { width: 10px; height: 10px; border-radius: 3px; }
+.rc-tkey i.is-now, .rc-tbar-b.is-now { background: var(--ready); }
+.rc-tkey i.is-prev, .rc-tbar-b.is-prev { background: color-mix(in oklab, var(--ink-muted) 38%, transparent); }
+.rc-tbars, .rc-tday { position: relative; padding-left: 28px; margin-top: 18px; }
+.rc-tbars-grid { position: absolute; left: 28px; right: 0; top: 0; height: 240px; pointer-events: none; }
+.rc-tday .rc-tbars-grid { height: 160px; }
+.rc-tbars-grid span { position: absolute; left: 0; right: 0; border-top: 1px solid var(--hairline); }
+.rc-tbars-grid i { position: absolute; left: -28px; top: -8px; width: 20px; text-align: right; font: 400 11px/14px var(--font-mono); font-style: normal; color: var(--ink-faint); }
+.rc-tbars-cols, .rc-tday-cols { position: relative; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--rc-cols, 9), minmax(0, 1fr)); gap: 6px; }
+.rc-tday-cols { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.rc-tbar { position: relative; width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 0 0 6px; border: 0; border-radius: 10px; background: none; cursor: default; outline: 0; color: inherit; font: inherit; transition: background var(--rc-dur-2); }
+.rc-tbar:hover, .rc-tbar:focus-visible { background: var(--glass-100); }
+.rc-tbar.is-on { box-shadow: inset 0 0 0 1px var(--glass-edge); }
+.rc-tbar:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.rc-tbar-plot { height: 240px; display: flex; align-items: flex-end; justify-content: center; gap: 2px; }
+.rc-tday .rc-tbar-plot { height: 160px; }
+.rc-tbar-b { position: relative; width: 56%; max-width: 44px; min-height: 2px; border-radius: 4px 4px 0 0; animation: rc-rise 700ms var(--rc-ease-out) backwards; transform-origin: bottom; }
+.rc-tday .rc-tbar-b { max-width: 22px; }
+.rc-tbar-b em { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); padding-bottom: 4px; font: 500 13px/16px var(--font-mono); font-style: normal; color: var(--ink); }
+@keyframes rc-rise { from { transform: scaleY(0); } }
+.rc-tbar-l { font: 500 13px/16px var(--font-sans); text-align: center; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
+.rc-tday-cols .rc-tbar-l { font: 400 12px/16px var(--font-mono); color: var(--ink-muted); }
+.rc-tday-cols li { display: flex; flex-direction: column; gap: 6px; }
+.rc-tbar-d { font: 400 12px/14px var(--font-mono); text-align: center; color: var(--ink-faint); }
+.rc-tbar-d.is-up { color: var(--escalate); }
+.rc-tbar-d.is-down { color: var(--ready); }
+.rc-tbar-w { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 16px; font: 400 11.5px/16px var(--font-sans); color: var(--escalate); white-space: nowrap; }
+.rc-tbar-w .rc-state-dot { width: 7px; height: 7px; }
+.rc-tbar-tip { position: absolute; left: 50%; bottom: calc(100% - 40px); z-index: 5; transform: translate(-50%, 4px); display: grid; gap: 2px; width: max-content; max-width: 220px; padding: 10px 12px; border-radius: 10px; background: var(--ground-raised); border: 1px solid var(--glass-edge); box-shadow: var(--shadow-float); text-align: left; font: 400 12.5px/17px var(--font-sans); color: var(--ink-muted); opacity: 0; pointer-events: none; transition: opacity var(--rc-dur-1), transform var(--rc-dur-1); }
+.rc-tbar-tip b { font-weight: 600; color: var(--ink); }
+.rc-tbar:hover .rc-tbar-tip, .rc-tbar:focus-visible .rc-tbar-tip { opacity: 1; transform: translate(-50%, 0); }
+.rc-tbars-cols li:first-child .rc-tbar-tip { left: 0; transform: translate(0, 4px); }
+.rc-tbars-cols li:first-child .rc-tbar:hover .rc-tbar-tip { transform: translate(0, 0); }
+.rc-tbars-cols li:last-child .rc-tbar-tip { left: auto; right: 0; transform: translate(0, 4px); }
+.rc-tbars-cols li:last-child .rc-tbar:hover .rc-tbar-tip { transform: translate(0, 0); }
+.rc-tday-sum { display: grid; gap: 8px; justify-items: start; padding: var(--space-4); border-radius: var(--radius-md); background: var(--glass-100); border: 1px solid var(--hairline); }
+.rc-tday-sum p { margin: 0; font: 400 15px/22px var(--font-sans); color: var(--ink); }
+@media (max-width: 900px) {
+  .rc-tbar-tip { display: none; }
+}
+@media (max-width: 560px) {
+  .rc-tbars-card, .rc-tday-card { padding: var(--space-4); }
+  .rc-tbars-grid, .rc-tbar-plot { height: 200px; }
+  .rc-tday .rc-tbars-grid, .rc-tday .rc-tbar-plot { height: 140px; }
+}
+@media (prefers-reduced-motion: reduce) { .rc-tbar-b { animation: none; } }
+
+@media (max-width: 640px) {
+  .rc-tbars { padding-left: 0; margin-top: 4px; }
+  .rc-tbars > .rc-tbars-grid { display: none; }
+  .rc-tbars-cols { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .rc-tbar { display: grid; grid-template-columns: 84px minmax(0, 1fr); align-items: center; gap: 10px; padding: 4px 0; }
+  .rc-tbar-l { grid-column: 1; grid-row: 1; text-align: left; padding: 0; }
+  .rc-tbars-card .rc-tbar-plot, .rc-tbars .rc-tbar-plot { grid-column: 2; grid-row: 1; height: 22px !important; justify-content: flex-start; align-items: center; }
+  .rc-tbars-card .rc-tbar-b { width: calc(var(--v, 0) * 0.82%); max-width: none; height: 18px; min-width: 2px; border-radius: 0 4px 4px 0; transform-origin: left; animation-name: rc-grow-x; }
+  .rc-tbar-b em { left: 100%; bottom: auto; top: 50%; transform: translate(6px, -50%); padding: 0; }
+}
+@keyframes rc-grow-x { from { transform: scaleX(0); } }
+
+

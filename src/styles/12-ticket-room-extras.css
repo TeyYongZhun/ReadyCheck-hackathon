@@ -1,0 +1,41 @@
+/* Extracted verbatim from design/readycheck-export.html (lines 1091-1130). Edit here, not in the export. */
+/* ---------- Ticket Room: demo, feedback, 1:1, AI summary ---------- */
+.rc-demo { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px 0 4px; border-radius: var(--radius-pill); border: 1px dashed var(--ready); background: var(--ready-soft); cursor: pointer; font: 500 12.5px/1 var(--font-sans) !important; color: var(--ready) !important; }
+.rc-demo:hover { background: var(--glass-200); }
+.rc-demo-k { padding: 3px 7px; border-radius: var(--radius-pill); background: var(--ready); color: var(--ready-ink); font: 600 10px/1 var(--font-sans); letter-spacing: .06em; text-transform: uppercase; }
+.rc-composer-input:disabled { opacity: .7; }
+.rc-msg-typing.is-ai { color: var(--ready); }
+.rc-msg-typing.is-ai .rc-dots i { background: var(--ready); }
+.rc-msg-ask, .rc-msg-kb, .rc-msg-event { animation: rc-room-in 420ms var(--rc-ease-out) both; }
+.rc-ask { display: grid; gap: 10px; padding: 16px; border-radius: var(--radius-md); background: var(--glass-200); border: 1px solid var(--glass-edge); box-shadow: var(--shadow-card); }
+.rc-ask-k { display: flex; align-items: center; gap: 8px; font: 600 12px/16px var(--font-sans); color: var(--ink-muted); }
+.rc-brand-mark.is-sm { width: 20px; height: 20px; border-radius: 6px; }
+.rc-ask-q { margin: 0; font: 600 16px/22px var(--font-sans); color: var(--ink); }
+.rc-ask-s { margin: 0; font: 400 13px/19px var(--font-sans); color: var(--ink-muted); }
+.rc-ask-act { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+.rc-btn-primary.is-sm, .rc-btn-ghost.is-sm { height: 38px; font-size: 14px !important; }
+.rc-btn-primary.is-sm { padding: 0 16px 0 12px; gap: 6px; }
+.rc-btn-ghost.is-sm { padding: 0 14px; }
+.rc-msg-event { align-self: stretch; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--ready-soft); font: 400 13.5px/19px var(--font-sans); color: var(--ink); }
+.rc-msg-event b { font-weight: 600; color: var(--ready); }
+.rc-msg-event-ic { width: 32px; height: 32px; flex: none; border-radius: 10px; display: grid; place-items: center; background: var(--ready); color: var(--ready-ink); }
+.rc-kb { display: grid; gap: 10px; padding: 16px; border-radius: var(--radius-md); background: var(--glass-200); border: 1px solid var(--glass-edge); box-shadow: var(--shadow-card); }
+.rc-msg-kb { align-self: stretch; }
+.rc-kb-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rc-kb-st { display: inline-flex; align-items: center; gap: 6px; font: 500 12px/16px var(--font-sans); color: var(--escalate); white-space: nowrap; }
+.rc-kb-st i { width: 8px; height: 8px; border-radius: 50%; background: var(--escalate); }
+.rc-kb-st.is-live { color: var(--ready); }
+.rc-kb-st.is-live i { background: var(--ready); }
+.rc-kb-st.is-discarded { color: var(--ink-muted); }
+.rc-kb-st.is-discarded i { background: var(--ink-faint); }
+.rc-kb-t { margin: 0; font: 600 16px/22px var(--font-sans); color: var(--ink); }
+.rc-kb-p { margin: 0; font: 400 13.5px/20px var(--font-sans); color: var(--ink-muted); }
+.rc-kb-steps { margin: 0; padding: 0; list-style: none; counter-reset: kb; display: grid; gap: 6px; }
+.rc-kb-steps li { counter-increment: kb; display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; font: 400 14px/20px var(--font-sans); color: var(--ink); }
+.rc-kb-steps li::before { content: counter(kb); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--glass-100); box-shadow: inset 0 0 0 1px var(--hairline); font: 500 11px/1 var(--font-mono); color: var(--ink-muted); }
+.rc-kb-m { margin: 0; font: 400 12px/16px var(--font-mono); color: var(--ink-muted); }
+.rc-kb-act { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+.rc-kb-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.rc-kb-list .rc-kb { box-shadow: none; background: var(--glass-100); border-color: var(--hairline); }
+.rc-kb-list .rc-kb.is-review { border-color: var(--escalate); }
+

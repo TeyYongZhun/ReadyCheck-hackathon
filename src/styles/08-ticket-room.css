@@ -1,0 +1,74 @@
+/* Extracted verbatim from design/readycheck-export.html (lines 766-838). Edit here, not in the export. */
+/* ================= Ticket Room ================= */
+.rc-roomlayer, .rc-roomlayer * { box-sizing: border-box; }
+.rc-roomlayer { position: fixed; inset: 0; z-index: 60; display: flex; justify-content: flex-end; font-family: var(--font-sans); color: var(--ink); }
+.rc-roomlayer :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+:where(.rc-roomlayer) button { font: inherit; color: inherit; }
+.rc-roomlayer-scrim { position: absolute; inset: 0; background: var(--ground); opacity: .55; animation: rc-scrim 300ms var(--rc-ease) both; }
+@keyframes rc-scrim { from { opacity: 0; } }
+.rc-troom {
+  position: relative; display: flex; flex-direction: column; width: min(520px, 100%); height: 100%;
+  border-radius: var(--radius-xl) 0 0 var(--radius-xl); border-right: 0;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  animation: rc-sheet 480ms var(--rc-ease-out) both;
+}
+@keyframes rc-sheet { from { transform: translateX(48px); opacity: 0; } }
+.rc-troom-head { padding: var(--space-5) var(--space-5) var(--space-4); border-bottom: 1px solid var(--hairline); display: grid; gap: var(--space-3); }
+.rc-troom-row { display: flex; align-items: center; gap: 10px; }
+.rc-troom-name { font: 500 14px/20px var(--font-mono); }
+.rc-troom-x { margin-left: auto; width: 34px; height: 34px; }
+.rc-troom-people { display: flex; align-items: center; gap: 12px; }
+.rc-troom-who { min-width: 0; flex: 1; }
+.rc-troom-pn { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font: 600 14px/20px var(--font-sans); }
+.rc-troom-role { padding: 1px 8px; border-radius: var(--radius-pill); background: var(--glass-100); border: 1px solid var(--hairline); font: 500 11px/16px var(--font-sans); color: var(--ink-muted); }
+.rc-troom-ps { font: 400 12.5px/17px var(--font-sans); color: var(--ink-muted); }
+.rc-troom-note { font: 400 12px/16px var(--font-sans); color: var(--ink-muted); padding: 8px 10px; border-radius: var(--radius-sm); background: var(--glass-100); border: 1px dashed var(--hairline); }
+.rc-solve { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px 0 12px; border-radius: var(--radius-pill); border: 1px solid var(--ready); background: var(--ready-soft); cursor: pointer; font: 600 12.5px/1 var(--font-sans) !important; color: var(--ready) !important; transition: background var(--rc-dur-2); }
+.rc-solve:hover { background: var(--ready); color: var(--ready-ink) !important; }
+.rc-troom-ctx { margin: var(--space-4) var(--space-5) 0; padding: 12px 14px; border-radius: var(--radius-md); background: var(--escalate-soft); border: 1px solid var(--hairline); }
+.rc-troom-ctx-k { display: flex; align-items: center; gap: 6px; font: 500 11px/14px var(--font-mono); letter-spacing: .02em; color: var(--escalate); }
+.rc-troom-ctx-q { margin: 6px 0 0; font: 400 13px/19px var(--font-sans); color: var(--ink); }
+.rc-thread { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: var(--space-4) var(--space-5); display: flex; flex-direction: column; gap: 14px; }
+.rc-msg-sys { align-self: center; text-align: center; font: 400 11.5px/16px var(--font-sans); color: var(--ink-faint); }
+.rc-msg-sys span { display: inline-block; padding: 3px 10px; border-radius: var(--radius-pill); background: var(--glass-100); border: 1px solid var(--hairline); }
+.rc-msg { display: flex; align-items: flex-end; gap: 10px; max-width: 86%; animation: rc-room-in 380ms var(--rc-ease-out) both; }
+.rc-msg.is-me { align-self: flex-end; flex-direction: row-reverse; }
+.rc-msg-person { width: 30px; height: 30px; font-size: 10.5px; }
+.rc-msg-b { min-width: 0; display: grid; gap: 4px; }
+.rc-msg.is-me .rc-msg-b { justify-items: end; }
+.rc-msg-meta { font: 400 11px/14px var(--font-sans); color: var(--ink-muted); }
+.rc-msg-meta b { font-weight: 600; color: var(--ink); }
+.rc-msg-text { padding: 10px 14px; border-radius: 18px 18px 18px 6px; background: var(--glass-200); border: 1px solid var(--hairline); font: 400 14px/20px var(--font-sans); color: var(--ink); }
+.rc-msg.is-me .rc-msg-text { border-radius: 18px 18px 6px 18px; background: var(--ready-soft); border-color: var(--ready-soft); }
+.rc-msg-typing { display: flex; align-items: center; gap: 8px; font: 400 12px/16px var(--font-sans); color: var(--ink-muted); }
+.rc-dots { display: inline-flex; gap: 3px; padding: 8px 10px; border-radius: var(--radius-pill); background: var(--glass-200); }
+.rc-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-muted); animation: rc-dot 1.1s ease-in-out infinite; }
+.rc-dots i:nth-child(2) { animation-delay: .15s; }
+.rc-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes rc-dot { 40% { transform: translateY(-3px); opacity: .5; } }
+.rc-troom-compose { padding: var(--space-3) var(--space-5) var(--space-5); border-top: 1px solid var(--hairline); display: grid; gap: var(--space-3); }
+.rc-troom-quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.rc-troom-quick .rc-chip { height: 30px; font-size: 12.5px; }
+.rc-composer { display: flex; align-items: center; gap: 8px; height: 52px; padding: 0 6px 0 18px; border-radius: var(--radius-pill); background: var(--glass-200); border: 1px solid var(--glass-edge); }
+.rc-composer:focus-within { border-color: var(--ready); box-shadow: 0 0 0 4px var(--ready-soft); }
+.rc-composer-input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: 400 15px/22px var(--font-sans); color: var(--ink); }
+.rc-composer-input::placeholder { color: var(--ink-faint); }
+.rc-composer .rc-omni-go { width: 40px; height: 40px; }
+.rc-troom-done { display: flex; align-items: center; gap: 10px; margin: 0 var(--space-5) var(--space-5); padding: 14px; border-radius: var(--radius-md); background: var(--ready-soft); font: 500 13px/18px var(--font-sans); color: var(--ready); }
+.rc-troom-done .rc-quiet { margin-left: auto; margin-right: 0; }
+@media (max-width: 560px) { .rc-troom { width: 100%; border-radius: 0; } }
+
+/* receipt with a room */
+.rc-room-btn { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 10px 0 14px; border: 0; border-radius: var(--radius-pill); background: var(--ready); cursor: pointer; font: 600 12.5px/1 var(--font-sans) !important; color: var(--ready-ink) !important; animation: rc-pop 460ms var(--rc-ease-out) both; }
+.rc-room-btn:hover { transform: translateY(-1px); }
+.rc-room-btn.is-done { background: var(--glass-100); color: var(--ink) !important; box-shadow: inset 0 0 0 1px var(--hairline); animation: none; }
+.rc-receipt.has-room { border-style: solid; border-color: var(--ready); background: var(--ready-soft); }
+.rc-receipt.has-room .rc-receipt-tag, .rc-receipt.has-room .rc-receipt-id { color: var(--ready); }
+.rc-receipt.has-room .rc-receipt-track li.is-done::before, .rc-receipt.has-room .rc-receipt-track li.is-now::before { background: var(--ready); }
+.rc-receipt.is-done { border-style: solid; border-color: var(--hairline); background: var(--glass-100); }
+.rc-receipt.is-done .rc-receipt-tag, .rc-receipt.is-done .rc-receipt-id { color: var(--ready); }
+.rc-receipt.is-done .rc-receipt-track li::before { background: var(--ready); }
+.rc-receipt-actions { align-items: center; }
+.rc-room.is-clickable { text-align: left; cursor: pointer; color: var(--ink); font: inherit; }
+.rc-room.is-clickable:hover { background: var(--glass-200); border-color: var(--glass-edge); transform: translateY(-2px); }
+
