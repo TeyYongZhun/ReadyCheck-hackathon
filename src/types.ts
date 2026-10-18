@@ -71,7 +71,8 @@ export interface Room {
   last: string; isNew?: boolean;
 }
 
-export type MessageFrom = 'pic' | 'employee' | 'system';
+/** pic = the assigned expert, manager = Rachel replying from the Command Center. */
+export type MessageFrom = 'pic' | 'employee' | 'manager' | 'system';
 export interface Message {
   id: string; from: MessageFrom; t: string; text: string; kind?: 'kb' | 'booked'; kbId?: string;
   /** Written by Gemini standing in for the expert. */

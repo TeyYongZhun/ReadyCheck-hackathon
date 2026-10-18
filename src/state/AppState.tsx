@@ -117,9 +117,9 @@ function useAppStateValue() {
 
   function send(roomId: string, viewer: Mode, text: string) {
     const rec = rooms[roomId]; if (!rec) return;
-    const msg: Message = { id: uid('m'), t: clock(), from: viewer === 'manager' ? 'pic' : 'employee', text };
+    const msg: Message = { id: uid('m'), t: clock(), from: viewer === 'manager' ? 'manager' : 'employee', text };
     setRooms((s) => s[roomId] ? { ...s, [roomId]: { ...s[roomId], feedback: null, messages: [...s[roomId].messages, msg] } } : s);
-    // Only the employee gets an automatic expert reply; when the manager types, they are the expert.
+    // Only the employee's messages get an automatic expert reply; the manager's go out as Rachel.
     if (viewer === 'employee') void expertTurn(roomId, [...rec.messages, msg]);
   }
 
@@ -206,7 +206,7 @@ function seedRecord(r: Room): RoomRecord {
 function withLatest(r: RoomRecord): Room {
   const last = r.messages.filter((m) => m.from !== 'system').slice(-1)[0];
   if (!last) return r.room;
-  const who = last.from === 'pic' ? r.pic.first : r.employee.first === 'there' ? r.employee.name : r.employee.first;
+  const who = last.from === 'pic' ? r.pic.first : last.from === 'manager' ? 'Rachel' : r.employee.first === 'there' ? r.employee.name : r.employee.first;
   return { ...r.room, last: who + ': ' + last.text };
 }
 

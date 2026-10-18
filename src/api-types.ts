@@ -1,7 +1,7 @@
 // Request/response shapes for /api/*. Shared by the browser (src/lib/api.ts) and the server (server/).
 import type { ThemeKey } from './types';
 
-export interface ChatLine { from: 'pic' | 'employee'; text: string }
+export interface ChatLine { from: 'pic' | 'employee' | 'manager'; text: string }
 export interface PicPersona { name: string; first: string; team: string; skills: string }
 export interface TicketContext { q: string; from: string }
 

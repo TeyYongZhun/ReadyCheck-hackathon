@@ -89,7 +89,7 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
         </div>
         <div className="rc-user rc-side-user">
           <span className="rc-avatar">RG</span>
-          <div><div className="rc-user-n">Rachel Goh</div><div className="rc-user-s">Support lead</div></div>
+          <div><div className="rc-user-n">Rachel Goh</div><div className="rc-user-s">Manager</div></div>
         </div>
       </aside>
 

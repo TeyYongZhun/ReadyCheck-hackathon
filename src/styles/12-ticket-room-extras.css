@@ -4,6 +4,8 @@
 .rc-demo:hover { background: var(--glass-200); }
 .rc-demo-k { padding: 3px 7px; border-radius: var(--radius-pill); background: var(--ready); color: var(--ready-ink); font: 600 10px/1 var(--font-sans); letter-spacing: .06em; text-transform: uppercase; }
 .rc-composer-input:disabled { opacity: .7; }
+/* The composer pill already shows the focus ring; drop the input's own outline so it isn't doubled. */
+.rc-roomlayer .rc-composer-input:focus-visible { outline: none; }
 .rc-msg-typing.is-ai { color: var(--ready); }
 .rc-msg-typing.is-ai .rc-dots i { background: var(--ready); }
 .rc-msg-ask, .rc-msg-kb, .rc-msg-event { animation: rc-room-in 420ms var(--rc-ease-out) both; }

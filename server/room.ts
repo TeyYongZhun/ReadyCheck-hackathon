@@ -9,8 +9,8 @@ function persona(p: Partial<PicPersona> | undefined): PicPersona {
 
 function transcript(lines: ChatLine[] | undefined, pic: PicPersona, employee: string): string {
   return (lines ?? []).slice(-30)
-    .filter((m) => m && (m.from === 'pic' || m.from === 'employee') && typeof m.text === 'string')
-    .map((m) => `${m.from === 'pic' ? pic.first : employee}: ${m.text.slice(0, 1000)}`)
+    .filter((m) => m && (m.from === 'pic' || m.from === 'employee' || m.from === 'manager') && typeof m.text === 'string')
+    .map((m) => `${m.from === 'pic' ? pic.first : m.from === 'manager' ? 'Rachel (manager)' : employee}: ${m.text.slice(0, 1000)}`)
     .join('\n');
 }
 

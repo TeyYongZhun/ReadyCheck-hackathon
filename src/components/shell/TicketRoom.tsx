@@ -5,6 +5,8 @@ import { cx } from '../../lib/util';
 import { AttachChips, BrandMark, Icon, PicAvatar, Person } from '../primitives';
 import { KbCard } from './KbCard';
 
+const MANAGER = { name: 'Rachel Goh', initials: 'RG' };
+
 interface TicketRoomProps {
   rec: RoomRecord;
   viewer: Mode;
@@ -20,7 +22,7 @@ interface TicketRoomProps {
 /** The side sheet where the expert and the employee talk. Opens over either view. */
 export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve, onFeedback, onReopen, onApproveKb }: TicketRoomProps) {
   const { room, pic, employee, ticket } = rec;
-  const me = viewer === 'manager' ? 'pic' : 'employee', isEmp = viewer === 'employee';
+  const me = viewer === 'manager' ? 'manager' : 'employee', isEmp = viewer === 'employee';
   const resolved = room.status === 'resolved';
   const asking = !resolved && rec.feedback === 'ask' && !rec.typing;
   const listRef = useRef<HTMLOListElement>(null), inputRef = useRef<HTMLInputElement>(null);
@@ -38,6 +40,7 @@ export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve,
   const who = {
     pic: { name: pic.name, el: <PicAvatar pic={pic} size={30} /> },
     employee: { name: employee.name, el: <Person initials={employee.initials} className="rc-msg-person" /> },
+    manager: { name: MANAGER.name, el: <Person initials={MANAGER.initials} className="rc-msg-person" /> },
   };
   const extra = Math.max(0, room.people.length - 1);
 
@@ -59,7 +62,7 @@ export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve,
             </div>
             {isEmp && !resolved ? <button type="button" className="rc-solve" onClick={onResolve}><Icon name="check" size={14} strokeWidth={2.2} />Mark solved</button> : null}
           </div>
-          {viewer === 'manager' ? <div className="rc-troom-note">You’re viewing as Rachel Goh. Messages you send go out as {pic.first}.</div> : null}
+          {viewer === 'manager' ? <div className="rc-troom-note">You’re in this room as {MANAGER.name} (Manager). Your messages are labelled as yours, not {pic.first}’s.</div> : null}
         </header>
 
         {ticket ? (
@@ -80,7 +83,7 @@ export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve,
                 {w.el}
                 <div className="rc-msg-b">
                   <div className="rc-msg-meta">
-                    <b>{m.from === me ? 'You' : w.name.split(' ')[0]}</b> · {m.t}
+                    <b>{m.from === me ? 'You' : w.name.split(' ')[0]}</b>{m.from === 'manager' ? ' (Manager)' : ''} · {m.t}
                     {m.ai ? <> · <span className="rc-ai-label" title="Written by Gemini standing in for the expert">AI expert (demo)</span></> : null}
                   </div>
                   <div className="rc-msg-text">{m.text}</div>
@@ -128,7 +131,7 @@ export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve,
             ) : null}
             <form className="rc-composer" onSubmit={(e) => { e.preventDefault(); send(draft); }}>
               <input ref={inputRef} className="rc-composer-input" value={draft} onChange={(e) => setDraft(e.target.value)} autoComplete="off" aria-label="Message"
-                placeholder={viewer === 'manager' ? 'Reply as ' + pic.first : 'Message ' + pic.first} />
+                placeholder={viewer === 'manager' ? `Reply as ${MANAGER.name} (Manager)` : 'Message ' + pic.first} />
               <button type="submit" className="rc-omni-go" aria-label="Send" disabled={!draft.trim()}><Icon name="arrow" size={17} strokeWidth={1.9} /></button>
             </form>
           </div>
