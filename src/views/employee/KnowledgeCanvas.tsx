@@ -6,7 +6,7 @@ import { useApp } from '../../state/AppState';
 import { DEFAULT_SUGGEST } from '../../data/scenarios';
 import { isChat, resolveAnswer } from '../../lib/answer';
 import { clock, cx, greeting, uid } from '../../lib/util';
-import { Brand, Icon, Toast, toAttachment } from '../../components/primitives';
+import { Brand, GeminiStatus, Icon, Toast, toAttachment } from '../../components/primitives';
 import { ActionCard, ChecklistCard, DocSummaryCard, VideoCard } from '../../components/cards/ActionCard';
 import { DashboardDock, EscalatedReceipt, EscalationFlight, rectWithin, type Rect } from '../../components/cards/Escalation';
 import { OmniBar } from './OmniBar';
@@ -14,6 +14,7 @@ import { HistorySidebar, type HistoryItem } from './HistorySidebar';
 
 const USER = { first: 'Mira', last: 'Tan', role: 'Day 3 · Product Design' };
 interface Flight { id: string; from: Rect; to: Rect; card: CardSpec; ans: CanvasAnswer; query: string; files: Attachment[]; entryId: string | null }
+const MIN_LOADING_MS = 700;
 
 export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   const app = useApp();
@@ -64,7 +65,12 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   async function run(q: string) {
     const no = ++askNo.current, mine = files;
     setDraft(q); setQuery(q); setPhase('loading'); setCs({}); setAns(null); setChat(null); setSent(mine); setFiles([]);
-    const a = await resolveAnswer(q, mine.map((f) => f.name), app.knowledge);
+    const started = performance.now();
+    const answer = resolveAnswer(q, mine.map((f) => f.name), app.knowledge);
+    const [a] = await Promise.all([
+      answer,
+      new Promise<void>((resolve) => window.setTimeout(resolve, Math.max(0, MIN_LOADING_MS - (performance.now() - started)))),
+    ]);
     if (no !== askNo.current) return;
     if (isChat(a)) {
       // Small talk: a short reply, no card, not saved to "Your questions". Empty the bar for their real question.
@@ -156,6 +162,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
       <div className="rc-emp-main">
         <header className="rc-topbar">
           <div className="rc-topbar-right">
+            <GeminiStatus />
             <div className="rc-dock-slot">
               <DashboardDock ref={dock} items={dockItems} pulse={pulse} open={dockOpen} onOpenRoom={(id) => app.setOpenRoom({ id, viewer: 'employee' })} />
             </div>

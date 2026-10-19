@@ -66,3 +66,56 @@
 }
 
 [hidden] { display: none !important; }
+
+/* Gemini status stays silent until an AI request fails. */
+.rc-gemini-status {
+ display: inline-flex;
+ align-items: center;
+ gap: 7px;
+ min-height: 30px;
+ padding: 0 11px;
+ border: 1px solid var(--escalate);
+ border-radius: var(--radius-pill);
+ background: var(--escalate-soft);
+ color: var(--escalate);
+ font: 600 11.5px/1 var(--font-sans);
+ white-space: nowrap;
+}
+
+.rc-topbar .rc-gemini-status {
+ position: absolute;
+ top: 15px;
+ right: 320px;
+}
+
+.rc-gemini-status i {
+ width: 7px;
+ height: 7px;
+ border-radius: 50%;
+ background: var(--escalate);
+ box-shadow: 0 0 0 3px var(--escalate-soft);
+}
+
+.rc-manager-status {
+ min-height: 0;
+ display: flex;
+ justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .rc-topbar .rc-gemini-status {
+    position: relative;
+    top: auto;
+    right: auto;
+    order: 2;
+    margin-left: auto;
+  }
+
+  .rc-topbar-right {
+    position: relative;
+  }
+
+  .rc-topbar .rc-dock-slot {
+    order: 1;
+  }
+}

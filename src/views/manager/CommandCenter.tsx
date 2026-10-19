@@ -5,13 +5,13 @@ import type { ManagerTab, Pic, Theme } from '../../types';
 import { useApp } from '../../state/AppState';
 import { SLA_MINUTES, SUGGEST, THEMES } from '../../data/command';
 import { cx, initialsOf, plural } from '../../lib/util';
-import { Brand, Icon, PageHead, Toast } from '../../components/primitives';
+import { Brand, GeminiStatus, Icon, PageHead, Toast } from '../../components/primitives';
 import { HomeOverview } from './HomeOverview';
 import { NeedsYou, type NeedsGroup } from './NeedsYou';
 import { TicketRooms } from './TicketRooms';
 import { ThemeTrends } from './ThemeTrends';
 import { KnowledgeBase } from './KnowledgeBase';
-import { ExpertTeam } from './ExpertTeam';
+import { ExpertTeam, type TeamDraft } from './ExpertTeam';
 
 export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
   const app = useApp();
@@ -23,6 +23,7 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
   const liveRooms = app.roomList.filter((r) => r.status !== 'resolved').length;
   const reviewN = app.knowledge.filter((k) => k.status === 'review').length;
   const asked = THEMES.reduce((s, t) => s + t.count, 0), byCards = THEMES.reduce((s, t) => s + t.cards, 0);
+  const solvedByCardsPct = Math.round((byCards / asked) * 100);
 
   const groups: NeedsGroup[] = THEMES.flatMap((t) => {
     const tk = queue.filter((q) => q.theme === t.key);
@@ -93,13 +94,14 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
       </aside>
 
       <div className="rc-cc2-main">
+        <div className="rc-manager-status"><GeminiStatus /></div>
         <dl className="rc-kpi3">
           <div className={cx('rc-kpi', waiting.length && 'is-need')}><dt>Need you</dt><dd>{waiting.length}</dd></div>
-          <div className="rc-kpi"><dt>Solved by cards</dt><dd>{Math.round((byCards / asked) * 100)}%</dd></div>
+          <div className="rc-kpi"><dt>Solved by cards</dt><dd>{solvedByCardsPct}%</dd></div>
           <div className="rc-kpi is-prog"><dt>In progress</dt><dd>{liveRooms}</dd></div>
         </dl>
 
-        {tab === 'home' ? <HomeOverview pics={app.experts} waiting={waiting.length} onOpenNeeds={() => setTab('needs')} />
+        {tab === 'home' ? <HomeOverview pics={app.experts} waiting={waiting.length} tickets={waiting} rooms={app.roomList} solvedByCardsPct={solvedByCardsPct} onOpenNeeds={() => setTab('needs')} />
           : tab === 'needs' ? (
             <div className="rc-home">
               <PageHead id="rc-needs-h" title="Needs you" sub="Where new hires are stuck. Overdue first, then longest wait. One click puts an expert in a room with them." />
@@ -119,7 +121,23 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
               <KnowledgeBase />
             </div>
           )
-          : <ExpertTeam pics={app.experts} load={app.load} onAddExpert={(team, name) => {
+          : <ExpertTeam pics={app.experts} load={app.load} onAddTeam={(draft: TeamDraft) => {
+              const added = draft.people.map((name, index) => {
+                const first = name.split(/\s+/)[0];
+                return {
+                  id: 'x' + Date.now().toString(36) + index,
+                  name,
+                  first,
+                  initials: initialsOf(name),
+                  team: draft.name,
+                  skills: plural(draft.covers.length, 'topic', 'topics'),
+                  covers: draft.covers,
+                  custom: true,
+                };
+              });
+              app.setExperts((current) => [...current, ...added]);
+              setToast(<><b>{draft.name}</b> added with {plural(added.length, 'expert', 'experts')}. They are in every Assign menu now.</>);
+            }} onAddExpert={(team, name) => {
               const x: Pic = { id: 'x' + Date.now().toString(36), name, first: name.split(/\s+/)[0], initials: initialsOf(name), team: team.name, skills: plural(team.covers.length, 'topic', 'topics'), covers: team.covers, custom: true };
               app.setExperts((l) => [...l, x]);
               setToast(<><b>{name}</b> joined {team.name}. They are in every Assign menu now.</>);

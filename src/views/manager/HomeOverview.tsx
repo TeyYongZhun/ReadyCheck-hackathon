@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Pic } from '../../types';
+import type { Pic, QueueTicket, Room } from '../../types';
+import { HOME, QUEUE, ROOMS } from '../../data/command';
 import { DEFAULT_WEEK, addDays, isoDate, rangeLabel, weekData, weekStart } from '../../data/homeWeeks';
 import { cx } from '../../lib/util';
 import { AiLabel, Footnote, Icon, PicAvatar } from '../../components/primitives';
@@ -92,18 +93,54 @@ function WeekPicker({ start, onChange }: { start: Date; onChange: (d: Date) => v
   );
 }
 
-/** Manager Home: the weekly overview. All figures are sample data (labelled). TODO: compute from real tickets. */
-export function HomeOverview({ pics, waiting, onOpenNeeds }: { pics: Pic[]; waiting: number; onOpenNeeds: () => void }) {
+/** Manager Home: the weekly overview. Trend history remains sample data; live counts come from shared state. */
+export function HomeOverview({ pics, waiting, rooms, tickets, solvedByCardsPct, onOpenNeeds }: {
+  pics: Pic[];
+  waiting: number;
+  rooms: Room[];
+  tickets: QueueTicket[];
+  solvedByCardsPct: number;
+  onOpenNeeds: () => void;
+}) {
   const [span, setSpan] = useState<'daily' | 'weekly'>('daily');
   const [week, setWeek] = useState<Date>(DEFAULT_WEEK);
   const W = weekData(week);
   const byId = Object.fromEntries(pics.map((x) => [x.id, x]));
-  const catMax = Math.max(10, ...W.cats.map((c) => c[1]));
+  const liveRooms = rooms.filter((r) => r.status !== 'resolved');
+  const openTickets = tickets.length + liveRooms.length;
+  const overdue = tickets.filter((t) => t.wait >= 30).length;
+  const sampleRoomIds = new Set(ROOMS.map((room) => room.id));
+  const demoRoomCounts = new Map<string, number>();
+  liveRooms
+    .filter((room) => !sampleRoomIds.has(room.id))
+    .forEach((room) => demoRoomCounts.set(room.pic, (demoRoomCounts.get(room.pic) ?? 0) + 1));
+  const byPic = HOME.byPic.map(([id, n]) => [id, n + (demoRoomCounts.get(id) ?? 0)] as [string, number]);
+  const categoryThemes: Record<string, string[]> = {
+    'Access & permissions': ['db', 'vpn', 'mfa'],
+    'Process guidance': ['onb', 'exp', 'pay', 'leave', 'ben'],
+    'Tools & resources': ['hw'],
+    'Conflicting instructions': [],
+  };
+  const sampleTicketIds = new Set(QUEUE.map((ticket) => ticket.id));
+  const demoIssues = new Map<string, string>();
+  tickets
+    .filter((ticket) => !sampleTicketIds.has(ticket.id))
+    .forEach((ticket) => demoIssues.set(ticket.id, ticket.theme));
+  liveRooms
+    .filter((room) => !sampleRoomIds.has(room.id))
+    .forEach((room) => (room.tickets ?? [room.ticket]).filter((id): id is string => !!id)
+      .forEach((id) => demoIssues.set(id, room.theme)));
+  const cats = HOME.cats.map(([label]) => [
+    label,
+    (HOME.cats.find(([name]) => name === label)?.[1] ?? 0)
+      + Array.from(demoIssues.values()).filter((theme) => categoryThemes[label]?.includes(theme)).length,
+  ] as [string, number]);
+  const catMax = Math.max(10, ...cats.map((c) => c[1]));
   const STATS: [string, string, string, string, string][] = [
-    ['Open tickets', String(W.stats.open), 'Unresolved', 'doc', ''],
-    ['Overdue', String(W.stats.overdue), 'Past agreed date', 'clock', 'is-hot'],
-    ['Employee-confirmed resolved', W.stats.resolvedPct + '%', `${W.stats.resolved} of ${W.stats.cohort} cohort tickets`, 'check', ''],
-    ['Awaiting confirmation', String(W.stats.awaiting), 'Not counted as resolved', 'users', ''],
+    ['Open tickets', String(openTickets), 'Current unresolved tickets', 'doc', ''],
+    ['Overdue', String(overdue), 'Past agreed date', 'clock', 'is-hot'],
+    ['Employee-confirmed resolved', solvedByCardsPct + '%', 'Solved by answer cards', 'check', ''],
+    ['Awaiting confirmation', String(liveRooms.length), 'Active rooms', 'users', ''],
   ];
   return (
     <div className="rc-home" role="tabpanel" id="rc-pane-home" aria-labelledby="rc-tab-home">
@@ -148,7 +185,7 @@ export function HomeOverview({ pics, waiting, onOpenNeeds }: { pics: Pic[]; wait
           <h2 className="rc-panel-h" id="rc-cic-h">Common issue categories</h2>
           <p className="rc-panel-s">Current open tickets</p>
           <ul className="rc-bars">
-            {W.cats.map(([label, n]) => (
+            {cats.map(([label, n]) => (
               <li key={label}><span className="rc-bars-l">{label}</span><span className="rc-bars-t" aria-hidden><i style={{ width: (n / catMax) * 100 + '%' }} /></span><span className="rc-bars-n">{n}</span></li>
             ))}
           </ul>
@@ -157,9 +194,9 @@ export function HomeOverview({ pics, waiting, onOpenNeeds }: { pics: Pic[]; wait
           <h2 className="rc-panel-h" id="rc-pic-h">Open tickets by expert</h2>
           <p className="rc-panel-s">Who is carrying the load</p>
           <ul className="rc-bypic">
-            {W.byPic.map(([id, n]) => (
+            {byPic.length ? byPic.map(([id, n]) => (
               <li key={id}><PicAvatar pic={byId[id]} size={32} /><span className="rc-bypic-n">{byId[id]?.name}</span><span className="rc-bypic-t">{byId[id]?.team}</span><b>{n}</b></li>
-            ))}
+            )) : <li className="rc-sec-empty">No active expert rooms.</li>}
           </ul>
         </section>
       </div>
