@@ -3,6 +3,8 @@ import { HttpError } from './gemini.js';
 import { answer } from './answer.js';
 import { roomReply, summarizeRoom } from './room.js';
 import { themeSummary } from './themeSummary.js';
+import { homeSummary } from './homeSummary.js';
+import { materialExtract } from './materialExtract.js';
 
 // Bodies are untrusted JSON; each handler validates its own.
 type Handler = (body: any) => Promise<unknown>;
@@ -12,6 +14,8 @@ export const ROUTES: Record<string, Handler> = {
   'room-reply': roomReply,
   'summarize-room': summarizeRoom,
   'theme-summary': themeSummary,
+  'home-summary': homeSummary,
+  'material-extract': materialExtract,
 };
 
 /** Run a route and turn any failure into { status, body } without leaking internals. */

@@ -65,13 +65,13 @@ export function Toast({ children, tone = 'escalate', onClose }: { children: Reac
   );
 }
 
-const ACCEPT = 'image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv';
+const ACCEPT = 'image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv';
 
 export function toAttachment(f: File): Attachment {
   const img = f.type.startsWith('image/');
   let url = '';
   try { if (img) url = URL.createObjectURL(f); } catch { url = ''; }
-  return { id: uid('f'), name: f.name, size: f.size, kind: img ? 'image' : 'file', url };
+  return { id: uid('f'), name: f.name, size: f.size, kind: img ? 'image' : 'file', mimeType: f.type, url };
 }
 
 export function AttachChips({ items, onRemove, className }: { items: Partial<Attachment>[]; onRemove?: (id: string) => void; className?: string }) {
@@ -80,7 +80,9 @@ export function AttachChips({ items, onRemove, className }: { items: Partial<Att
     <ul className={cx('rc-att', className)} aria-label="Attachments">
       {items.map((f, i) => (
         <li key={f.id ?? f.name! + i} className="rc-att-i">
-          {f.url ? <img className="rc-att-th" src={f.url} alt="" /> : <span className="rc-att-ic"><Icon name={f.kind === 'image' ? 'image' : 'doc'} size={14} /></span>}
+          {f.kind === 'image' && f.url
+            ? <img className="rc-att-th" src={f.url} alt="" />
+            : <span className="rc-att-ic"><Icon name={f.mimeType?.startsWith('video/') ? 'video' : f.kind === 'image' ? 'image' : 'doc'} size={14} /></span>}
           <span className="rc-att-n" title={f.name}>{f.name}</span>
           {f.size ? <span className="rc-att-s">{fileSize(f.size)}</span> : null}
           {onRemove && f.id ? <button type="button" className="rc-att-x" aria-label={'Remove ' + f.name} onClick={() => onRemove(f.id!)}><Icon name="close" size={12} strokeWidth={2} /></button> : null}

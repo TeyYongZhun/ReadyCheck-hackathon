@@ -1,6 +1,6 @@
 // Turns a question into the one card the canvas shows: Gemini first, keyword fallback if the API fails.
 import type { CanvasAnswer, CardSpec, ChatReply, Expert, KbItem, ThemeKey } from '../types';
-import { SCENARIOS, SCEN_THEME, pickScenario } from '../data/scenarios';
+import { SCENARIOS, SCEN_THEME } from '../data/scenarios';
 import { PICS } from '../data/command';
 import { askAnswer } from './api';
 
@@ -11,10 +11,29 @@ function expertFor(theme: ThemeKey): Expert {
   return { name: p.name, initials: p.initials, eta: 'a few min' };
 }
 
+function themeForQuery(query: string, fallback: ThemeKey): ThemeKey {
+  const q = query.toLocaleLowerCase();
+  if (/\b(database|staging|postgres|postgresql|sql|warehouse|db-?\d*|read role)\b/.test(q)) return 'db';
+  if (/\b(vpn|remote access|wi-?fi|network|globalconnect|split tunnel)\b/.test(q)) return 'vpn';
+  if (/\b(mfa|2fa|authenticator|authentication|new phone|sign.?in)\b/.test(q)) return 'mfa';
+  if (/\b(expense|receipt|reimburse|concur|claim)\b/.test(q)) return 'exp';
+  if (/\b(payroll|bank account|salary)\b/.test(q)) return 'pay';
+  return fallback;
+}
+
+function queueFor(theme: ThemeKey): string {
+  return PICS.find((pic) => pic.covers.includes(theme))?.team ?? 'People Team';
+}
+
 function learnedCard(k: KbItem): CardSpec {
+  const materials = k.allowEmployeeAccess
+    ? (k.files ?? []).filter((file): file is typeof file & { url: string; mimeType: string } => !!file.url && !!file.mimeType)
+      .filter((file) => file.mimeType === 'application/pdf' || file.mimeType.startsWith('video/'))
+      .map(({ name, url, mimeType }) => ({ name, url, mimeType }))
+    : undefined;
   return {
     id: 'learned-' + k.id, type: 'steps',
-    props: { title: k.title, kindLabel: 'From an expert', source: `AI summary of ${k.roomName} · solved by ${k.pic.first}, approved by Rachel`, steps: k.steps.map((label) => ({ label })) },
+    props: { title: k.title, kindLabel: 'From an expert', source: `AI summary of ${k.roomName} · solved by ${k.pic.first}, approved by Rachel`, steps: k.steps.map((label) => ({ label })), materials },
   };
 }
 
@@ -27,8 +46,34 @@ export function isChat(a: CanvasAnswer | ChatReply): a is ChatReply {
 
 export async function resolveAnswer(query: string, files: string[], knowledge: KbItem[]): Promise<CanvasAnswer | ChatReply> {
   const live = knowledge.filter((k) => k.status === 'live');
-  const res = await askAnswer({ query, files, learned: live.map((k) => ({ id: k.id, theme: k.theme, title: k.title, steps: k.steps })) });
+  const res = await askAnswer({ query, files, learned: live.map((k) => ({
+    id: k.id, theme: k.theme, title: k.title, steps: k.steps,
+    materials: k.allowEmployeeAccess ? (k.files ?? []).filter((file): file is typeof file & { url: string; mimeType: string } => !!file.url && !!file.mimeType)
+      .filter((file) => file.mimeType === 'application/pdf' || file.mimeType.startsWith('video/'))
+      .map(({ name, url, mimeType }) => ({ name, url, mimeType })) : undefined,
+  })) });
   if (res?.choice === 'chat' && res.message) return { heading: res.heading, message: res.message, source: 'ai' };
+  if (res?.choice === 'unknown') {
+    const message = res.message || 'Sorry, I couldn’t find any relevant knowledge. Please ask a human expert.';
+    const theme = themeForQuery(query, res.theme);
+    return {
+      heading: res.heading,
+      theme,
+      queue: queueFor(theme),
+      expert: expertFor(theme),
+      source: 'ai',
+      card: {
+        id: 'unknown-' + Date.now().toString(36),
+        type: 'steps',
+        props: {
+          title: message,
+          kindLabel: 'No relevant knowledge found',
+          source: 'No approved company knowledge matched this question.',
+          steps: [],
+        },
+      },
+    };
+  }
   if (!res && !files.length && SMALL_TALK.test(query)) {
     return { heading: 'Hello there', message: 'Hi! Tell me what you need help with, like an access problem, a policy question or something for your first week.', source: 'offline' };
   }
@@ -40,12 +85,28 @@ export async function resolveAnswer(query: string, files: string[], knowledge: K
     } else if (res.choice === 'learned') {
       const k = live.find((x) => x.id === res.cardId);
       if (k) return { ...base, card: learnedCard(k) };
-    } else if (res.card) {
-      return { ...base, card: { id: 'ai-' + Date.now().toString(36), type: 'steps', props: { title: res.card.title, kindLabel: 'AI answer', source: 'Written by Gemini from company guidance. Check before acting.', steps: res.card.steps } } };
     }
   }
-  // Offline: keyword match, approved knowledge first.
-  const s = pickScenario(query), theme = SCEN_THEME[s.key as keyof typeof SCEN_THEME];
+  // Offline: only return a card when a built-in company scenario explicitly matches.
+  const s = SCENARIOS.find((scenario) => scenario.match.test(query));
+  if (!s) return {
+    heading: 'No approved answer found',
+    theme: themeForQuery(query, 'onb'),
+    queue: queueFor(themeForQuery(query, 'onb')),
+    expert: expertFor(themeForQuery(query, 'onb')),
+    card: {
+      id: 'unknown-' + Date.now().toString(36),
+      type: 'steps',
+      props: {
+        title: 'I can’t find an answer based on the current approved company knowledge available to me. Please ask a human expert for help. Thanks!',
+        kindLabel: 'Needs human expert assistance',
+        source: 'No approved company knowledge matched this question.',
+        steps: [],
+      },
+    },
+    source: 'offline',
+  };
+  const theme = SCEN_THEME[s.key as keyof typeof SCEN_THEME];
   const k = live.find((x) => x.theme === theme);
   return { heading: s.heading, theme, queue: s.queue, expert: s.expert, card: k ? learnedCard(k) : s.cards[0], source: 'offline' };
 }

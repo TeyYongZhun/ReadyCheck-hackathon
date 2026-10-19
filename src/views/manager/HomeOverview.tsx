@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Pic, QueueTicket, Room } from '../../types';
-import { HOME, QUEUE, ROOMS } from '../../data/command';
+import { HOME, QUEUE, ROOMS, SLA_MINUTES, THEMES_BY_KEY } from '../../data/command';
 import { DEFAULT_WEEK, addDays, isoDate, rangeLabel, weekData, weekStart } from '../../data/homeWeeks';
 import { cx } from '../../lib/util';
 import { AiLabel, Footnote, Icon, PicAvatar } from '../../components/primitives';
+import { askHomeSummary } from '../../lib/api';
 
 function OpenIssuesChart({ id, data, labels, label }: { id: string; data: number[]; labels: string[]; label: string }) {
   const wrap = useRef<HTMLDivElement>(null);
@@ -107,8 +108,8 @@ export function HomeOverview({ pics, waiting, rooms, tickets, solvedByCardsPct, 
   const W = weekData(week);
   const byId = Object.fromEntries(pics.map((x) => [x.id, x]));
   const liveRooms = rooms.filter((r) => r.status !== 'resolved');
-  const openTickets = tickets.length + liveRooms.length;
-  const overdue = tickets.filter((t) => t.wait >= 30).length;
+  const openTickets = tickets.length + liveRooms.reduce((total, room) => total + (room.tickets?.length ?? 1), 0);
+  const overdue = tickets.filter((t) => t.wait >= SLA_MINUTES).length;
   const sampleRoomIds = new Set(ROOMS.map((room) => room.id));
   const demoRoomCounts = new Map<string, number>();
   liveRooms
@@ -136,11 +137,128 @@ export function HomeOverview({ pics, waiting, rooms, tickets, solvedByCardsPct, 
       + Array.from(demoIssues.values()).filter((theme) => categoryThemes[label]?.includes(theme)).length,
   ] as [string, number]);
   const catMax = Math.max(10, ...cats.map((c) => c[1]));
+  const topThemes = tickets
+    .reduce((groups, ticket) => {
+      const group = groups.find((item) => item.theme === ticket.theme);
+      if (group) { group.waiting += 1; group.oldest = Math.max(group.oldest, ticket.wait); }
+      else groups.push({ theme: ticket.theme, waiting: 1, oldest: ticket.wait });
+      return groups;
+    }, [] as { theme: string; waiting: number; oldest: number }[])
+    .sort((a, b) => b.waiting - a.waiting || b.oldest - a.oldest)
+    .slice(0, 3)
+    .map((group) => ({ name: THEMES_BY_KEY[group.theme as keyof typeof THEMES_BY_KEY]?.name ?? group.theme, waiting: group.waiting, oldest: group.oldest }));
+  const topExpertData = byPic
+    .slice()
+    .sort((a, b) => b[1] - a[1])
+    .map(([id, load]) => ({ name: byId[id]?.name ?? id, load }));
+  const activeRoomCounts = liveRooms.reduce((counts, room) => {
+    counts.set(room.pic, (counts.get(room.pic) ?? 0) + 1);
+    return counts;
+  }, new Map<string, number>());
+  const activeTicketCounts = liveRooms.reduce((counts, room) => {
+    counts.set(room.pic, (counts.get(room.pic) ?? 0) + (room.tickets?.length ?? 1));
+    return counts;
+  }, new Map<string, number>());
+  const topThemeKey = topThemes[0] && Object.entries(THEMES_BY_KEY).find(([, theme]) => theme.name === topThemes[0].name)?.[0];
+  const matchesTheme = (id: string) => !!byId[id]?.covers.includes(topThemeKey ?? '');
+  const availableForAssignment = (id: string) => (activeRoomCounts.get(id) ?? 0) < 3 && (activeTicketCounts.get(id) ?? 0) < 6;
+  const recommendedExpert = topThemeKey
+    ? byPic
+      .filter(([id]) => matchesTheme(id))
+      .sort((a, b) => {
+        const aAvailable = availableForAssignment(a[0]), bAvailable = availableForAssignment(b[0]);
+        return Number(bAvailable) - Number(aAvailable)
+          || (activeTicketCounts.get(a[0]) ?? 0) - (activeTicketCounts.get(b[0]) ?? 0)
+          || (activeRoomCounts.get(a[0]) ?? 0) - (activeRoomCounts.get(b[0]) ?? 0)
+          || b[1] - a[1];
+      })[0]
+    : undefined;
+  const recommendedExpertData = recommendedExpert
+    ? {
+      name: byId[recommendedExpert[0]]?.name ?? recommendedExpert[0],
+      load: recommendedExpert[1],
+      activeRooms: activeRoomCounts.get(recommendedExpert[0]) ?? 0,
+      activeTickets: activeTicketCounts.get(recommendedExpert[0]) ?? 0,
+      displayedLoad: recommendedExpert[1],
+    }
+    : null;
+  const expertCandidates = pics.map((pic) => ({
+    name: pic.name,
+    covers: pic.covers,
+    activeRooms: activeRoomCounts.get(pic.id) ?? 0,
+    activeTickets: activeTicketCounts.get(pic.id) ?? 0,
+    displayedLoad: byPic.find(([id]) => id === pic.id)?.[1] ?? 0,
+    maxRooms: 3,
+    maxTickets: 6,
+  }));
+  const newOverdue = tickets
+    .filter((ticket) => ticket.wait >= SLA_MINUTES)
+    .map((ticket) => ({
+      id: ticket.id,
+      title: ticket.title,
+      theme: THEMES_BY_KEY[ticket.theme]?.name ?? ticket.theme,
+      domain: ticket.theme,
+    }));
+  const summarySignature = JSON.stringify({
+    openTickets,
+    overdue,
+    activeRooms: liveRooms.length,
+    waiting,
+    topThemes: topThemes.map((theme) => [theme.name, theme.waiting, theme.oldest]),
+    topExperts: topExpertData.map((expert) => [expert.name, expert.load]),
+    recommendedExpert: recommendedExpertData ? [
+      recommendedExpertData.name,
+      recommendedExpertData.activeRooms,
+      recommendedExpertData.activeTickets,
+      recommendedExpertData.displayedLoad,
+    ] : null,
+    expertCandidates: expertCandidates.map((expert) => [
+      expert.name,
+      expert.activeRooms,
+      expert.activeTickets,
+      expert.displayedLoad,
+    ]),
+    newOverdue: newOverdue.map((ticket) => [ticket.id, ticket.theme, ticket.domain]),
+  });
+  const [homeSummary, setHomeSummary] = useState<{ signature: string; summary: string; action: string } | null>(null);
+  const [summaryRefresh, setSummaryRefresh] = useState(0);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setSummaryLoading(true);
+    const fallback = () => {
+      const theme = topThemes[0];
+      const summary = overdue
+        ? `${overdue} waiting ticket${overdue === 1 ? '' : 's'} may need attention${theme ? `, mainly in ${theme.name}` : ''}.`
+        : `${openTickets} unresolved ticket${openTickets === 1 ? '' : 's'} are spread across ${liveRooms.length} active room${liveRooms.length === 1 ? '' : 's'}.`;
+      const expert = recommendedExpertData;
+      const action = theme && expert && expert.displayedLoad >= 8
+        ? `Review ${theme.name}; confirm ${expert.name}'s capacity before assigning the ticket.`
+        : theme && expert
+          ? `Review ${theme.name} and ask ${expert.name} to take the next suitable assignment.`
+        : theme
+          ? `Review the ${theme.name} queue and assign the next suitable expert.`
+          : expert
+            ? `Review the waiting queue before assigning more work to ${expert.name}.`
+            : 'Monitor the waiting queue and active rooms.';
+      return { summary, action };
+    };
+    setHomeSummary((current) => current?.signature === summarySignature ? current : { signature: summarySignature, ...fallback() });
+    const timer = window.setTimeout(() => {
+      void askHomeSummary({ openTickets, overdue, activeRooms: liveRooms.length, waiting, topThemes, topExperts: topExpertData, recommendedExpert: recommendedExpertData, experts: expertCandidates, newOverdue })
+        .then((result) => {
+          if (!active) return;
+          if (result) setHomeSummary({ signature: summarySignature, ...result });
+          setSummaryLoading(false);
+        });
+    }, 800);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [summarySignature, summaryRefresh]);
   const STATS: [string, string, string, string, string][] = [
     ['Open tickets', String(openTickets), 'Current unresolved tickets', 'doc', ''],
-    ['Overdue', String(overdue), 'Past agreed date', 'clock', 'is-hot'],
+    ['Overdue', String(overdue), `Waiting over ${SLA_MINUTES}m for response or assignment`, 'clock', 'is-hot'],
     ['Employee-confirmed resolved', solvedByCardsPct + '%', 'Solved by answer cards', 'check', ''],
-    ['Awaiting confirmation', String(liveRooms.length), 'Active rooms', 'users', ''],
+    ['Active rooms', String(liveRooms.length), 'Unresolved ticket rooms', 'users', ''],
   ];
   return (
     <div className="rc-home" role="tabpanel" id="rc-pane-home" aria-labelledby="rc-tab-home">
@@ -156,6 +274,16 @@ export function HomeOverview({ pics, waiting, rooms, tickets, solvedByCardsPct, 
           <span className="rc-home-wait-go">Open Needs you<Icon name="chevron" size={14} /></span>
         </button>
       ) : null}
+      <section className="rc-home-card rc-glass rc-glass-2 rc-home-readout" aria-labelledby="rc-home-readout-h">
+        <header className="rc-panel-head">
+          <div><h2 className="rc-panel-h" id="rc-home-readout-h"><AiLabel>AI readout</AiLabel></h2><p className="rc-home-s">Based on current tickets and active rooms</p></div>
+          <button type="button" className="rc-btn-primary is-sm rc-home-refresh" disabled={summaryLoading} onClick={() => setSummaryRefresh((value) => value + 1)}>
+            {summaryLoading ? <><span className="rc-ai-pulse" aria-hidden>AI summarizing</span><span className="rc-ai-dots" aria-hidden>…</span></> : 'Refresh summary'}
+          </button>
+        </header>
+        <p className="rc-home-readout-text">{homeSummary?.summary}</p>
+        <p className="rc-home-readout-action"><strong>AI Suggestion:</strong>{homeSummary?.action}</p>
+      </section>
 
       <dl className="rc-home-stats">
         {STATS.map(([k, v, sub, icon, cls]) => (

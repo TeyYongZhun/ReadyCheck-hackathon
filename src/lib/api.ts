@@ -2,6 +2,7 @@
 import type {
   AnswerRequest, AnswerResponse, RoomReplyRequest, RoomReplyResponse,
   SummarizeRequest, SummarizeResponse, ThemeSummaryRequest, ThemeSummaryResponse,
+  HomeSummaryRequest, HomeSummaryResponse, MaterialExtractRequest, MaterialExtractResponse,
 } from '../api-types';
 import { markAiConnected, markAiOffline } from './ai-status';
 
@@ -26,3 +27,5 @@ export const askAnswer = (b: AnswerRequest) => post<AnswerResponse>('answer', b)
 export const askRoomReply = (b: RoomReplyRequest) => post<RoomReplyResponse>('room-reply', b);
 export const askSummary = (b: SummarizeRequest) => post<SummarizeResponse>('summarize-room', b);
 export const askThemeSummary = (b: ThemeSummaryRequest) => post<ThemeSummaryResponse>('theme-summary', b);
+export const askHomeSummary = (b: HomeSummaryRequest) => post<HomeSummaryResponse>('home-summary', b);
+export const extractMaterial = (b: MaterialExtractRequest) => post<MaterialExtractResponse>('material-extract', b);

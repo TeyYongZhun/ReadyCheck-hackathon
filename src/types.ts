@@ -4,7 +4,7 @@ export type Mode = 'employee' | 'manager';
 export type CardKind = 'video' | 'doc' | 'steps' | 'answer';
 export type CardState = 'idle' | 'solved' | 'escalating' | 'routing' | 'escalated';
 
-export interface Attachment { id: string; name: string; size?: number; kind: 'image' | 'file'; url?: string }
+export interface Attachment { id: string; name: string; size?: number; kind: 'image' | 'file'; url?: string; mimeType?: string }
 
 export interface Chapter { t: number; label: string }
 export interface DocPoint { text: string; page?: number }
@@ -12,7 +12,7 @@ export interface Step { label: string; detail?: string }
 
 export interface VideoCardData { title: string; source?: string; kindLabel?: string; duration: number; chapters?: Chapter[] }
 export interface DocCardData { title: string; source?: string; kindLabel?: string; file: string; pages: number; updated?: string; points: DocPoint[] }
-export interface StepsCardData { title: string; source?: string; kindLabel?: string; steps: Step[]; done?: number[] }
+export interface StepsCardData { title: string; source?: string; kindLabel?: string; steps: Step[]; done?: number[]; materials?: { name: string; url: string; mimeType: string }[] }
 
 export type CardSpec =
   | { id: string; type: 'video'; props: VideoCardData }
@@ -63,6 +63,8 @@ export interface QueueTicket {
   id: string; person: string; first: string; initials: string; role: string; theme: ThemeKey;
   /** Minutes waiting. */
   wait: number;
+  /** Timestamp used to keep newly escalated tickets' wait time current. */
+  createdAt?: number;
   from: string; slug: string; q: string;
   title?: string;
   files?: Pick<Attachment, 'name' | 'kind'>[];
@@ -93,7 +95,8 @@ export interface KbItem {
   id: string; roomId: string | null; roomName: string; theme: ThemeKey; title: string; problem?: string; steps: string[];
   pic: Pick<Pic, 'id' | 'name' | 'first' | 'initials' | 'team'>; employee: string;
   status: KbStatus; at?: string; edited?: boolean; discardReason?: string; manual?: boolean;
-  files?: Pick<Attachment, 'name' | 'kind' | 'size'>[];
+  files?: Pick<Attachment, 'name' | 'kind' | 'size' | 'url' | 'mimeType'>[];
+  allowEmployeeAccess?: boolean;
 }
 
 /** What the canvas shows for one question: one card, plus who handles it if escalated. */

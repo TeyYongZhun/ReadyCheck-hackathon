@@ -30,7 +30,7 @@ export const SCENARIOS: Scenario[] = [
     ],
   },
   {
-    key: 'onboarding', match: /./,
+    key: 'onboarding', match: /first week|onboarding|new joiner|new hire|buddy|schedule|welcome/i,
     heading: 'Your first week', queue: 'People Team', expert: { name: 'Sofia Hart', initials: 'SH', eta: '20 min' },
     cards: [
       { id: 'v4', type: 'video', props: { title: 'Welcome aboard: how your first week works', source: 'People Team · Onboarding', duration: 236, chapters: [{ t: 0, label: 'Monday: kit and accounts' }, { t: 70, label: 'Meet your buddy' }, { t: 140, label: 'Mandatory training' }, { t: 200, label: 'Friday check-in' }] } },
