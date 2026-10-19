@@ -51,7 +51,7 @@ ReadyCheck is one website with two views.
 ![How ReadyCheck works: 8 steps from a new hire asking a question to an approved knowledge card](docs/workflow.svg)
 
 1. **New hire** asks a question.
-2. **AI** gives one answer card. If it helps, done.
+2. **AI** gives one answer card based on company's knowledge base. If it helps, done.
 3. If not, the **new hire** taps *Need human expert* and a ticket is created.
 4. **AI** groups tickets by topic and summarises why people are stuck.
 5. **Manager / HR** assigns an expert in one click.
@@ -141,6 +141,29 @@ npm run dev
 3. Add `GEMINI_API_KEY` in **Settings → Environment Variables**.
 4. Click **Deploy**.
 
+## Run with Docker
+
+Build and start the production container:
+
+```bash
+docker build -t readycheck .
+docker run --rm -p 3000:3000 \
+  -e GEMINI_API_KEY=your-key-here \
+  -e GEMINI_MODEL=gemini-3.5-flash-lite \
+  readycheck
+```
+OR
+1. Input your GEMINI-API-KEY in .env, following the format of .env.example.
+2. Then start the container:
+```bash
+docker run --rm --name readycheck -p 3000:3000 `
+  --env-file .env `
+  readycheck
+
+```
+
+Open http://localhost:3000. The container serves the Vite build and the `/api/*` endpoints from the same process. If `GEMINI_API_KEY` is omitted, the app still works with its local fallback behaviour, but AI-powered responses are unavailable.
+
 ## Try it (2-minute demo)
 
 1. On the employee view, click **Access issue** and press Enter. An answer card appears.
@@ -169,6 +192,7 @@ ReadyCheck-hackathon/
 │   └── data/                  # Sample answers, topics, experts, demo chats
 ├── docs/                      # Workflow and architecture diagrams
 ├── .env.example               # Template for the Gemini API key
+├── Dockerfile                 # Production container definition
 ├── vercel.json                # Vercel deployment settings
 └── package.json               # Scripts and dependencies
 ```
