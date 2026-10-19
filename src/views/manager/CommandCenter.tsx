@@ -11,7 +11,7 @@ import { NeedsYou, type NeedsGroup } from './NeedsYou';
 import { TicketRooms } from './TicketRooms';
 import { ThemeTrends } from './ThemeTrends';
 import { KnowledgeBase } from './KnowledgeBase';
-import { ExpertTeam } from './ExpertTeam';
+import { ExpertTeam, type TeamDraft } from './ExpertTeam';
 
 export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
   const app = useApp();
@@ -121,7 +121,23 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
               <KnowledgeBase />
             </div>
           )
-          : <ExpertTeam pics={app.experts} load={app.load} onAddExpert={(team, name) => {
+          : <ExpertTeam pics={app.experts} load={app.load} onAddTeam={(draft: TeamDraft) => {
+              const added = draft.people.map((name, index) => {
+                const first = name.split(/\s+/)[0];
+                return {
+                  id: 'x' + Date.now().toString(36) + index,
+                  name,
+                  first,
+                  initials: initialsOf(name),
+                  team: draft.name,
+                  skills: plural(draft.covers.length, 'topic', 'topics'),
+                  covers: draft.covers,
+                  custom: true,
+                };
+              });
+              app.setExperts((current) => [...current, ...added]);
+              setToast(<><b>{draft.name}</b> added with {plural(added.length, 'expert', 'experts')}. They are in every Assign menu now.</>);
+            }} onAddExpert={(team, name) => {
               const x: Pic = { id: 'x' + Date.now().toString(36), name, first: name.split(/\s+/)[0], initials: initialsOf(name), team: team.name, skills: plural(team.covers.length, 'topic', 'topics'), covers: team.covers, custom: true };
               app.setExperts((l) => [...l, x]);
               setToast(<><b>{name}</b> joined {team.name}. They are in every Assign menu now.</>);
