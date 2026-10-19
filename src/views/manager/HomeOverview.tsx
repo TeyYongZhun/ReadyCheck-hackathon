@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Pic, QueueTicket, Room } from '../../types';
+import { HOME, QUEUE, ROOMS } from '../../data/command';
 import { DEFAULT_WEEK, addDays, isoDate, rangeLabel, weekData, weekStart } from '../../data/homeWeeks';
 import { cx } from '../../lib/util';
 import { AiLabel, Footnote, Icon, PicAvatar } from '../../components/primitives';
@@ -108,12 +109,32 @@ export function HomeOverview({ pics, waiting, rooms, tickets, solvedByCardsPct, 
   const liveRooms = rooms.filter((r) => r.status !== 'resolved');
   const openTickets = tickets.length + liveRooms.length;
   const overdue = tickets.filter((t) => t.wait >= 30).length;
-  const byPic = pics
-    .map((pic) => [pic.id, liveRooms.filter((room) => room.pic === pic.id).length] as [string, number])
-    .filter(([, n]) => n > 0);
-  const categoryCounts = new Map<string, number>();
-  tickets.forEach((ticket) => categoryCounts.set(ticket.theme, (categoryCounts.get(ticket.theme) ?? 0) + 1));
-  const cats = Array.from(categoryCounts.entries()).map(([theme, n]) => [theme, n] as [string, number]);
+  const sampleRoomIds = new Set(ROOMS.map((room) => room.id));
+  const demoRoomCounts = new Map<string, number>();
+  liveRooms
+    .filter((room) => !sampleRoomIds.has(room.id))
+    .forEach((room) => demoRoomCounts.set(room.pic, (demoRoomCounts.get(room.pic) ?? 0) + 1));
+  const byPic = HOME.byPic.map(([id, n]) => [id, n + (demoRoomCounts.get(id) ?? 0)] as [string, number]);
+  const categoryThemes: Record<string, string[]> = {
+    'Access & permissions': ['db', 'vpn', 'mfa'],
+    'Process guidance': ['onb', 'exp', 'pay', 'leave', 'ben'],
+    'Tools & resources': ['hw'],
+    'Conflicting instructions': [],
+  };
+  const sampleTicketIds = new Set(QUEUE.map((ticket) => ticket.id));
+  const demoIssues = new Map<string, string>();
+  tickets
+    .filter((ticket) => !sampleTicketIds.has(ticket.id))
+    .forEach((ticket) => demoIssues.set(ticket.id, ticket.theme));
+  liveRooms
+    .filter((room) => !sampleRoomIds.has(room.id))
+    .forEach((room) => (room.tickets ?? [room.ticket]).filter((id): id is string => !!id)
+      .forEach((id) => demoIssues.set(id, room.theme)));
+  const cats = HOME.cats.map(([label]) => [
+    label,
+    (HOME.cats.find(([name]) => name === label)?.[1] ?? 0)
+      + Array.from(demoIssues.values()).filter((theme) => categoryThemes[label]?.includes(theme)).length,
+  ] as [string, number]);
   const catMax = Math.max(10, ...cats.map((c) => c[1]));
   const STATS: [string, string, string, string, string][] = [
     ['Open tickets', String(openTickets), 'Current unresolved tickets', 'doc', ''],
@@ -164,9 +185,9 @@ export function HomeOverview({ pics, waiting, rooms, tickets, solvedByCardsPct, 
           <h2 className="rc-panel-h" id="rc-cic-h">Common issue categories</h2>
           <p className="rc-panel-s">Current open tickets</p>
           <ul className="rc-bars">
-            {cats.length ? cats.map(([label, n]) => (
+            {cats.map(([label, n]) => (
               <li key={label}><span className="rc-bars-l">{label}</span><span className="rc-bars-t" aria-hidden><i style={{ width: (n / catMax) * 100 + '%' }} /></span><span className="rc-bars-n">{n}</span></li>
-            )) : <li className="rc-sec-empty">No open tickets right now.</li>}
+            ))}
           </ul>
         </section>
         <section className="rc-home-card rc-glass rc-glass-2" aria-labelledby="rc-pic-h">
