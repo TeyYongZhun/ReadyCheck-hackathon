@@ -2,6 +2,7 @@ import { useRef, type ReactNode } from 'react';
 import type { Attachment, Pic } from '../../types';
 import { cx, fileSize, uid } from '../../lib/util';
 import { Icon } from './Icon';
+import { useAiOffline } from '../../lib/ai-status';
 
 export { Icon } from './Icon';
 
@@ -42,6 +43,12 @@ export function PageHead({ id, title, sub, children }: { id?: string; title: str
 
 export function AiLabel({ children }: { children: ReactNode }) {
   return <span className="rc-ai-label">{children}</span>;
+}
+
+export function GeminiStatus() {
+  const offline = useAiOffline();
+  if (!offline) return null;
+  return <span className="rc-gemini-status" role="status"><i aria-hidden />AI Assistant offline</span>;
 }
 
 export function Footnote({ children }: { children: ReactNode }) {
