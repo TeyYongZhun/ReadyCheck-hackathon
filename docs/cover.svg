@@ -60,16 +60,16 @@
 
   <!-- Feature chips -->
   <g>
-    <rect class="chip" x="72" y="492" width="164" height="36" rx="18"/>
-    <circle cx="92" cy="510" r="5" fill="#5fe3b5"/><text class="chipt" x="104" y="515">AI answer cards</text>
-    <rect class="chip" x="244" y="492" width="178" height="36" rx="18"/>
-    <circle cx="264" cy="510" r="5" fill="#ffad5c"/><text class="chipt" x="276" y="515">One-tap escalation</text>
-    <rect class="chip" x="430" y="492" width="174" height="36" rx="18"/>
-    <circle cx="450" cy="510" r="5" fill="#a3b8ff"/><text class="chipt" x="462" y="515">AI theme detection</text>
+    <rect class="chip" x="72" y="492" width="216" height="36" rx="18"/>
+    <circle cx="92" cy="510" r="5" fill="#5fe3b5"/><text class="chipt" x="104" y="515">Knowledge-base answers</text>
+    <rect class="chip" x="296" y="492" width="178" height="36" rx="18"/>
+    <circle cx="316" cy="510" r="5" fill="#ffad5c"/><text class="chipt" x="328" y="515">One-tap escalation</text>
+    <rect class="chip" x="482" y="492" width="174" height="36" rx="18"/>
+    <circle cx="502" cy="510" r="5" fill="#a3b8ff"/><text class="chipt" x="514" y="515">AI theme detection</text>
   </g>
 
   <text x="72" y="590" fill="#6f8682" font-size="13" font-weight="700" letter-spacing=".14em">AI FUTURE MAKERS · CHALLENGE 4 · RETAIN</text>
-  <text x="72" y="612" fill="#55696a" font-size="13">Gemini 3.5 Flash-Lite · React · Vercel</text>
+  <text x="72" y="612" fill="#55696a" font-size="13">Gemini 3.5 Flash-Lite · 3.6 Flash · Embedding 001 · React · Vercel</text>
 
   <!-- ===== Right: product moment ===== -->
   <!-- My tickets dock -->
@@ -95,9 +95,9 @@
 
   <!-- Answer card -->
   <g filter="url(#sh)"><rect class="card" x="700" y="214" width="336" height="262" rx="24"/></g>
-  <rect x="720" y="234" width="104" height="26" rx="13" fill="#0f1a1c" stroke="#2c3e42"/>
-  <path d="M731 243h10M731 247h10M731 251h10" stroke="#a8b9b3" stroke-width="1.6" stroke-linecap="round"/>
-  <text x="748" y="252" fill="#c9d6d2" font-size="12.5" font-weight="600">AI answer</text>
+  <rect x="720" y="234" width="138" height="26" rx="13" fill="#5fe3b5" fill-opacity=".12" stroke="#5fe3b5" stroke-opacity=".55"/>
+  <path d="M736 243.5c-1.8-1.2-3.8-1.6-7-1.6v10c3.2 0 5.2.4 7 1.6 1.8-1.2 3.8-1.6 7-1.6v-10c-3.2 0-5.2.4-7 1.6zM736 243.5v10" stroke="#5fe3b5" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+  <text x="750" y="252" fill="#5fe3b5" font-size="12.5" font-weight="600">Knowledge base</text>
   <text class="mono" x="1014" y="252" text-anchor="end" fill="#8fa39d" font-size="12.5">2 / 3</text>
   <text x="720" y="290" fill="#eef5f2" font-size="18" font-weight="600">Get back on the VPN</text>
   <rect x="720" y="304" width="296" height="4" rx="2" fill="#223236"/><rect x="720" y="304" width="197" height="4" rx="2" fill="#5fe3b5"/>
