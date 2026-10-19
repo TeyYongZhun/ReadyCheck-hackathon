@@ -86,7 +86,7 @@
   <g filter="url(#shadow)"><rect class="card" x="228" y="150" width="280" height="330" rx="16"/></g>
   <path d="M228 166 a16 16 0 0 1 16 -16 h248 a16 16 0 0 1 16 16 v14 h-280 z" fill="#1c2c30"/>
   <circle cx="246" cy="165" r="4" fill="#ff7b72"/><circle cx="260" cy="165" r="4" fill="#ffad5c"/><circle cx="274" cy="165" r="4" fill="#5fe3b5"/>
-  <text x="368" y="169" text-anchor="middle" fill="#8fa39d" font-size="11" class="mono">ready-check-hackathon.vercel.app</text>
+  <text x="392" y="169" text-anchor="middle" fill="#8fa39d" font-size="10.5" class="mono">ready-check-hackathon.vercel.app</text>
   <text class="h" x="246" y="210">ReadyCheck web app</text>
   <text class="s" x="246" y="229">React 18 · TypeScript · Vite</text>
 
@@ -117,7 +117,7 @@
   <text class="s mono" x="602" y="293" font-size="12">api/[route].ts → server/</text>
 
   <text class="ep mono" x="602" y="322">POST /api/answer</text>
-  <text class="eps" x="602" y="338">pick or write the answer card</text>
+  <text class="eps" x="602" y="338">find the knowledge-base card</text>
   <text class="ep mono" x="602" y="362">POST /api/theme-summary</text>
   <text class="eps" x="602" y="378">why people are stuck on a topic</text>
   <text class="ep mono" x="602" y="402">POST /api/room-reply</text>
@@ -134,13 +134,16 @@
   <text class="lbl mono" x="538" y="382" text-anchor="middle">JSON</text>
 
   <!-- ===== Gemini ===== -->
-  <g filter="url(#shadow)"><rect class="card" x="914" y="244" width="138" height="186" rx="16"/></g>
+  <g filter="url(#shadow)"><rect class="card" x="914" y="244" width="138" height="214" rx="16"/></g>
   <rect x="914" y="244" width="138" height="4" rx="2" fill="url(#gem)"/>
   <path d="M983 268 C985 282 990 287 1004 289 C990 291 985 296 983 310 C981 296 976 291 962 289 C976 287 981 282 983 268 Z" fill="url(#gem)"/>
-  <text class="h" x="983" y="338" text-anchor="middle" font-size="15">Google Gemini</text>
-  <text x="983" y="358" text-anchor="middle" fill="#cfe0ff" font-size="13" font-weight="600">3.5 Flash-Lite</text>
-  <text class="eps" x="983" y="376" text-anchor="middle">model set in env</text>
-  <text class="eps" x="983" y="404" text-anchor="middle">JSON-schema output</text>
+  <text class="h" x="983" y="334" text-anchor="middle" font-size="15">Google Gemini</text>
+  <text x="983" y="356" text-anchor="middle" fill="#cfe0ff" font-size="12" font-weight="600">3.5 Flash-Lite</text>
+  <text class="eps" x="983" y="370" text-anchor="middle">answers + chat</text>
+  <text x="983" y="390" text-anchor="middle" fill="#cfe0ff" font-size="12" font-weight="600">3.6 Flash</text>
+  <text class="eps" x="983" y="404" text-anchor="middle">knowledge cards</text>
+  <text x="983" y="424" text-anchor="middle" fill="#cfe0ff" font-size="12" font-weight="600">Embedding 001</text>
+  <text class="eps" x="983" y="438" text-anchor="middle">semantic search</text>
 
   <!-- Vercel ↔ Gemini -->
   <path class="flow" d="M832 335 H908" marker-end="url(#aB)" stroke="#a3b8ff"/>

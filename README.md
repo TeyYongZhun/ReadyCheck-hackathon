@@ -63,14 +63,26 @@ This matches the challenge's required flow: **employee feedback → AI finds the
 
 ## How we use AI
 
-We use **Google Gemini 3.5 Flash-Lite**: fast, low-cost, and good at short structured answers.
+We use **three Google Gemini models**, each picked for its job:
+
+| Model | Used for | Why this model |
+|---|---|---|
+| **Gemini 3.5 Flash-Lite** (`GEMINI_CHAT_MODEL`) | Choosing the answer card, reranking search results, small-talk replies, the AI expert in rooms, topic and Home summaries | Fast and low-cost for short, frequent answers |
+| **Gemini 3.6 Flash** (`GEMINI_SUMMARY_MODEL`) | Turning a solved chat into a knowledge card, turning an uploaded PDF into a knowledge card | Stronger at reading longer content and writing accurate steps |
+| **Gemini Embedding 001** (`GEMINI_EMBEDDING_MODEL`) | Semantic search: finds the knowledge-base cards that mean the same as the question, even with different words | Turns text into vectors for similarity search |
 
 | What AI does | What a person still decides |
 |---|---|
-| Picks or writes the best answer card for a question | The employee says if it helped |
+| Finds the matching card in the knowledge base. If nothing matches, it says so and suggests a human expert instead of guessing | The employee says if it helped, or asks an expert |
 | Groups tickets into topics and summarises each topic | The manager decides who to assign |
-| Turns a solved chat into a new knowledge card | The manager approves, edits or discards it |
+| Turns a solved chat, or an uploaded PDF, into a draft knowledge card | The manager approves, edits or discards it |
 | Plays the expert in the demo chat (labelled "AI expert (demo)") | In real use, real experts reply |
+
+**How an answer is found**
+1. **Search:** Embedding 001 compares the question with every knowledge-base card and keeps the closest ones.
+2. **Rerank:** Flash-Lite puts those candidates in order of how well they answer the question.
+3. **Answer:** Flash-Lite picks one card (manager-approved cards first), or replies "I don't know" and points to a human expert.
+4. **Fallback:** if Gemini is unavailable, simple keyword matching takes over, so the app keeps working.
 
 **Responsible by design**
 - Uses only questions employees **choose** to ask. No monitoring, no emotion detection.
@@ -84,7 +96,8 @@ We use **Google Gemini 3.5 Flash-Lite**: fast, low-cost, and good at short struc
 |---|---|
 | Front end | React 18, TypeScript, Vite |
 | Styling | CSS with design tokens (dark and light themes) |
-| AI | Google Gemini via the Gemini API (`@google/genai`), including embedding-based retrieval and reranking |
+| AI | Google Gemini API (`@google/genai`): Gemini 3.5 Flash-Lite, Gemini 3.6 Flash, Gemini Embedding 001 |
+| Search | Embedding-based semantic search (cosine similarity) + Gemini reranking |
 | Back end | Vercel serverless functions |
 | Hosting | Vercel |
 | Design | Claude Design |
@@ -95,15 +108,17 @@ We use **Google Gemini 3.5 Flash-Lite**: fast, low-cost, and good at short struc
 
 - **Browser:** the React web app has both the employee and manager views.
 - **Vercel:** serves the website and runs one serverless API. The Gemini API key is stored only here.
-- **Google Gemini:** generates answer JSON, semantic embeddings and a reranked candidate order.
+- **Google Gemini (3 models):** Embedding 001 for search vectors, 3.5 Flash-Lite for answers and chat, 3.6 Flash for knowledge-card summaries. All return structured JSON.
 - **Retrieval:** the server keeps an in-memory vector index, ranks candidates with cosine similarity, then uses Gemini as a semantic reranker. It falls back to keyword matching if embeddings are unavailable.
 
-| API endpoint | What it does |
-|---|---|
-| `/api/answer` | Finds the best answer card for a question |
-| `/api/theme-summary` | Summarises why people are stuck on a topic |
-| `/api/room-reply` | Writes the expert's reply in the demo chat |
-| `/api/summarize-room` | Turns a solved chat into a knowledge card |
+| API endpoint | What it does | Model |
+|---|---|---|
+| `/api/answer` | Finds the best knowledge-base card for a question, or says "I don't know" | Embedding 001 + 3.5 Flash-Lite |
+| `/api/theme-summary` | Summarises why people are stuck on a topic | 3.5 Flash-Lite |
+| `/api/home-summary` | Briefs the manager on the Home dashboard and suggests who to assign | 3.5 Flash-Lite |
+| `/api/room-reply` | Writes the expert's reply in the demo chat | 3.5 Flash-Lite |
+| `/api/summarize-room` | Turns a solved chat into a knowledge card | 3.6 Flash |
+| `/api/material-extract` | Turns an uploaded PDF into a knowledge card draft | 3.6 Flash |
 
 The vector index is rebuilt on a cold start. For a multi-instance production deployment, replace the in-memory index with a persistent vector database.
 
@@ -143,7 +158,7 @@ npm run dev
 
 1. Push the project to GitHub.
 2. Import it at [vercel.com/new](https://vercel.com/new).
-3. Add `GEMINI_API_KEY` in **Settings → Environment Variables**.
+3. In **Settings → Environment Variables**, add `GEMINI_API_KEY`. Optionally add `GEMINI_CHAT_MODEL`, `GEMINI_SUMMARY_MODEL` and `GEMINI_EMBEDDING_MODEL` to change the models.
 4. Click **Deploy**.
 
 ## Run with Docker
@@ -154,7 +169,9 @@ Build and start the production container:
 docker build -t readycheck .
 docker run --rm -p 3000:3000 \
   -e GEMINI_API_KEY=your-key-here \
-  -e GEMINI_MODEL=gemini-3.5-flash-lite \
+  -e GEMINI_CHAT_MODEL=gemini-3.5-flash-lite \
+  -e GEMINI_SUMMARY_MODEL=gemini-3.6-flash \
+  -e GEMINI_EMBEDDING_MODEL=gemini-embedding-001 \
   readycheck
 ```
 OR
@@ -186,9 +203,14 @@ ReadyCheck-hackathon/
 ├── api/
 │   └── [route].ts             # Vercel serverless entry for all /api calls
 ├── server/                    # Back end: Gemini prompts (API key stays here)
-│   ├── answer.ts              # Picks or writes the answer card
-│   ├── themeSummary.ts        # Summarises why new hires are stuck on a topic
-│   └── room.ts                # AI expert replies + knowledge card from a solved chat
+│   ├── gemini.ts              # The 3 Gemini models: chat, summary, embedding
+│   ├── retrieval.ts           # Semantic search (embeddings) + Gemini reranking
+│   ├── answer.ts              # Finds the knowledge-base card, or says "I don't know"
+│   ├── room.ts                # AI expert replies + knowledge card from a solved chat
+│   ├── materialExtract.ts     # Knowledge card from an uploaded PDF
+│   ├── themeSummary.ts        # Why new hires are stuck on a topic
+│   ├── homeSummary.ts         # Manager briefing on the Home dashboard
+│   └── production.ts          # Server used by the Docker container
 ├── src/                       # Front end (React + TypeScript)
 │   ├── views/
 │   │   ├── employee/          # Ask a question, answer cards, My tickets
@@ -197,7 +219,7 @@ ReadyCheck-hackathon/
 │   ├── state/AppState.tsx     # Shared data: tickets, rooms, knowledge cards
 │   └── data/                  # Sample answers, topics, experts, demo chats
 ├── docs/                      # Workflow and architecture diagrams
-├── .env.example               # Template for the Gemini API key
+├── .env.example               # Template for the Gemini API key and the 3 model names
 ├── Dockerfile                 # Production container definition
 ├── vercel.json                # Vercel deployment settings
 └── package.json               # Scripts and dependencies
