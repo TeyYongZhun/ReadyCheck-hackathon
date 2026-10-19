@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Attachment, KbItem, ThemeKey } from '../../types';
 import { useApp } from '../../state/AppState';
 import { AddFilesButton, AiLabel, AttachChips, Footnote, Icon, toAttachment } from '../../components/primitives';
 import { KbCard } from '../../components/shell/KbCard';
+import { extractMaterial } from '../../lib/api';
 
 const TOPICS: { key: ThemeKey; name: string }[] = [
   { key: 'vpn', name: 'VPN & remote access' },
@@ -22,8 +23,64 @@ function NewMaterial({ onSave, onCancel }: { onSave: (item: KbItem) => void; onC
   const [problem, setProblem] = useState('');
   const [steps, setSteps] = useState('');
   const [files, setFiles] = useState<Attachment[]>([]);
+  const [allowEmployeeAccess, setAllowEmployeeAccess] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [extractMessage, setExtractMessage] = useState('');
+  const topicTouchedRef = useRef(false);
   const list = steps.split('\n').map((step) => step.trim()).filter(Boolean);
+  const hasEmployeeMaterials = files.some((file) => file.mimeType === 'application/pdf' || file.mimeType?.startsWith('video/'));
   const valid = !!title.trim() && list.length > 0;
+
+  async function analyzePdf(file: File) {
+    if (file.type !== 'application/pdf') {
+      setExtractMessage('PDF analysis is available for PDF files. Other files were attached without analysis.');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setExtractMessage('This PDF is larger than 8 MB, so it was attached without analysis.');
+      return;
+    }
+    setExtracting(true);
+    setExtractMessage('Analyzing PDF. Your existing text will be kept.');
+    try {
+      const data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Could not read PDF'));
+        reader.onerror = () => reject(reader.error ?? new Error('Could not read PDF'));
+        reader.readAsDataURL(file);
+      });
+      const result = await extractMaterial({ filename: file.name, mimeType: file.type, data });
+      if (!result) {
+        setExtractMessage('PDF analysis was unavailable. You can complete the fields manually.');
+        return;
+      }
+      setTitle((current) => current.trim() ? current : result.title);
+      setProblem((current) => current.trim() ? current : result.problem);
+      setSteps((current) => current.trim() ? current : result.steps.join('\n'));
+      if (!topicTouchedRef.current) setTopic(result.theme);
+      setExtractMessage('AI suggestions added to empty fields only. Please review before publishing.');
+    } catch {
+      setExtractMessage('PDF analysis failed. The file is attached and the fields can be completed manually.');
+    } finally {
+      setExtracting(false);
+    }
+  }
+
+  function addFiles(list: FileList) {
+    const selected = Array.from(list);
+    setFiles((current) => [...current, ...selected.map(toAttachment)].slice(0, 6));
+    selected.filter((file) => file.type === 'application/pdf' || file.type.startsWith('video/')).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result !== 'string') return;
+        setFiles((current) => current.map((item) => item.name === file.name ? { ...item, url: reader.result as string, mimeType: file.type } : item));
+      };
+      reader.readAsDataURL(file);
+    });
+    const pdf = selected.find((file) => file.type === 'application/pdf');
+    if (pdf) void analyzePdf(pdf);
+    else if (selected.length) setExtractMessage('Files attached. Upload a PDF to generate field suggestions.');
+  }
 
   function save(status: KbItem['status']) {
     onSave({
@@ -34,12 +91,23 @@ function NewMaterial({ onSave, onCancel }: { onSave: (item: KbItem) => void; onC
       title: title.trim(),
       problem: problem.trim(),
       steps: list,
-      files: files.map(({ name, kind, size }) => ({ name, kind, size })),
+      files: files.map(({ name, kind, size, url, mimeType }) => ({ name, kind, size, url, mimeType })),
+      allowEmployeeAccess,
       pic: { id: 'rg', name: 'Rachel Goh', first: 'Rachel', initials: 'RG', team: 'Support lead' },
       employee: '',
       manual: true,
       status,
       at: 'Today',
+    });
+  }
+
+  function removeFile(id: string) {
+    setFiles((current) => {
+      const next = current.filter((file) => file.id !== id);
+      if (!next.some((file) => file.mimeType === 'application/pdf' || file.mimeType?.startsWith('video/'))) {
+        setAllowEmployeeAccess(false);
+      }
+      return next;
     });
   }
 
@@ -53,7 +121,7 @@ function NewMaterial({ onSave, onCancel }: { onSave: (item: KbItem) => void; onC
         <input className="rc-kb-input" value={title} maxLength={90} autoFocus placeholder="e.g. Get access to the staging database" onChange={(event) => setTitle(event.target.value)} />
       </label>
       <label className="rc-kb-lab">Topic
-        <select className="rc-kb-input is-select" value={topic} onChange={(event) => setTopic(event.target.value as ThemeKey)}>
+        <select className="rc-kb-input is-select" value={topic} onChange={(event) => { topicTouchedRef.current = true; setTopic(event.target.value as ThemeKey); }}>
           {TOPICS.map((item) => <option key={item.key} value={item.key}>{item.name}</option>)}
         </select>
       </label>
@@ -66,13 +134,20 @@ function NewMaterial({ onSave, onCancel }: { onSave: (item: KbItem) => void; onC
       </label>
       <div className="rc-kb-lab">Photos or documents (optional)
         <div className="rc-kb-files">
-          <AddFilesButton text="Add files" onFiles={(list) => setFiles((current) => [...current, ...Array.from(list).map(toAttachment)].slice(0, 6))} />
-          <AttachChips items={files} onRemove={(id) => setFiles((current) => current.filter((file) => file.id !== id))} />
+          <AddFilesButton text={extracting ? 'Analyzing PDF…' : 'Add files'} onFiles={addFiles} />
+          <AttachChips items={files} onRemove={removeFile} />
         </div>
+        {extractMessage ? <span className="rc-kb-hint" role="status">{extractMessage}</span> : null}
       </div>
+      {hasEmployeeMaterials ? (
+        <label className="rc-kb-access">
+          <input type="checkbox" checked={allowEmployeeAccess} onChange={(event) => setAllowEmployeeAccess(event.target.checked)} />
+          <span><b>Allow new employees to access these materials</b><small>When published, employees can open PDFs or play videos from the answer card.</small></span>
+        </label>
+      ) : null}
       <div className="rc-kb-act">
-        <button type="button" className="rc-btn-primary is-sm" disabled={!valid} onClick={() => save('live')}><Icon name="check" size={15} strokeWidth={2.2} />Publish</button>
-        <button type="button" className="rc-btn-ghost is-sm" disabled={!valid} onClick={() => save('review')}>Save draft</button>
+        <button type="button" className="rc-btn-primary is-sm" disabled={!valid || extracting} onClick={() => save('live')}><Icon name="check" size={15} strokeWidth={2.2} />Publish</button>
+        <button type="button" className="rc-btn-ghost is-sm" disabled={!valid || extracting} onClick={() => save('review')}>Save draft</button>
         <button type="button" className="rc-quiet" onClick={onCancel}>Cancel</button>
       </div>
       <p className="rc-kb-m">Publish shows it to new hires right away, marked “From an expert”. A draft waits under Needs your review.</p>

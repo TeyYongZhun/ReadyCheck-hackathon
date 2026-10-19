@@ -157,6 +157,22 @@ export const ChecklistCard = forwardRef<HTMLElement, StepsCardData & CardHandler
           );
         })}
       </ol>
+      {p.materials?.length ? (
+        <div className="rc-card-materials">
+          <span className="rc-card-materials-label">Reference material</span>
+          {p.materials.map((material) => material.mimeType === 'application/pdf' ? (
+            <details key={material.name} className="rc-card-material">
+              <summary><Icon name="doc" size={14} />View {material.name}</summary>
+              <iframe title={material.name} src={material.url} />
+            </details>
+          ) : (
+            <details key={material.name} className="rc-card-material">
+              <summary><Icon name="video" size={14} />Play {material.name}</summary>
+              <video controls preload="metadata" src={material.url} />
+            </details>
+          ))}
+        </div>
+      ) : null}
     </ActionCard>
   );
 });

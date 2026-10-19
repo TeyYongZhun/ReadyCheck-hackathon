@@ -84,7 +84,7 @@ We use **Google Gemini 3.5 Flash-Lite**: fast, low-cost, and good at short struc
 |---|---|
 | Front end | React 18, TypeScript, Vite |
 | Styling | CSS with design tokens (dark and light themes) |
-| AI | Google Gemini 3.5 Flash-Lite via the Gemini API (`@google/genai`) |
+| AI | Google Gemini via the Gemini API (`@google/genai`), including embedding-based retrieval and reranking |
 | Back end | Vercel serverless functions |
 | Hosting | Vercel |
 | Design | Claude Design |
@@ -95,7 +95,8 @@ We use **Google Gemini 3.5 Flash-Lite**: fast, low-cost, and good at short struc
 
 - **Browser:** the React web app has both the employee and manager views.
 - **Vercel:** serves the website and runs one serverless API. The Gemini API key is stored only here.
-- **Google Gemini:** receives a prompt with a JSON schema and returns structured JSON the app can use directly.
+- **Google Gemini:** generates answer JSON, semantic embeddings and a reranked candidate order.
+- **Retrieval:** the server keeps an in-memory vector index, ranks candidates with cosine similarity, then uses Gemini as a semantic reranker. It falls back to keyword matching if embeddings are unavailable.
 
 | API endpoint | What it does |
 |---|---|
@@ -104,7 +105,7 @@ We use **Google Gemini 3.5 Flash-Lite**: fast, low-cost, and good at short struc
 | `/api/room-reply` | Writes the expert's reply in the demo chat |
 | `/api/summarize-room` | Turns a solved chat into a knowledge card |
 
-If Gemini is unavailable, the app still works using simple keyword matching.
+The vector index is rebuilt on a cold start. For a multi-instance production deployment, replace the in-memory index with a persistent vector database.
 
 ## Run it locally
 
@@ -122,7 +123,11 @@ npm install
 Create a file named `.env` in the project folder:
 ```
 GEMINI_API_KEY=your-key-here
-GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_CHAT_MODEL=gemini-3.5-flash-lite
+GEMINI_SUMMARY_MODEL=gemini-3.6-flash
+GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+# Optional: minimum cosine similarity for a RAG candidate (default: 0.55)
+RAG_MIN_SIMILARITY=0.55
 ```
 
 **3. Start**
@@ -156,6 +161,7 @@ OR
 1. Input your GEMINI-API-KEY in .env, following the format of .env.example.
 2. Then start the container:
 ```bash
+docker build -t readycheck .
 docker run --rm --name readycheck -p 3000:3000 `
   --env-file .env `
   readycheck

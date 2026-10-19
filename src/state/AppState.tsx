@@ -81,6 +81,27 @@ function useAppStateValue() {
     }
   }, [queue, mine, assignments, rooms, history, knowledge, experts]);
 
+  useEffect(() => {
+    const updateWaitTimes = () => {
+      const now = Date.now();
+      setQueue((current) => {
+        let changed = false;
+        const next = current.map((ticket) => {
+          if (ticket.createdAt === undefined) return ticket;
+          const elapsed = Math.max(0, Math.floor((now - ticket.createdAt) / 60000));
+          const wait = Math.max(ticket.wait, elapsed);
+          if (wait === ticket.wait) return ticket;
+          changed = true;
+          return { ...ticket, wait };
+        });
+        return changed ? next : current;
+      });
+    };
+    updateWaitTimes();
+    const interval = window.setInterval(updateWaitTimes, 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
   function go(next: Mode) {
     setMode(next); setOpenRoom(null);
     try { window.history.replaceState(null, '', '#' + next); } catch { /* sandboxed */ }
@@ -114,7 +135,7 @@ function useAppStateValue() {
   function escalate(e: EscalationInput) {
     const theme = e.theme;
     const t: QueueTicket = {
-      id: e.id, title: e.title, ...ME, theme, wait: 0, isNew: true, from: e.kind + ' card',
+      id: e.id, title: e.title, ...ME, theme, wait: 0, createdAt: Date.now(), isNew: true, from: e.kind + ' card',
       slug: theme + '-' + slugify(ME.first) + '-' + e.id.replace(/\D/g, '').slice(-2),
       q: (e.query ? `“${e.query}” ` : '') + 'Card shown: ' + e.title + '.', files: e.files,
     };
