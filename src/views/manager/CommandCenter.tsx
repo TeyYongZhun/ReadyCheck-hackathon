@@ -23,6 +23,7 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
   const liveRooms = app.roomList.filter((r) => r.status !== 'resolved').length;
   const reviewN = app.knowledge.filter((k) => k.status === 'review').length;
   const asked = THEMES.reduce((s, t) => s + t.count, 0), byCards = THEMES.reduce((s, t) => s + t.cards, 0);
+  const solvedByCardsPct = Math.round((byCards / asked) * 100);
 
   const groups: NeedsGroup[] = THEMES.flatMap((t) => {
     const tk = queue.filter((q) => q.theme === t.key);
@@ -95,11 +96,11 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
       <div className="rc-cc2-main">
         <dl className="rc-kpi3">
           <div className={cx('rc-kpi', waiting.length && 'is-need')}><dt>Need you</dt><dd>{waiting.length}</dd></div>
-          <div className="rc-kpi"><dt>Solved by cards</dt><dd>{Math.round((byCards / asked) * 100)}%</dd></div>
+          <div className="rc-kpi"><dt>Solved by cards</dt><dd>{solvedByCardsPct}%</dd></div>
           <div className="rc-kpi is-prog"><dt>In progress</dt><dd>{liveRooms}</dd></div>
         </dl>
 
-        {tab === 'home' ? <HomeOverview pics={app.experts} waiting={waiting.length} onOpenNeeds={() => setTab('needs')} />
+        {tab === 'home' ? <HomeOverview pics={app.experts} waiting={waiting.length} tickets={waiting} rooms={app.roomList} solvedByCardsPct={solvedByCardsPct} onOpenNeeds={() => setTab('needs')} />
           : tab === 'needs' ? (
             <div className="rc-home">
               <PageHead id="rc-needs-h" title="Needs you" sub="Where new hires are stuck. Overdue first, then longest wait. One click puts an expert in a room with them." />
