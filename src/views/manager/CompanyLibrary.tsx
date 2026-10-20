@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { CardKind, CardSpec } from '../../types';
 import { SCENARIOS, SCEN_THEME } from '../../data/scenarios';
 import { THEMES_BY_KEY } from '../../data/command';
-import { KIND } from '../../components/cards/ActionCard';
+import { KIND, docUrl } from '../../components/cards/ActionCard';
 import { Icon } from '../../components/primitives';
 import { cx, fmt } from '../../lib/util';
 
@@ -30,7 +30,7 @@ function LibraryCard({ card, topic }: Item) {
   const kind = KIND[card.type];
   const lines = card.type === 'video' ? card.props.chapters ?? []
     : card.type === 'doc' ? card.props.points
-    : card.props.steps;
+    : [];
   const shown = card.type === 'video' ? lines : lines.slice(0, SHOWN);
   return (
     <div className="rc-kb is-live rc-lib">
@@ -46,14 +46,27 @@ function LibraryCard({ card, topic }: Item) {
       </div>
       <h3 className="rc-kb-t">{card.props.title}</h3>
       <p className="rc-kb-p">{card.props.source}</p>
-      <ul className="rc-lib-lines" aria-label={card.type === 'video' ? 'Chapters' : card.type === 'doc' ? 'Key points' : 'Steps'}>
-        {shown.map((line, i) => {
-          if ('t' in line) return <li key={i}><span className="rc-lib-t">{fmt(line.t)}</span>{line.label}</li>;
-          return <li key={i}>{'text' in line ? line.text : line.label}</li>;
-        })}
-        {lines.length > shown.length ? <li className="rc-lib-more">+{lines.length - shown.length} more</li> : null}
-      </ul>
-      <p className="rc-kb-m">{card.type === 'doc' ? card.props.file + ' · ' : ''}Topic: {topic}</p>
+      {card.type === 'steps' ? (
+        // Numbered like every other knowledge-base card, and every step is shown.
+        <ol className="rc-kb-steps" aria-label="Steps">
+          {card.props.steps.map((s, i) => (
+            <li key={i}><span>{s.label}{s.detail ? <small className="rc-lib-detail">{s.detail}</small> : null}</span></li>
+          ))}
+        </ol>
+      ) : (
+        <ul className="rc-lib-lines" aria-label={card.type === 'video' ? 'Chapters' : 'Key points'}>
+          {shown.map((line, i) => (
+            't' in line
+              ? <li key={i}><span className="rc-lib-t">{fmt(line.t)}</span>{line.label}</li>
+              : <li key={i}>{line.text}</li>
+          ))}
+          {lines.length > shown.length ? <li className="rc-lib-more">+{lines.length - shown.length} more</li> : null}
+        </ul>
+      )}
+      <p className="rc-kb-m">
+        {card.type === 'doc' ? <><a className="rc-lib-file" href={docUrl(card.props.file)} target="_blank" rel="noopener noreferrer" title="Open the sample PDF">{card.props.file}</a> · </> : null}
+        Topic: {topic}
+      </p>
     </div>
   );
 }

@@ -64,4 +64,7 @@
 .rc-lib-lines li { display: flex; gap: 10px; align-items: baseline; font: 400 14px/20px var(--font-sans); color: var(--ink); }
 .rc-lib-t { flex: none; font: 500 12px/16px var(--font-mono); color: var(--ready); }
 .rc-lib-more { color: var(--ink-muted) !important; }
+.rc-lib-detail { display: block; margin-top: 2px; font: 400 13px/18px var(--font-sans); color: var(--ink-muted); }
+.rc-lib-file { color: var(--ready); text-decoration: underline; text-underline-offset: 3px; }
+.rc-lib-file:hover { color: var(--ink); }
 .rc-kbase .rc-kb-grid .rc-lib .rc-kb-t { font-size: 17px; line-height: 23px; }

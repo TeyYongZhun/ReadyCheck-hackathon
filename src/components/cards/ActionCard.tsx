@@ -107,26 +107,32 @@ export const VideoCard = forwardRef<HTMLElement, VideoCardData & CardHandlers>(f
   );
 });
 
+/** Where a card's PDF lives. The files are mock documents in public/docs. */
+export function docUrl(file: string): string {
+  return '/docs/' + encodeURIComponent(file);
+}
+
 export const DocSummaryCard = forwardRef<HTMLElement, DocCardData & CardHandlers & { collapsedCount?: number }>(function DocSummaryCard(p, ref) {
   const [open, setOpen] = useState(false);
   const n = p.collapsedCount ?? 3;
   const shown = open ? p.points : p.points.slice(0, n);
+  const href = docUrl(p.file); // a mock PDF served from public/docs
   return (
     <ActionCard ref={ref} kind="doc" meta={p.pages + ' pages'} {...p}>
-      <div className="rc-doc-file">
+      <a className="rc-doc-file" href={href} target="_blank" rel="noopener noreferrer" aria-label={`Open ${p.file} in a new tab`}>
         <span className="rc-doc-thumb" aria-hidden><i /><i /><i /><i /></span>
         <div className="rc-doc-filetext">
           <div className="rc-doc-name">{p.file}</div>
           {p.updated ? <div className="rc-doc-sub">{p.updated}</div> : null}
         </div>
         <span className="rc-doc-open" title="Open document"><Icon name="arrow" size={15} /></span>
-      </div>
+      </a>
       <div className="rc-doc-label">Key points</div>
       <ul className="rc-doc-points">
         {shown.map((pt, i) => (
           <li key={i}>
             <span className="rc-doc-dot" aria-hidden /><span className="rc-doc-text">{pt.text}</span>
-            {pt.page ? <span className="rc-doc-page">p.{pt.page}</span> : null}
+            {pt.page ? <a className="rc-doc-page" href={`${href}#page=${pt.page}`} target="_blank" rel="noopener noreferrer" title={`Open page ${pt.page}`}>p.{pt.page}</a> : null}
           </li>
         ))}
       </ul>
