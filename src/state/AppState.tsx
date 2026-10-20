@@ -1,6 +1,6 @@
 // Shared state for both views: escalations flow employee → manager, rooms flow back.
-// Everything is in-memory for now. TODO: persist to localStorage key `readycheck.session.v1`
-// (history, incoming, assignments, rooms, knowledge, team) like the design export does, or move to a backend.
+// Everything is in-memory and starts fresh on every page load, so a demo can always be run again from the seed data.
+// TODO: move to a backend if it should survive a refresh.
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Attachment, CardKind, HistoryEntry, KbItem, Message, Mode, Pic, QueueTicket, Room, ThemeKey } from '../types';
 import { PICS, QUEUE, ROOMS, SEED_KB, THEMES_BY_KEY } from '../data/command';
@@ -31,56 +31,21 @@ export interface EscalationInput {
 }
 
 const ME = { person: 'Mira Tan', first: 'Mira', initials: 'MT', role: 'Product Designer · Day 3' };
-const SESSION_KEY = 'readycheck.session.v1';
-
-interface SessionSnapshot {
-  queue: QueueTicket[];
-  mine: string[];
-  assignments: Record<string, Assignment>;
-  rooms: Record<string, RoomRecord>;
-  history: HistoryEntry[];
-  knowledge: KbItem[];
-  experts: Pic[];
-}
-
-function readSession(): Partial<SessionSnapshot> {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    if (!raw) return {};
-    const parsed: unknown = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed as Partial<SessionSnapshot> : {};
-  } catch (error) {
-    console.warn('[ReadyCheck] Could not restore the saved session:', error);
-    return {};
-  }
-}
 
 function useAppStateValue() {
-  const saved = useRef<Partial<SessionSnapshot> | null>(null);
-  if (saved.current === null) saved.current = readSession();
-  const restored = saved.current;
   const [mode, setMode] = useState<Mode>(location.hash === '#manager' ? 'manager' : 'employee');
-  const [queue, setQueue] = useState<QueueTicket[]>(() => restored.queue ?? QUEUE.map((q) => ({ ...q })));
-  const [mine, setMine] = useState<string[]>(() => restored.mine ?? []); // ticket ids raised from this employee canvas
-  const [assignments, setAssignments] = useState<Record<string, Assignment>>(() => restored.assignments ?? {});
-  const [rooms, setRooms] = useState<Record<string, RoomRecord>>(() => restored.rooms ?? Object.fromEntries(ROOMS.map((r) => [r.id, seedRecord(r)])));
-  const [history, setHistory] = useState<HistoryEntry[]>(() => restored.history ?? []);
-  const [knowledge, setKnowledge] = useState<KbItem[]>(() => restored.knowledge ?? SEED_KB.map((k) => ({ ...k })));
-  const [experts, setExperts] = useState<Pic[]>(() => restored.experts ?? PICS);
+  const [queue, setQueue] = useState<QueueTicket[]>(() => QUEUE.map((q) => ({ ...q })));
+  const [mine, setMine] = useState<string[]>([]); // ticket ids raised from this employee canvas
+  const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
+  const [rooms, setRooms] = useState<Record<string, RoomRecord>>(() => Object.fromEntries(ROOMS.map((r) => [r.id, seedRecord(r)])));
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [knowledge, setKnowledge] = useState<KbItem[]>(() => SEED_KB.map((k) => ({ ...k })));
+  const [experts, setExperts] = useState<Pic[]>(PICS);
   const [openRoom, setOpenRoom] = useState<{ id: string; viewer: Mode } | null>(null);
   const roomsRef = useRef(rooms); roomsRef.current = rooms;
   const ticketSeq = useRef(0);
   const timers = useRef<number[]>([]);
   const later = (fn: () => void, ms: number) => { timers.current.push(window.setTimeout(fn, ms)); };
-
-  useEffect(() => {
-    const snapshot: SessionSnapshot = { queue, mine, assignments, rooms, history, knowledge, experts };
-    try {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(snapshot));
-    } catch (error) {
-      console.warn('[ReadyCheck] Could not save the session:', error);
-    }
-  }, [queue, mine, assignments, rooms, history, knowledge, experts]);
 
   useEffect(() => {
     const updateWaitTimes = () => {

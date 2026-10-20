@@ -312,7 +312,7 @@ allowEmployeeAccess === true
 
 The manager permission checkbox is shown only after a PDF or video has been attached. The employee can then open PDFs in an iframe or play videos in the card.
 
-The current demo stores file data URLs and session state in browser `localStorage`. This supports a small same-browser demo, but it is not suitable for cross-device sharing or large videos. A shared deployment should use object storage and a database, preferably with signed URLs.
+The current demo keeps file data URLs and session state in browser memory only, so everything resets to the seed data on refresh. This keeps the demo repeatable, but it is not suitable for cross-device sharing or large videos. A shared deployment should use object storage and a database, preferably with signed URLs.
 
 ## 10. AI safety and source-of-truth rules
 
@@ -339,6 +339,6 @@ This implementation is optimized for the hackathon demo:
 - The similarity threshold needs evaluation against real company questions.
 - The fallback keyword index is not a substitute for semantic retrieval.
 - Video content is not automatically extracted or transcribed.
-- Browser `localStorage` is not a shared multi-user database.
+- Session state lives in browser memory, so it resets on refresh and is not shared between users.
 
 For production, add a persistent vector store such as pgvector, Supabase Vector, Pinecone or another managed vector database. Precompute embeddings when a library or Knowledge Base card is created or approved, and store material files in private object storage.
