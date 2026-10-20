@@ -1,6 +1,6 @@
 // Turns a question into the one card the canvas shows: Gemini first, keyword fallback if the API fails.
 import type { CanvasAnswer, CardSpec, ChatReply, Expert, KbItem, LibraryEntry, ThemeKey } from '../types';
-import { SCENARIOS, SCEN_THEME } from '../data/scenarios';
+import { DEFAULT_SUGGEST, DEMO_ANSWER_BUDGET_MS, SCENARIOS, SCEN_THEME } from '../data/scenarios';
 import { PICS } from '../data/command';
 import { askAnswer } from './api';
 
@@ -31,7 +31,7 @@ function learnedCard(k: KbItem): CardSpec {
     : undefined;
   return {
     id: 'learned-' + k.id, type: 'steps',
-    props: { title: k.title, kindLabel: 'From an expert', source: `AI summary of ${k.roomName} · solved by ${k.pic.first}, approved by Rachel`, steps: k.steps.map((label) => ({ label })), materials },
+    props: { title: k.title, kindLabel: 'From an expert', source: `${k.sample ? 'Sample summary' : 'AI summary'} of ${k.roomName} · solved by ${k.pic.first}, approved by Rachel`, steps: k.steps.map((label) => ({ label })), materials },
   };
 }
 
@@ -56,12 +56,13 @@ export function isChat(a: CanvasAnswer | ChatReply): a is ChatReply {
 export async function resolveAnswer(query: string, files: string[], knowledge: KbItem[], library: LibraryEntry[]): Promise<CanvasAnswer | ChatReply> {
   const live = knowledge.filter((k) => k.status === 'live');
   const libraryCards = library.filter((e) => e.status === 'live').map((e) => e.card);
+  const isDemo = DEFAULT_SUGGEST.some((s) => s.demo && s.query === query);
   const res = await askAnswer({ query, files, library: libraryCards, learned: live.map((k) => ({
     id: k.id, theme: k.theme, title: k.title, steps: k.steps,
     materials: k.allowEmployeeAccess ? (k.files ?? []).filter((file): file is typeof file & { url: string; mimeType: string } => !!file.url && !!file.mimeType)
       .filter((file) => file.mimeType === 'application/pdf' || file.mimeType.startsWith('video/'))
       .map(({ name, url, mimeType }) => ({ name, url, mimeType })) : undefined,
-  })) });
+  })) }, isDemo ? DEMO_ANSWER_BUDGET_MS : undefined);
   if (res?.choice === 'chat' && res.message) return { heading: res.heading, message: res.message, source: 'ai' };
   if (res?.choice === 'unknown') {
     const message = res.message || 'Sorry, I couldn’t find any relevant knowledge. Please ask a human expert.';

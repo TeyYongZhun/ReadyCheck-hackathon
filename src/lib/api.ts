@@ -6,9 +6,12 @@ import type {
 } from '../api-types';
 import { markAiConnected, markAiOffline } from './ai-status';
 
-async function post<T>(route: string, body: unknown): Promise<T | null> {
+async function post<T>(route: string, body: unknown, timeoutMs?: number): Promise<T | null> {
   try {
-    const res = await fetch('/api/' + route, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const res = await fetch('/api/' + route, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      signal: timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined,
+    });
     if (!res.ok) {
       markAiOffline();
       console.warn(`[ReadyCheck] /api/${route} failed (${res.status}):`, await res.text().catch(() => ''));
@@ -23,7 +26,7 @@ async function post<T>(route: string, body: unknown): Promise<T | null> {
   }
 }
 
-export const askAnswer = (b: AnswerRequest) => post<AnswerResponse>('answer', b);
+export const askAnswer = (b: AnswerRequest, timeoutMs?: number) => post<AnswerResponse>('answer', b, timeoutMs);
 export const askRoomReply = (b: RoomReplyRequest) => post<RoomReplyResponse>('room-reply', b);
 export const askSummary = (b: SummarizeRequest) => post<SummarizeResponse>('summarize-room', b);
 export const askThemeSummary = (b: ThemeSummaryRequest) => post<ThemeSummaryResponse>('theme-summary', b);

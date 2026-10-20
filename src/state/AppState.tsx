@@ -6,7 +6,7 @@ import type { Attachment, CardKind, CardSpec, HistoryEntry, KbItem, LibraryEntry
 import { PICS, QUEUE, ROOMS, SEED_KB, THEMES_BY_KEY } from '../data/command';
 import { SCENARIOS, SCEN_THEME } from '../data/scenarios';
 import { askRoomReply, askSummary } from '../lib/api';
-import { dialogueFor, fillLine } from '../data/dialogues';
+import { SAMPLE_SUMMARIES, dialogueFor, fillLine } from '../data/dialogues';
 import type { ChatLine, PicPersona, TicketContext } from '../api-types';
 import { clock, slugify, uid } from '../lib/util';
 
@@ -93,10 +93,7 @@ function useAppStateValue() {
     const rec = roomsRef.current[roomId]; if (!rec) return;
     setTyping(roomId, 'pic');
     const res = await askRoomReply({ pic: persona(rec.pic), employee: employeeName(rec), ticket: ticketContext(rec.ticket), messages: chatLines(messages) });
-    if (!res) {
-      push(roomId, { from: 'system', text: 'AI expert unavailable right now. Try sending again in a moment.' });
-      return;
-    }
+    if (!res) { setTyping(roomId, false); return; } // No notice: the sample conversation still plays.
     push(roomId, { from: 'pic', text: res.reply, ai: true });
     if (res.solved) setFeedback(roomId, 'ask');
   }
@@ -222,24 +219,26 @@ function useAppStateValue() {
     void expertTurn(roomId, [...rec.messages, msg]);
   }
 
-  /** Close the room, then have Gemini turn the conversation into a knowledge-base draft for manager review. */
+  /** Close the room, then turn the conversation into a knowledge-base draft for manager review.
+   *  A played sample conversation uses its ready-made summary (labelled "Sample"); a real chat goes to Gemini. */
   async function resolve(roomId: string, by: string) {
     const rec = rooms[roomId]; if (!rec) return;
     setRooms((s) => ({ ...s, [roomId]: { ...s[roomId], feedback: null, room: { ...s[roomId].room, status: 'resolved' } } }));
     push(roomId, { from: 'system', text: 'Marked solved by ' + by });
     setAssignments((a) => Object.fromEntries(Object.entries(a).map(([k, v]) => [k, v.roomId === roomId ? { ...v, status: 'resolved' as const } : v])));
-    setTyping(roomId, 'ai');
-    const sum = await askSummary({ roomName: rec.room.name, pic: persona(rec.pic), employee: employeeName(rec), ticket: ticketContext(rec.ticket), messages: chatLines(rec.messages) });
+    const sample = rec.messages.some((m) => m.scripted) ? SAMPLE_SUMMARIES[rec.room.theme] : undefined;
+    if (!sample) setTyping(roomId, 'ai');
+    const sum = sample ?? await askSummary({ roomName: rec.room.name, pic: persona(rec.pic), employee: employeeName(rec), ticket: ticketContext(rec.ticket), messages: chatLines(rec.messages) });
     if (!sum) {
       push(roomId, { from: 'system', text: 'AI summary unavailable, so nothing was added to the knowledge base.' });
       return;
     }
     const kb: KbItem = {
       id: uid('kb'), roomId, roomName: rec.room.name, theme: rec.room.theme, title: sum.title, problem: sum.problem, steps: sum.steps,
-      pic: rec.pic, employee: employeeName(rec), status: 'review', at: clock(),
+      pic: rec.pic, employee: employeeName(rec), status: 'review', at: clock(), sample: !!sample,
     };
     setKnowledge((l) => [kb, ...l]);
-    push(roomId, { from: 'system', kind: 'kb', kbId: kb.id, text: 'AI summary added to the knowledge base' });
+    push(roomId, { from: 'system', kind: 'kb', kbId: kb.id, text: (sample ? 'Sample' : 'AI') + ' summary added to the knowledge base' });
   }
 
   function reopen(roomId: string, by: string) {

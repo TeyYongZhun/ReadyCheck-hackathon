@@ -143,7 +143,7 @@ export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve,
         {resolved ? (
           <div className="rc-troom-done">
             <span className="rc-fb-tick"><Icon name="check" size={13} strokeWidth={2.2} /></span>
-            Solved. The AI summary is saved to the knowledge base.
+            Solved. The summary is saved to the knowledge base.
             <button type="button" className="rc-quiet" onClick={onReopen}>Reopen</button>
           </div>
         ) : (

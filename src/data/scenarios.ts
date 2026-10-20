@@ -52,6 +52,9 @@ export const DEFAULT_SUGGEST = [
   { label: 'Find a guide', icon: 'doc', query: 'Where can I find the guide to move MFA to my new phone?' },
   { label: 'Missing resources', icon: 'steps', query: 'I’m missing the schedule and resources for my first week' },
   // Demo questions: Demo 1 has an approved knowledge-base card, Demo 2 has none and goes to an expert.
-  { label: 'Demo 1', icon: 'book', query: 'Can I carry my unused annual leave into next year?' },
-  { label: 'Demo 2', icon: 'expert', query: 'Staging Postgres rejects my password since this morning' },
+  { label: 'Demo 1', icon: 'book', query: 'Can I carry my unused annual leave into next year?', demo: true },
+  { label: 'Demo 2', icon: 'expert', query: 'Staging Postgres rejects my password since this morning', demo: true },
 ];
+
+/** How long the demo questions wait for the AI before the local matcher answers instead, so the demo never stalls. */
+export const DEMO_ANSWER_BUDGET_MS = 3000;

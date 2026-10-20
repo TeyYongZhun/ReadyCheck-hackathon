@@ -36,12 +36,10 @@ export async function semanticSearch<T>(
   keywordFallback: () => T[],
 ): Promise<T[]> {
   try {
-    const queryVector = await cachedEmbedding(query);
-    const entries: VectorEntry<T>[] = [];
-    for (let index = 0; index < items.length; index += 1) {
-      const text = textFor(items[index]);
-      entries.push({ item: items[index], text, vector: await cachedEmbedding(text), index });
-    }
+    // Embed the question and every card together: one after another a cold start took seconds.
+    const texts = items.map(textFor);
+    const [queryVector, ...vectors] = await Promise.all([query, ...texts].map(cachedEmbedding));
+    const entries: VectorEntry<T>[] = items.map((item, index) => ({ item, text: texts[index], vector: vectors[index], index }));
     return entries
       .map((entry) => ({ ...entry, score: cosineSimilarity(queryVector, entry.vector) }))
       .sort((a, b) => b.score - a.score || a.index - b.index)

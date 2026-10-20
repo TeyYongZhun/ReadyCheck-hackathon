@@ -106,6 +106,8 @@ export interface KbItem {
   id: string; roomId: string | null; roomName: string; theme: ThemeKey; title: string; problem?: string; steps: string[];
   pic: Pick<Pic, 'id' | 'name' | 'first' | 'initials' | 'team'>; employee: string;
   status: KbStatus; at?: string; edited?: boolean; discardReason?: string; manual?: boolean;
+  /** Summarised from the scripted sample conversation, not written by the model. */
+  sample?: boolean;
   files?: Pick<Attachment, 'name' | 'kind' | 'size' | 'url' | 'mimeType'>[];
   allowEmployeeAccess?: boolean;
 }

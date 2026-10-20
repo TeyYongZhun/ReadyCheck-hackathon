@@ -27,7 +27,7 @@ export function KbCard({ kb: k, compact, onApprove, onEdit, onDiscard, onRestore
   const stLabel = isLive ? 'Live for new hires' : k.status === 'discarded' ? 'Discarded' : k.manual ? 'Draft' : k.edited ? 'Draft · edited' : 'Needs manager review';
   const head = (
     <div className="rc-kb-top">
-      <span className="rc-ai-label">{k.manual ? 'Written by you' : k.edited ? 'AI summary · edited' : 'AI summary'}</span>
+      <span className="rc-ai-label">{k.manual ? 'Written by you' : (k.sample ? 'Sample summary' : 'AI summary') + (k.edited ? ' · edited' : '')}</span>
       <span className={cx('rc-kb-st', 'is-' + k.status)}><i />{stLabel}</span>
     </div>
   );

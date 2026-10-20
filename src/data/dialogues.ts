@@ -61,6 +61,59 @@ const DIALOGUES: Partial<Record<ThemeKey, DialogueLine[]>> & { any: DialogueLine
   ],
 };
 
+/** The knowledge card each sample conversation turns into. Used instead of the model, so a played demo summarises instantly and never fails. */
+export const SAMPLE_SUMMARIES: Partial<Record<ThemeKey, { title: string; problem: string; steps: string[] }>> = {
+  db: {
+    title: 'Fix a staging Postgres password that stopped working',
+    problem: 'Staging Postgres (staging-db-02) rejected the password with “Password authentication failed” after Tuesday’s credential rotation.',
+    steps: [
+      'Note the exact error: “Password authentication failed” on staging-db-02',
+      'Message the Data Platform team and ask them to re-issue your staging credentials',
+      'Copy the new staging entry from your password manager',
+      'Reconnect and check that the staging database connects',
+    ],
+  },
+  vpn: {
+    title: 'Fix “certificate expired” in GlobalConnect',
+    problem: 'GlobalConnect showed “certificate expired” on step 2 of the setup because new laptops had an expired VPN profile.',
+    steps: [
+      'Ask IT Enablement to push a fresh VPN profile to your laptop',
+      'Quit GlobalConnect fully from the menu bar',
+      'Open GlobalConnect again so it picks up the new profile',
+      'Check it says Connected and the Wiki loads',
+    ],
+  },
+  exp: {
+    title: 'Get retroactive approval for a client dinner over RM 1,000',
+    problem: 'A client dinner cost RM 1,180, which is over the RM 1,000 limit that needs manager approval first.',
+    steps: [
+      'Open the expense in Concur and choose Client entertainment',
+      'Add the attendees',
+      'Tick “Retroactive approval” at the bottom (allowed within 30 days)',
+      'Keep the itemised receipt attached so it goes to your manager',
+    ],
+  },
+  mfa: {
+    title: 'Move MFA to a new phone when the authenticator won’t add it',
+    problem: 'The authenticator would not add a new phone because the account needed a second sign-in method first.',
+    steps: [
+      'Ask Identity & Access to send a temporary access code to your work email',
+      'Open mysignins and choose Add method',
+      'Enter the code, then scan the QR code with your new phone',
+      'Remove the old phone from the list',
+    ],
+  },
+  onb: {
+    title: 'Find your onboarding buddy and book a first coffee',
+    problem: 'A new joiner could not find their onboarding buddy because the pairing email went to a personal inbox.',
+    steps: [
+      'Ask the People Team to resend the pairing email to your work email',
+      'Check your work inbox for your buddy’s name',
+      'Accept the 30-minute coffee invite in your calendar',
+    ],
+  },
+};
+
 export function dialogueFor(theme: ThemeKey): DialogueLine[] {
   return DIALOGUES[theme] ?? DIALOGUES.any;
 }
