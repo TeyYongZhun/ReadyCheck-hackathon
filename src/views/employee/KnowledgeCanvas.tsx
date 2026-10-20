@@ -21,7 +21,6 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   const root = useRef<HTMLDivElement>(null), dock = useRef<HTMLElement>(null);
   const cardEls = useRef<Record<string, HTMLElement | null>>({});
   const tickets = useRef<Record<string, string>>({});
-  const seq = useRef(1061);
   const askNo = useRef(0); // ignores answers that arrive after the canvas moved on
 
   const [phase, setPhase] = useState<'idle' | 'loading' | 'results'>('idle');
@@ -105,7 +104,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   function escalate(card: CardSpec) {
     const el = cardEls.current[card.id];
     if (flight || !el || !root.current || !dock.current || !ans) return;
-    const id = 'RC-' + seq.current++;
+    const id = app.newTicketId();
     tickets.current[card.id] = id;
     setCard(card.id, 'escalating');
     setFlight({ id, from: rectWithin(el, root.current), to: rectWithin(dock.current, root.current), card, ans, query, files: sent, entryId });

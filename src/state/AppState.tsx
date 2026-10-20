@@ -69,6 +69,7 @@ function useAppStateValue() {
   const [experts, setExperts] = useState<Pic[]>(() => restored.experts ?? PICS);
   const [openRoom, setOpenRoom] = useState<{ id: string; viewer: Mode } | null>(null);
   const roomsRef = useRef(rooms); roomsRef.current = rooms;
+  const ticketSeq = useRef(0);
   const timers = useRef<number[]>([]);
   const later = (fn: () => void, ms: number) => { timers.current.push(window.setTimeout(fn, ms)); };
 
@@ -131,9 +132,22 @@ function useAppStateValue() {
     if (res.solved) setFeedback(roomId, 'ask');
   }
 
-  /** Employee tapped "Need human expert". */
+  /** Next free ticket id, past every id in the restored session, so a reload can't reuse one and inherit its old expert. */
+  function newTicketId() {
+    const used = [
+      ...queue.map((q) => q.id), ...mine, ...Object.keys(assignments),
+      ...Object.values(rooms).flatMap((r) => [r.room.ticket, ...(r.room.tickets ?? [])]),
+      ...history.flatMap((h) => (h.ticketId ? [h.ticketId] : [])),
+    ];
+    const highest = Math.max(1060, ...used.map((id) => Number(/\d+/.exec(id ?? '')?.[0] ?? 0)));
+    ticketSeq.current = Math.max(ticketSeq.current, highest) + 1;
+    return 'RC-' + ticketSeq.current;
+  }
+
+  /** Employee tapped "Need human expert". The ticket waits in Needs you until a manager assigns an expert. */
   function escalate(e: EscalationInput) {
     const theme = e.theme;
+    setAssignments((a) => (a[e.id] ? Object.fromEntries(Object.entries(a).filter(([id]) => id !== e.id)) : a));
     const t: QueueTicket = {
       id: e.id, title: e.title, ...ME, theme, wait: 0, createdAt: Date.now(), isNew: true, from: e.kind + ' card',
       slug: theme + '-' + slugify(ME.first) + '-' + e.id.replace(/\D/g, '').slice(-2),
@@ -287,7 +301,7 @@ function useAppStateValue() {
 
   return {
     mode, go, queue, mine, assignments, rooms, roomList, load, history: history_, historyItems: history, knowledge, kb,
-    experts, setExperts, openRoom, setOpenRoom, escalate, assignTheme, send, answerFeedback, answer1v1, playDemo, stopDemo, resolve, reopen,
+    experts, setExperts, openRoom, setOpenRoom, newTicketId, escalate, assignTheme, send, answerFeedback, answer1v1, playDemo, stopDemo, resolve, reopen,
   };
 }
 
