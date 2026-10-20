@@ -37,6 +37,17 @@ function learnedCard(k: KbItem): CardSpec {
   };
 }
 
+/** Offline stand-in for search: the live card sharing the most longer words with the question, and at least two. */
+function bestApproved(query: string, live: KbItem[]): KbItem | undefined {
+  const words = (text: string) => new Set(text.toLowerCase().match(/[a-z0-9]{4,}/g) ?? []);
+  const q = words(query);
+  const scored = live.map((k) => {
+    const c = words([k.title, k.problem, ...k.steps].join(' '));
+    return { k, hits: [...q].filter((w) => c.has(w)).length };
+  }).filter((x) => x.hits >= 2).sort((a, b) => b.hits - a.hits);
+  return scored[0]?.k;
+}
+
 /** Offline guess at "not a work issue": short greetings, thanks and test messages. */
 const SMALL_TALK = /^\s*(hi+|hello|hey|yo|hai|helo|good (morning|afternoon|evening)|thanks?|thank you|ty|ok(ay)?|test(ing)?)\b[\s\w!,.?']{0,30}$/i;
 
@@ -87,9 +98,16 @@ export async function resolveAnswer(query: string, files: string[], knowledge: K
       if (k) return { ...base, card: learnedCard(k) };
     }
   }
-  // Offline: only return a card when a built-in company scenario explicitly matches.
+  // Offline: a manager-approved card that covers the question wins, then a built-in company scenario.
+  // Anything else is "I don't know", so it goes to a human expert.
+  const approved = bestApproved(query, live);
+  if (approved) {
+    return { heading: 'Here’s what should help', theme: approved.theme, queue: queueFor(approved.theme), expert: expertFor(approved.theme), card: learnedCard(approved), source: 'offline' };
+  }
   const s = SCENARIOS.find((scenario) => scenario.match.test(query));
-  if (!s) return {
+  const sTheme = s ? SCEN_THEME[s.key as keyof typeof SCEN_THEME] : null;
+  // A keyword for another topic wins, so "password" alone can't pull the MFA card for a database question.
+  if (!s || !sTheme || themeForQuery(query, sTheme) !== sTheme) return {
     heading: 'No approved answer found',
     theme: themeForQuery(query, 'onb'),
     queue: queueFor(themeForQuery(query, 'onb')),
@@ -106,7 +124,6 @@ export async function resolveAnswer(query: string, files: string[], knowledge: K
     },
     source: 'offline',
   };
-  const theme = SCEN_THEME[s.key as keyof typeof SCEN_THEME];
-  const k = live.find((x) => x.theme === theme);
-  return { heading: s.heading, theme, queue: s.queue, expert: s.expert, card: k ? learnedCard(k) : s.cards[0], source: 'offline' };
+  const k = live.find((x) => x.theme === sTheme);
+  return { heading: s.heading, theme: sTheme, queue: s.queue, expert: s.expert, card: k ? learnedCard(k) : s.cards[0], source: 'offline' };
 }
