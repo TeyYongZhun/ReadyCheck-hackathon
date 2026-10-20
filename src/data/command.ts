@@ -70,7 +70,7 @@ export const SEED_KB: KbItem[] = [
     steps: ['Open Payroll details in the HR portal', 'Choose your bank from the updated list (GXBank and Boost now included)', 'Enter your account number and save', 'Check for the confirmation email before the 20th'],
     pic: { id: 'dl', name: 'Daniel Lim', first: 'Daniel', initials: 'DL', team: 'Finance Ops' }, employee: 'Hui Yi', status: 'review', at: '15:44' },
   { id: 'kb-seed-leave', roomId: 'r-old', roomName: '#leave-carry-over', theme: 'leave', title: 'Carry annual leave into next year', problem: 'New joiners asked whether unused leave from a partial first year can be carried over.',
-    steps: ['Up to 5 unused days carry over automatically', 'Anything above 5 days needs your manager’s approval in the HR portal', 'Carried days expire on 31 March'],
+    steps: ['Up to 5 unused days carry over automatically', 'Anything above 5 days needs your manager’s approval in the HR portal', 'Carried days expire on 31 March 2027'],
     pic: { id: 'sh', name: 'Sofia Hart', first: 'Sofia', initials: 'SH', team: 'People Team' }, employee: 'Nadia', status: 'live', at: 'Thu' },
 ];
 
