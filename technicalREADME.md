@@ -70,7 +70,7 @@ Draft and discarded cards are never used for employee answers.
 
 ### 3.1 Library retrieval
 
-The built-in company library is created from the cards in [`src/data/scenarios.ts`](./src/data/scenarios.ts). [`server/library.ts`](./server/library.ts) converts each card into searchable text containing:
+The built-in company library is created from the cards in [`src/data/scenarios.ts`](./src/data/scenarios.ts). In the manager's Knowledge base each library card can be edited, discarded and restored. The app sends the live library cards, edits included, with every `/api/answer` request as `library`; the server answers from that list (`libraryFromRequest()` in `server/library.ts`) and falls back to the built-in cards only when the field is missing. Discarded cards are never retrieved. [`server/library.ts`](./server/library.ts) converts each card into searchable text containing:
 
 - card title
 - source

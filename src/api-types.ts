@@ -1,5 +1,5 @@
 // Request/response shapes for /api/*. Shared by the browser (src/lib/api.ts) and the server (server/).
-import type { ThemeKey } from './types';
+import type { CardSpec, ThemeKey } from './types';
 
 export interface ChatLine { from: 'pic' | 'employee' | 'manager'; text: string }
 export interface PicPersona { name: string; first: string; team: string; skills: string }
@@ -8,6 +8,8 @@ export interface TicketContext { q: string; from: string }
 export interface AnswerRequest {
   query: string;
   files: string[];
+  /** The company-library cards the manager has live, with their edits. Omitted: the built-in sample library. */
+  library?: CardSpec[];
   /** Approved knowledge-base cards, so the model can prefer them. */
   learned: { id: string; theme: ThemeKey; title: string; steps: string[]; materials?: { name: string; url: string; mimeType: string }[] }[];
 }

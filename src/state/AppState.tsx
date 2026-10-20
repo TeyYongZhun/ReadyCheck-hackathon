@@ -2,8 +2,9 @@
 // Everything is in-memory and starts fresh on every page load, so a demo can always be run again from the seed data.
 // TODO: move to a backend if it should survive a refresh.
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { Attachment, CardKind, HistoryEntry, KbItem, Message, Mode, Pic, QueueTicket, Room, ThemeKey } from '../types';
+import type { Attachment, CardKind, CardSpec, HistoryEntry, KbItem, LibraryEntry, Message, Mode, Pic, QueueTicket, Room, ThemeKey } from '../types';
 import { PICS, QUEUE, ROOMS, SEED_KB, THEMES_BY_KEY } from '../data/command';
+import { SCENARIOS, SCEN_THEME } from '../data/scenarios';
 import { askRoomReply, askSummary } from '../lib/api';
 import { dialogueFor, fillLine } from '../data/dialogues';
 import type { ChatLine, PicPersona, TicketContext } from '../api-types';
@@ -41,6 +42,9 @@ function useAppStateValue() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [knowledge, setKnowledge] = useState<KbItem[]>(() => SEED_KB.map((k) => ({ ...k })));
   const [experts, setExperts] = useState<Pic[]>(PICS);
+  const [library, setLibrary] = useState<LibraryEntry[]>(() => SCENARIOS.flatMap((s) => s.cards.map((card) => (
+    { card, scenario: s.key, topic: SCEN_THEME[s.key as keyof typeof SCEN_THEME], status: 'live' as const }
+  ))));
   const [openRoom, setOpenRoom] = useState<{ id: string; viewer: Mode } | null>(null);
   const roomsRef = useRef(rooms); roomsRef.current = rooms;
   const ticketSeq = useRef(0);
@@ -251,6 +255,13 @@ function useAppStateValue() {
     add: (item: KbItem) => setKnowledge((l) => [item, ...l]),
   };
 
+  /** Company-library cards: an edit or a discard changes what ReadyCheck AI can answer from straight away. */
+  const lib = {
+    edit: (id: string, card: CardSpec) => setLibrary((l) => l.map((x) => (x.card.id === id ? { ...x, card, edited: true } : x))),
+    discard: (id: string, reason: string) => setLibrary((l) => l.map((x) => (x.card.id === id ? { ...x, status: 'discarded', discardReason: reason } : x))),
+    restore: (id: string) => setLibrary((l) => l.map((x) => (x.card.id === id ? { ...x, status: 'live', discardReason: '' } : x))),
+  };
+
   const history_ = {
     add: (e: HistoryEntry) => setHistory((l) => [e, ...l].slice(0, 40)),
     setState: (id: string, state: HistoryEntry['state']) => setHistory((l) => l.map((x) => (x.id === id && x.state !== 'escalated' ? { ...x, state } : x))),
@@ -265,7 +276,7 @@ function useAppStateValue() {
   }, [roomList]);
 
   return {
-    mode, go, queue, mine, assignments, rooms, roomList, load, history: history_, historyItems: history, knowledge, kb,
+    mode, go, queue, mine, assignments, rooms, roomList, load, history: history_, historyItems: history, knowledge, kb, library, lib,
     experts, setExperts, openRoom, setOpenRoom, newTicketId, escalate, assignTheme, send, answerFeedback, answer1v1, playDemo, stopDemo, resolve, reopen,
   };
 }

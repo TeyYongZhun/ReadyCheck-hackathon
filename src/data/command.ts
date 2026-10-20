@@ -5,7 +5,7 @@ export const SLA_MINUTES = 15;
 
 export const THEMES: Theme[] = [
   { key: 'db', name: 'Databases', short: 'Databases', count: 5, cards: 2, trend: 4, days: [0, 0, 2, 1, 2, 0, 0], people: ['JW', 'LK', 'RA', 'TS', 'MN'],
-    summary: 'Most are permission errors on staging-db-02 since Tuesday’s credential rotation. Two people are blocked.',
+    summary: 'Permission errors on staging-db-02 since Tuesday’s credential rotation. A credential re-issue fixes it.',
     asked: ['Staging Postgres rejects my password since this morning', 'Who approves read access to the analytics warehouse?', 'Is staging-db-02 down for everyone?'] },
   { key: 'vpn', name: 'VPN & remote access', short: 'VPN', count: 9, cards: 8, trend: -3, days: [3, 2, 1, 0, 2, 1, 0], people: ['MT', 'FN', 'KC', 'AB', 'YS', 'DP', 'EL', 'GO', 'HR'],
     summary: '“Certificate expired” on GlobalConnect step 2. The setup video solved the rest.',
@@ -46,14 +46,8 @@ export const PICS: Pic[] = [
 /** Default suggested expert per theme (used when no team covers it). */
 export const SUGGEST: Record<ThemeKey, string> = { db: 'mc', vpn: 'ao', hw: 'ao', exp: 'dl', pay: 'dl', mfa: 'pr', onb: 'sh', leave: 'sh', ben: 'sh' };
 
-export const QUEUE: QueueTicket[] = [
-  { id: 'RC-1047', person: 'Jun Wei', first: 'Jun', initials: 'JW', role: 'Data Analyst · Day 2', theme: 'db', wait: 26, from: 'Video card', slug: 'staging-db-password', q: 'Staging Postgres rejects my password since this morning. The setup video doesn’t cover database access.' },
-  { id: 'RC-1049', person: 'Lina Kaur', first: 'Lina', initials: 'LK', role: 'BI Engineer · Week 2', theme: 'db', wait: 18, from: 'PDF summary card', slug: 'warehouse-read-access', q: 'Who approves read access to the analytics warehouse? The policy says “data owner” but doesn’t name one.' },
-  { id: 'RC-1051', person: 'Tomas Silva', first: 'Tomas', initials: 'TS', role: 'Designer · Day 4', theme: 'hw', wait: 12, from: 'Steps card', slug: 'dock-not-charging', q: 'My laptop won’t charge on the USB-C dock on Level 3. Tried two docks.' },
-  { id: 'RC-1052', person: 'Mira Tan', first: 'Mira', initials: 'MT', role: 'Product Designer · Day 3', theme: 'vpn', wait: 6, from: 'Steps card', slug: 'vpn-cert-expired', q: 'GlobalConnect says “certificate expired” on step 2 of the setup.' },
-  { id: 'RC-1053', person: 'Ahmad Rizal', first: 'Ahmad', initials: 'AR', role: 'Account Exec · Day 1', theme: 'pay', wait: 4, from: 'PDF summary card', slug: 'payroll-gxbank', q: 'The payroll form rejects my GXBank account. Is it supported?' },
-  { id: 'RC-1054', person: 'Grace Ho', first: 'Grace', initials: 'GH', role: 'Consultant · Week 3', theme: 'exp', wait: 2, from: 'PDF summary card', slug: 'late-preapproval', q: 'Client dinner came to RM 1,180. Can I get pre-approval after the fact?' },
-];
+/** Starts empty: the sample tickets are treated as already assigned, so Needs you only holds tickets raised during the demo. */
+export const QUEUE: QueueTicket[] = [];
 
 export const ROOMS: Room[] = [
   { id: 'r1', ticket: 'RC-1044', name: '#expenses-client-dinner', theme: 'exp', pic: 'dl', people: ['SK', 'BW'], status: 'live', elapsed: 14, last: 'Daniel: Retroactive approval is fine under RM 1,500. Sending the form now.' },
@@ -68,7 +62,7 @@ export const ROOMS: Room[] = [
 export const SEED_KB: KbItem[] = [
   { id: 'kb-seed-pay', roomId: 'r4', roomName: '#payroll-bank-codes', theme: 'pay', title: 'Add a digital bank account for payroll', problem: 'The payroll form rejected digital banks (GXBank, Boost) because their codes were missing from the supported list.',
     steps: ['Open Payroll details in the HR portal', 'Choose your bank from the updated list (GXBank and Boost now included)', 'Enter your account number and save', 'Check for the confirmation email before the 20th'],
-    pic: { id: 'dl', name: 'Daniel Lim', first: 'Daniel', initials: 'DL', team: 'Finance Ops' }, employee: 'Hui Yi', status: 'review', at: '15:44' },
+    pic: { id: 'dl', name: 'Daniel Lim', first: 'Daniel', initials: 'DL', team: 'Finance Ops' }, employee: 'Hui Yi', status: 'live', at: '15:44' },
   { id: 'kb-seed-leave', roomId: 'r-old', roomName: '#leave-carry-over', theme: 'leave', title: 'Carry annual leave into next year', problem: 'New joiners asked whether unused leave from a partial first year can be carried over.',
     steps: ['Up to 5 unused days carry over automatically', 'Anything above 5 days needs your manager’s approval in the HR portal', 'Carried days expire on 31 March 2027'],
     pic: { id: 'sh', name: 'Sofia Hart', first: 'Sofia', initials: 'SH', team: 'People Team' }, employee: 'Nadia', status: 'live', at: 'Thu' },

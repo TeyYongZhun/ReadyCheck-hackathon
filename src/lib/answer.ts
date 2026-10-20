@@ -1,10 +1,8 @@
 // Turns a question into the one card the canvas shows: Gemini first, keyword fallback if the API fails.
-import type { CanvasAnswer, CardSpec, ChatReply, Expert, KbItem, ThemeKey } from '../types';
+import type { CanvasAnswer, CardSpec, ChatReply, Expert, KbItem, LibraryEntry, ThemeKey } from '../types';
 import { SCENARIOS, SCEN_THEME } from '../data/scenarios';
 import { PICS } from '../data/command';
 import { askAnswer } from './api';
-
-const LIBRARY = SCENARIOS.flatMap((s) => s.cards);
 
 function expertFor(theme: ThemeKey): Expert {
   const p = PICS.find((x) => x.covers.includes(theme)) ?? PICS[PICS.length - 1];
@@ -55,9 +53,10 @@ export function isChat(a: CanvasAnswer | ChatReply): a is ChatReply {
   return 'message' in a;
 }
 
-export async function resolveAnswer(query: string, files: string[], knowledge: KbItem[]): Promise<CanvasAnswer | ChatReply> {
+export async function resolveAnswer(query: string, files: string[], knowledge: KbItem[], library: LibraryEntry[]): Promise<CanvasAnswer | ChatReply> {
   const live = knowledge.filter((k) => k.status === 'live');
-  const res = await askAnswer({ query, files, learned: live.map((k) => ({
+  const libraryCards = library.filter((e) => e.status === 'live').map((e) => e.card);
+  const res = await askAnswer({ query, files, library: libraryCards, learned: live.map((k) => ({
     id: k.id, theme: k.theme, title: k.title, steps: k.steps,
     materials: k.allowEmployeeAccess ? (k.files ?? []).filter((file): file is typeof file & { url: string; mimeType: string } => !!file.url && !!file.mimeType)
       .filter((file) => file.mimeType === 'application/pdf' || file.mimeType.startsWith('video/'))
@@ -91,7 +90,7 @@ export async function resolveAnswer(query: string, files: string[], knowledge: K
   if (res) {
     const base = { heading: res.heading, theme: res.theme, queue: res.queue, expert: expertFor(res.theme), source: 'ai' as const };
     if (res.choice === 'library') {
-      const card = LIBRARY.find((c) => c.id === res.cardId);
+      const card = libraryCards.find((c) => c.id === res.cardId);
       if (card) return { ...base, card };
     } else if (res.choice === 'learned') {
       const k = live.find((x) => x.id === res.cardId);
@@ -106,8 +105,10 @@ export async function resolveAnswer(query: string, files: string[], knowledge: K
   }
   const s = SCENARIOS.find((scenario) => scenario.match.test(query));
   const sTheme = s ? SCEN_THEME[s.key as keyof typeof SCEN_THEME] : null;
+  // The scenario's first library card the manager still has live; none left means nothing to offer.
+  const sCard = s ? library.find((e) => e.status === 'live' && e.scenario === s.key)?.card : undefined;
   // A keyword for another topic wins, so "password" alone can't pull the MFA card for a database question.
-  if (!s || !sTheme || themeForQuery(query, sTheme) !== sTheme) return {
+  if (!s || !sTheme || !sCard || themeForQuery(query, sTheme) !== sTheme) return {
     heading: 'No approved answer found',
     theme: themeForQuery(query, 'onb'),
     queue: queueFor(themeForQuery(query, 'onb')),
@@ -125,5 +126,5 @@ export async function resolveAnswer(query: string, files: string[], knowledge: K
     source: 'offline',
   };
   const k = live.find((x) => x.theme === sTheme);
-  return { heading: s.heading, theme: sTheme, queue: s.queue, expert: s.expert, card: k ? learnedCard(k) : s.cards[0], source: 'offline' };
+  return { heading: s.heading, theme: sTheme, queue: s.queue, expert: s.expert, card: k ? learnedCard(k) : sCard, source: 'offline' };
 }

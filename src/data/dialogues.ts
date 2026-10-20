@@ -48,7 +48,7 @@ const DIALOGUES: Partial<Record<ThemeKey, DialogueLine[]>> & { any: DialogueLine
     ['employee', '“Password authentication failed” on staging-db-02.'],
     ['pic', 'That matches. I’ve re-issued your credentials. The new staging entry is in your password manager.'],
     ['employee', 'Connected now, thank you.'],
-    ['pic', 'Great. Read access to the analytics warehouse is approved as well, so you’re set for both.'],
+    ['pic', 'Great. If it ever fails again after a credential rotation, message the Data Platform channel and I’ll re-issue it.'],
     ['employee', 'Perfect, thanks {pic}!'],
   ],
   any: [

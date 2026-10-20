@@ -65,7 +65,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
     const no = ++askNo.current, mine = files;
     setDraft(q); setQuery(q); setPhase('loading'); setCs({}); setAns(null); setChat(null); setSent(mine); setFiles([]);
     const started = performance.now();
-    const answer = resolveAnswer(q, mine.map((f) => f.name), app.knowledge);
+    const answer = resolveAnswer(q, mine.map((f) => f.name), app.knowledge, app.library);
     const [a] = await Promise.all([
       answer,
       new Promise<void>((resolve) => window.setTimeout(resolve, Math.max(0, MIN_LOADING_MS - (performance.now() - started)))),

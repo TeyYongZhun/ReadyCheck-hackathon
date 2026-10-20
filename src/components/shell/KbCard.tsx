@@ -3,7 +3,7 @@ import type { KbItem } from '../../types';
 import { cx } from '../../lib/util';
 import { AttachChips, Icon } from '../primitives';
 
-const REASONS = ['Not accurate', 'Already covered', 'Out of date', 'Too specific to one person', 'Other'];
+export const REASONS = ['Not accurate', 'Already covered', 'Out of date', 'Too specific to one person', 'Other'];
 
 interface KbCardProps {
   kb: KbItem;

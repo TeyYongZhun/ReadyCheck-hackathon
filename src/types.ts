@@ -19,6 +19,17 @@ export type CardSpec =
   | { id: string; type: 'doc'; props: DocCardData }
   | { id: string; type: 'steps'; props: StepsCardData };
 
+/** One company-library card in the manager's Knowledge base. Edits and discards change what ReadyCheck AI can answer from. */
+export interface LibraryEntry {
+  card: CardSpec;
+  /** The built-in scenario this card came from. */
+  scenario: string;
+  topic: ThemeKey;
+  status: 'live' | 'discarded';
+  edited?: boolean;
+  discardReason?: string;
+}
+
 export interface Expert { name: string; initials: string; eta: string }
 
 export interface Scenario {

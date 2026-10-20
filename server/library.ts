@@ -27,9 +27,9 @@ function tokens(value: string): string[] {
 }
 
 /** Retrieve the most relevant library cards before Gemini sees the context. */
-function keywordRetrieveLibrary(query: string, limit: number): CardSpec[] {
+function keywordRetrieveLibrary(query: string, cards: CardSpec[], limit: number): CardSpec[] {
   const queryTokens = new Set(tokens(query));
-  return LIBRARY
+  return cards
     .map((card, index) => {
       const matches = tokens(cardText(card)).filter((token) => queryTokens.has(token)).length;
       return { card, score: matches, index };
@@ -40,8 +40,18 @@ function keywordRetrieveLibrary(query: string, limit: number): CardSpec[] {
     .map(({ card }) => card);
 }
 
-export function retrieveLibrary(query: string, limit = 6): Promise<CardSpec[]> {
-  return semanticSearch(query, LIBRARY, cardText, limit, () => keywordRetrieveLibrary(query, limit));
+export function retrieveLibrary(query: string, cards: CardSpec[], limit = 6): Promise<CardSpec[]> {
+  return semanticSearch(query, cards, cardText, limit, () => keywordRetrieveLibrary(query, cards, limit));
+}
+
+function isCard(c: any): c is CardSpec {
+  const list = c?.type === 'doc' ? c.props?.points : c?.type === 'steps' ? c.props?.steps : c?.props?.chapters ?? [];
+  return typeof c?.id === 'string' && ['video', 'doc', 'steps'].includes(c.type) && typeof c.props?.title === 'string' && Array.isArray(list);
+}
+
+/** The library a question is answered from: the cards the manager has live (edits included), else the built-in sample. */
+export function libraryFromRequest(raw: unknown): CardSpec[] {
+  return Array.isArray(raw) ? raw.filter(isCard).slice(0, 60) : LIBRARY;
 }
 
 /** A compact, model-readable view of retrieved library cards. */

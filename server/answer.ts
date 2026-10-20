@@ -1,6 +1,6 @@
 import type { AnswerRequest, AnswerResponse } from '../src/api-types.js';
 import { HttpError, generateJson, str } from './gemini.js';
-import { QUEUE_BY_THEME, THEME_KEYS, cardText, libraryForPrompt, retrieveLibrary, themesForPrompt } from './library.js';
+import { QUEUE_BY_THEME, THEME_KEYS, cardText, libraryForPrompt, libraryFromRequest, retrieveLibrary, themesForPrompt } from './library.js';
 import { rerankCandidates, semanticSearch } from './retrieval.js';
 
 const SYSTEM = `You are ReadyCheck, the internal help assistant for new employees at a Malaysian company.
@@ -44,7 +44,7 @@ export async function answer(body: Partial<AnswerRequest>): Promise<AnswerRespon
   const query = str(body.query, 'query', 1000);
   const files = (body.files ?? []).filter((f): f is string => typeof f === 'string').slice(0, 5);
   const learned = (body.learned ?? []).slice(0, 30);
-  const retrievedLibrary = await retrieveLibrary(query);
+  const retrievedLibrary = await retrieveLibrary(query, libraryFromRequest(body.library));
   const retrievedLearned = await retrieveLearned(query, learned);
   const reranked = await rerankCandidates(query, [
     ...retrievedLibrary.map((card) => ({ id: `library:${card.id}`, text: cardText(card) })),
