@@ -143,7 +143,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
 
   return (
     <div ref={root} className={cx('rc-canvas', active && 'is-active', 'is-single', 'has-side')}
-      style={{ height, '--rc-head-top': 200 + (files.length ? 44 : 0) + 'px', '--rc-grid-top': 242 + (files.length ? 44 : 0) + (ans && sent.length ? 26 : 0) + (ans?.source === 'offline' ? 22 : 0) + 'px' } as React.CSSProperties}>
+      style={{ height, '--rc-head-top': 200 + (files.length ? 44 : 0) + 'px', '--rc-grid-top': 242 + (files.length ? 44 : 0) + (ans && sent.length ? 26 : 0) + 'px' } as React.CSSProperties}>
       <div className="rc-canvas-orb rc-canvas-orb-a" aria-hidden />
       <div className="rc-canvas-orb rc-canvas-orb-b" aria-hidden />
 
@@ -185,7 +185,6 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
               <span className="rc-results-h">{ans ? ans.heading : chat ? chat.heading : 'Looking across policies, videos and how-tos'}</span>
               {ans ? <span className="rc-results-n">Best match for “{query}”</span> : null}
               {chat ? <span className="rc-results-n">Reply to “{query}”</span> : null}
-              {ans?.source === 'offline' ? <span className="rc-results-files">Offline answer (AI unavailable): matched by keywords.</span> : null}
               {ans && sent.length ? <span className="rc-results-files"><Icon name="clip" size={13} />{sent.length === 1 ? '1 attachment: ' : sent.length + ' attachments: '}{sent.map((f) => f.name).join(', ')}</span> : null}
             </div>
             <button type="button" className="rc-quiet" onClick={clear}>Clear canvas<kbd className="rc-kbd">Esc</kbd></button>
