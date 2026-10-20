@@ -51,4 +51,7 @@ export const DEFAULT_SUGGEST = [
   { label: 'Access issue', icon: 'route', query: 'I can’t get access to the VPN, it says my certificate expired' },
   { label: 'Find a guide', icon: 'doc', query: 'Where can I find the guide to move MFA to my new phone?' },
   { label: 'Missing resources', icon: 'steps', query: 'I’m missing the schedule and resources for my first week' },
+  // Demo questions: D1 has an approved knowledge-base card, D2 has none and goes to an expert.
+  { label: 'D1', icon: 'book', query: 'Can I carry my unused annual leave into next year?' },
+  { label: 'D2', icon: 'expert', query: 'Staging Postgres rejects my password since this morning' },
 ];
