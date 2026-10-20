@@ -6,7 +6,7 @@ import { useApp } from '../../state/AppState';
 import { DEFAULT_SUGGEST } from '../../data/scenarios';
 import { isChat, resolveAnswer } from '../../lib/answer';
 import { clock, cx, greeting, uid } from '../../lib/util';
-import { Brand, GeminiStatus, Icon, Toast, toAttachment } from '../../components/primitives';
+import { Brand, Icon, Toast, toAttachment } from '../../components/primitives';
 import { ActionCard, ChecklistCard, DocSummaryCard, VideoCard } from '../../components/cards/ActionCard';
 import { DashboardDock, EscalatedReceipt, EscalationFlight, rectWithin, type Rect } from '../../components/cards/Escalation';
 import { OmniBar } from './OmniBar';
@@ -161,7 +161,6 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
       <div className="rc-emp-main">
         <header className="rc-topbar">
           <div className="rc-topbar-right">
-            <GeminiStatus />
             <div className="rc-dock-slot">
               <DashboardDock ref={dock} items={dockItems} pulse={pulse} open={dockOpen} onOpenRoom={(id) => app.setOpenRoom({ id, viewer: 'employee' })} />
             </div>

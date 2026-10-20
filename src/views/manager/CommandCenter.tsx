@@ -5,7 +5,7 @@ import type { ManagerTab, Pic, Theme } from '../../types';
 import { useApp } from '../../state/AppState';
 import { SLA_MINUTES, SUGGEST, THEMES } from '../../data/command';
 import { cx, initialsOf, plural } from '../../lib/util';
-import { Brand, GeminiStatus, Icon, PageHead, Toast } from '../../components/primitives';
+import { Brand, Icon, PageHead, Toast } from '../../components/primitives';
 import { HomeOverview } from './HomeOverview';
 import { NeedsYou, type NeedsGroup } from './NeedsYou';
 import { TicketRooms } from './TicketRooms';
@@ -94,7 +94,6 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
       </aside>
 
       <div className="rc-cc2-main">
-        <div className="rc-manager-status"><GeminiStatus /></div>
         <dl className="rc-kpi3">
           <div className={cx('rc-kpi', waiting.length && 'is-need')}><dt>Need you</dt><dd>{waiting.length}</dd></div>
           <div className="rc-kpi"><dt>Solved by cards</dt><dd>{solvedByCardsPct}%</dd></div>
