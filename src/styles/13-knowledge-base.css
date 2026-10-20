@@ -52,3 +52,16 @@
 .rc-card-material summary { display: flex; align-items: center; gap: 7px; padding: 10px 12px; cursor: pointer; font: 500 13px/18px var(--font-sans); color: var(--ink); }
 .rc-card-material iframe { display: block; width: 100%; height: 420px; border: 0; border-top: 1px solid var(--hairline); background: white; }
 .rc-card-material video { display: block; width: 100%; max-height: 420px; border-top: 1px solid var(--hairline); background: #111; }
+
+/* Company library: read-only cards the AI answers from */
+.rc-sec-row .rc-seg { flex: none; }
+.rc-lib-thumb { position: relative; height: 96px; border-radius: var(--radius-sm); display: grid; place-items: center; background: linear-gradient(135deg, var(--ground-raised), var(--glass-300)); box-shadow: inset 0 0 0 1px var(--hairline); }
+.rc-lib-thumb span { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--ready); color: var(--ready-ink); }
+.rc-lib-thumb em { position: absolute; right: 10px; bottom: 8px; padding: 2px 8px; border-radius: var(--radius-pill); background: rgba(0, 0, 0, .55); color: #fff; font: 500 11.5px/16px var(--font-mono); font-style: normal; }
+.rc-lib-type { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: var(--radius-pill); background: var(--glass-100); box-shadow: inset 0 0 0 1px var(--hairline); font: 500 12px/16px var(--font-sans); color: var(--ink-muted); white-space: nowrap; }
+.rc-lib-type.is-video { background: var(--ready-soft); color: var(--ready); box-shadow: none; }
+.rc-lib-lines { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.rc-lib-lines li { display: flex; gap: 10px; align-items: baseline; font: 400 14px/20px var(--font-sans); color: var(--ink); }
+.rc-lib-t { flex: none; font: 500 12px/16px var(--font-mono); color: var(--ready); }
+.rc-lib-more { color: var(--ink-muted) !important; }
+.rc-kbase .rc-kb-grid .rc-lib .rc-kb-t { font-size: 17px; line-height: 23px; }

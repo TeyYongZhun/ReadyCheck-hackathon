@@ -117,7 +117,7 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
           )
           : tab === 'knowledge' ? (
             <div className="rc-home">
-              <PageHead title="Knowledge base" sub="The cards new hires get as answers. Review AI drafts from solved rooms and keep live cards up to date." />
+              <PageHead title="Knowledge base" sub="Everything new hires get as answers: the company library of videos, PDF summaries and step guides, plus cards drafted from solved rooms. Review AI drafts and keep live cards up to date." />
               <KnowledgeBase />
             </div>
           )

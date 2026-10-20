@@ -3,6 +3,7 @@ import type { Attachment, KbItem, ThemeKey } from '../../types';
 import { useApp } from '../../state/AppState';
 import { AddFilesButton, AiLabel, AttachChips, Footnote, Icon, toAttachment } from '../../components/primitives';
 import { KbCard } from '../../components/shell/KbCard';
+import { CompanyLibrary } from './CompanyLibrary';
 import { extractMaterial } from '../../lib/api';
 
 const TOPICS: { key: ThemeKey; name: string }[] = [
@@ -193,6 +194,7 @@ export function KnowledgeBase() {
         <p className="rc-sec-s">Approved cards. ReadyCheck shows these first, marked “From an expert”.</p>
         {live.length ? grid(live, 'live') : <p className="rc-sec-empty">No approved cards yet.</p>}
       </section>
+      <CompanyLibrary />
       {gone.length ? (
         <section>
           <button type="button" className="rc-link-btn" aria-expanded={showGone} onClick={() => setShowGone(!showGone)}>
