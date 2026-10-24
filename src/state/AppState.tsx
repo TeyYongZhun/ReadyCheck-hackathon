@@ -32,6 +32,7 @@ export interface EscalationInput {
 }
 
 const ME = { person: 'Mira Tan', first: 'Mira', initials: 'MT', role: 'Product Designer · Day 3' };
+const NOT_YET = 'Not yet, it’s still not working.';
 
 function useAppStateValue() {
   const [mode, setMode] = useState<Mode>(location.hash === '#manager' ? 'manager' : 'employee');
@@ -199,8 +200,18 @@ function useAppStateValue() {
     const rec = rooms[roomId]; if (!rec) return;
     if (solved) { void resolve(roomId, employeeName(rec)); return; }
     // Not fixed: offer a 1:1 with the expert before carrying on in chat.
-    const msg: Message = { id: uid('m'), t: clock(), from: 'employee', text: 'Not yet, it’s still not working.' };
+    const msg: Message = { id: uid('m'), t: clock(), from: 'employee', text: NOT_YET };
     setRooms((s) => s[roomId] ? { ...s, [roomId]: { ...s[roomId], feedback: 'ask1v1', messages: [...s[roomId].messages, msg] } } : s);
+  }
+
+  /** Employee stepped back from the 1:1 offer: drop their "Not yet" and ask "Did … solve it?" again. */
+  function back1v1(roomId: string) {
+    setRooms((s) => {
+      const r = s[roomId]; if (!r || r.feedback !== 'ask1v1') return s;
+      const last = r.messages[r.messages.length - 1];
+      const messages = last?.from === 'employee' && last.text === NOT_YET ? r.messages.slice(0, -1) : r.messages;
+      return { ...s, [roomId]: { ...r, feedback: 'ask', messages } };
+    });
   }
 
   /** Employee's answer to "Would a 1:1 with {expert} help?". */
@@ -276,7 +287,7 @@ function useAppStateValue() {
 
   return {
     mode, go, queue, mine, assignments, rooms, roomList, load, history: history_, historyItems: history, knowledge, kb, library, lib,
-    experts, setExperts, openRoom, setOpenRoom, newTicketId, escalate, assignTheme, send, answerFeedback, answer1v1, playDemo, stopDemo, resolve, reopen,
+    experts, setExperts, openRoom, setOpenRoom, newTicketId, escalate, assignTheme, send, answerFeedback, answer1v1, back1v1, playDemo, stopDemo, resolve, reopen,
   };
 }
 

@@ -16,6 +16,7 @@ interface TicketRoomProps {
   onResolve: () => void;
   onFeedback: (solved: boolean) => void;
   on1v1: (book: boolean) => void;
+  onBack1v1: () => void;
   onDemo: () => void;
   onStopDemo: () => void;
   onReopen: () => void;
@@ -23,7 +24,7 @@ interface TicketRoomProps {
 }
 
 /** The side sheet where the expert and the employee talk. Opens over either view. */
-export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve, onFeedback, on1v1, onDemo, onStopDemo, onReopen, onApproveKb }: TicketRoomProps) {
+export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve, onFeedback, on1v1, onBack1v1, onDemo, onStopDemo, onReopen, onApproveKb }: TicketRoomProps) {
   const { room, pic, employee, ticket } = rec;
   const me = viewer === 'manager' ? 'manager' : 'employee', isEmp = viewer === 'employee';
   const resolved = room.status === 'resolved';
@@ -107,7 +108,14 @@ export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve,
           {asking ? (
             <li className="rc-msg-ask">
               <div className="rc-ask">
-                <div className="rc-ask-k"><BrandMark small />ReadyCheck</div>
+                <div className="rc-ask-k">
+                  <BrandMark small />ReadyCheck
+                  {rec.feedback === 'ask1v1' && isEmp ? (
+                    <button type="button" className="rc-quiet rc-ask-back" onClick={onBack1v1} title={`Back to “Did ${pic.first} solve your problem?”`}>
+                      <Icon name="undo" size={13} />Back
+                    </button>
+                  ) : null}
+                </div>
                 {rec.feedback === 'ask1v1' ? (
                   <>
                     <p className="rc-ask-q">Sorry it isn’t sorted yet. Would a 1:1 session with {pic.first} help?</p>

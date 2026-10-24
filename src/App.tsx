@@ -22,6 +22,7 @@ function Shell() {
           onResolve={() => void app.resolve(rec.room.id, rec.employee.first)}
           onFeedback={(solved) => app.answerFeedback(rec.room.id, solved)}
           on1v1={(book) => app.answer1v1(rec.room.id, book)}
+          onBack1v1={() => app.back1v1(rec.room.id)}
           onDemo={() => app.playDemo(rec.room.id)}
           onStopDemo={() => app.stopDemo(rec.room.id)}
           onReopen={() => app.reopen(rec.room.id, open.viewer === 'manager' ? 'Rachel' : rec.employee.first)}

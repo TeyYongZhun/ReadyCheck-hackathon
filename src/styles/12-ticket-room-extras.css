@@ -11,6 +11,8 @@
 .rc-msg-ask, .rc-msg-kb, .rc-msg-event { animation: rc-room-in 420ms var(--rc-ease-out) both; }
 .rc-ask { display: grid; gap: 10px; padding: 16px; border-radius: var(--radius-md); background: var(--glass-200); border: 1px solid var(--glass-edge); box-shadow: var(--shadow-card); }
 .rc-ask-k { display: flex; align-items: center; gap: 8px; font: 600 12px/16px var(--font-sans); color: var(--ink-muted); }
+/* Small return to the previous question; negative margins keep the header row its usual height. */
+.rc-ask-back { margin: -5px -8px -5px auto; height: 26px; padding: 0 8px; gap: 5px; }
 .rc-brand-mark.is-sm { width: 20px; height: 20px; border-radius: 6px; }
 .rc-ask-q { margin: 0; font: 600 16px/22px var(--font-sans); color: var(--ink); }
 .rc-ask-s { margin: 0; font: 400 13px/19px var(--font-sans); color: var(--ink-muted); }
