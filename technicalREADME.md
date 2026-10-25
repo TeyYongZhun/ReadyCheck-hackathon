@@ -215,7 +215,7 @@ Expert recommendation is determined by code before Gemini is called:
 
 The manager must still click Assign. Home AI text and Needs you suggestions never assign tickets automatically.
 
-The dashboard retains its operational KPI cards, including the waiting-time indicator. The AI readout uses these metrics only to offer a neutral reminder and suggested next step; it does not describe SLA breaches, judge individual performance, or turn the KPI into a compliance message.
+The dashboard retains its operational KPI cards, including the waiting-time indicator. The Smart suggestions panel uses these metrics only to offer a neutral reminder and suggested next step; it does not describe SLA breaches, judge individual performance, or turn the KPI into a compliance message.
 
 ### Theme summaries
 

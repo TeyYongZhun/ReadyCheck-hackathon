@@ -276,7 +276,7 @@ export function HomeOverview({ pics, waiting, rooms, tickets, solvedByCardsPct, 
       ) : null}
       <section className="rc-home-card rc-glass rc-glass-2 rc-home-readout" aria-labelledby="rc-home-readout-h">
         <header className="rc-panel-head">
-          <div><h2 className="rc-panel-h" id="rc-home-readout-h"><AiLabel>AI readout</AiLabel></h2><p className="rc-home-s">Based on current tickets and active rooms</p></div>
+          <div><h2 className="rc-panel-h" id="rc-home-readout-h"><AiLabel>Smart suggestions</AiLabel></h2><p className="rc-home-s">Based on current tickets and active rooms</p></div>
           <button type="button" className="rc-btn-primary is-sm rc-home-refresh" disabled={summaryLoading} onClick={() => setSummaryRefresh((value) => value + 1)}>
             {summaryLoading ? <><span className="rc-ai-pulse" aria-hidden>AI summarizing</span><span className="rc-ai-dots" aria-hidden>…</span></> : 'Refresh summary'}
           </button>
