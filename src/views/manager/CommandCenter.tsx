@@ -110,7 +110,7 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
 
         {tab === 'home' ? <HomeOverview visible={app.mode === 'manager'} pics={app.experts} waiting={waiting.length} tickets={waiting} rooms={app.roomList} impact={impact}
             needSupport={needSupport} onOpenNeeds={() => setTab('needs')} onOpenCheckins={() => setTab('checkins')} />
-          : tab === 'checkins' ? <CheckIns />
+          : tab === 'checkins' ? <CheckIns onOpenTrends={() => setTab('trends')} />
           : tab === 'needs' ? (
             <div className="rc-home">
               <PageHead id="rc-needs-h" title="Needs you" sub="Where new hires are stuck. Overdue first, then longest wait. One click puts an expert in a room with them." />

@@ -34,6 +34,21 @@ export function latestByPersonAtMilestone(checkins: CheckIn[], milestone: Milest
   return [...out.values()];
 }
 
+export function pulseCheckinsForView(checkins: CheckIn[], latest: CheckIn[], milestone: MilestoneKey | null): CheckIn[] {
+  return milestone ? latestByPersonAtMilestone(checkins, milestone) : latest;
+}
+
+export function namedShareOf(list: CheckIn[]): { named: number; total: number } {
+  return { named: list.filter((checkin) => checkin.named).length, total: list.length };
+}
+
+export function pulseQuestionsWithDifficulty(totals: Totals, total: number): CorePulseKey[] {
+  if (!total) return [];
+  return CORE_PULSE
+    .filter(({ key }) => (totals[key].partly + totals[key].notyet) * 2 >= total)
+    .map(({ key }) => key);
+}
+
 /**
  * Upcoming: nobody has reached this milestone yet.
  * Open:     at least one person is still inside this milestone's window (or has not reached it yet).

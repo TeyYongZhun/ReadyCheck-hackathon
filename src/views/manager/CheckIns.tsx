@@ -1,11 +1,18 @@
-import type { PulseAnswer } from '../../types';
+import { useState } from 'react';
+import type { MilestoneKey, PulseAnswer, PulseKey } from '../../types';
 import { useApp } from '../../state/AppState';
 import { CHECKIN_MILESTONES, COHORT, CORE_PULSE, MIN_GROUP, PULSE_ANSWERS, daysSince } from '../../data/checkins';
-import { followUpResults, milestoneParticipation, totalsOf } from '../../lib/checkins';
+import { followUpResults, milestoneParticipation, namedShareOf, pulseCheckinsForView, pulseQuestionsWithDifficulty, totalsOf } from '../../lib/checkins';
 import { cx } from '../../lib/util';
 import { Footnote, Icon, PageHead, Person } from '../../components/primitives';
 
 const LABEL = Object.fromEntries(PULSE_ANSWERS.map((answer) => [answer.key, answer.label])) as Record<PulseAnswer, string>;
+const RELATED_TRENDS: Record<PulseKey, string[]> = {
+  tools: ['vpn', 'hw', 'db'],
+  clarity: ['onb'],
+  support: ['onb'],
+  workload: ['onb'],
+};
 
 const progressLabel = (status: 'improved' | 'persisted' | 'worsened') => ({
   improved: 'Improved',
@@ -13,9 +20,17 @@ const progressLabel = (status: 'improved' | 'persisted' | 'worsened') => ({
   worsened: 'Worsened',
 }[status]);
 
-export function CheckIns() {
+export function CheckIns({ onOpenTrends }: { onOpenTrends: () => void }) {
   const app = useApp();
+  const [pulseMilestone, setPulseMilestone] = useState<MilestoneKey | null>(null);
   const latest = [...app.latestCheckins.values()];
+  const pulseCheckins = pulseCheckinsForView(app.checkins, latest, pulseMilestone);
+  const pulseTotals = totalsOf(pulseCheckins);
+  const nameShare = namedShareOf(pulseCheckins);
+  const difficultyQuestions = new Set(pulseQuestionsWithDifficulty(pulseTotals, pulseCheckins.length));
+  const availableMilestones = CHECKIN_MILESTONES.filter((milestone) =>
+    app.checkins.some((checkin) => checkin.milestone === milestone.key),
+  );
 
   // Headcounts only: how many employees have checked in at the milestone they are currently in.
   const completedCurrent = COHORT.filter((hire) => app.checkins.some((checkin) => checkin.person === hire.id && checkin.milestone === hire.milestone)).length;
@@ -28,7 +43,6 @@ export function CheckIns() {
     return age >= 8 && age <= 14;
   }).length;
 
-  const totals = totalsOf(latest);
   const results = followUpResults(app.checkins, app.actions, COHORT);
   const milestones = milestoneParticipation(app.checkins, COHORT);
 
@@ -50,31 +64,44 @@ export function CheckIns() {
           <p>Employees yet to check in</p>
         </div>
         <div className="rc-home-stat">
-          <dt>Joined in the last 7 days<span className="rc-home-ic"><Icon name="users" size={18} /></span></dt>
+          <dt>New hires this month<span className="rc-home-ic"><Icon name="users" size={18} /></span></dt>
           <dd>{newHiresRecent}</dd>
-          <p>New employees in their first week</p>
+          <p>New employees who joined this month</p>
         </div>
         <div className="rc-home-stat">
-          <dt>Joined 8–14 days ago<span className="rc-home-ic"><Icon name="users" size={18} /></span></dt>
+          <dt>New hires last month<span className="rc-home-ic"><Icon name="users" size={18} /></span></dt>
           <dd>{newHiresPrevious}</dd>
-          <p>New employees in their second week</p>
+          <p>New employees who joined last month</p>
         </div>
       </dl>
 
       <div className="rc-ci-journey-grid">
-      <section className="rc-home-card rc-glass rc-glass-2 rc-ci-section" aria-labelledby="rc-ci-pulse-h">
+      <section className="rc-home-card rc-glass rc-glass-2 rc-ci-section rc-ci-pulse-section" aria-labelledby="rc-ci-pulse-h">
         <header className="rc-panel-head">
           <div>
             <h2 className="rc-panel-h" id="rc-ci-pulse-h">Onboarding pulse</h2>
             <p className="rc-panel-s">Latest response from each employee across the same four questions.</p>
           </div>
-          {latest.length >= MIN_GROUP ? <span className="rc-ci-response-count">{latest.length} responses</span> : null}
+          {pulseCheckins.length >= MIN_GROUP ? <span className="rc-ci-response-count"> Total: {pulseCheckins.length} responses</span> : null}
         </header>
-        {latest.length >= MIN_GROUP ? (
+        <div className="rc-ci-pulse-controls">
+          <div className="rc-seg rc-ci-pulse-seg" role="group" aria-label="Onboarding pulse milestone">
+            <button type="button" aria-pressed={pulseMilestone === null} className={cx(pulseMilestone === null && 'is-on')} onClick={() => setPulseMilestone(null)}>All</button>
+            {availableMilestones.map((milestone) => (
+              <button key={milestone.key} type="button" aria-pressed={pulseMilestone === milestone.key} className={cx(pulseMilestone === milestone.key && 'is-on')} onClick={() => setPulseMilestone(milestone.key)}>
+                {milestone.label}
+              </button>
+            ))}
+          </div>
+          {pulseCheckins.length >= MIN_GROUP ? (
+            <p className="rc-ci-name-share">{nameShare.named} of {nameShare.total} shared their name</p>
+          ) : null}
+        </div>
+        {pulseCheckins.length >= MIN_GROUP ? (
           <>
             <ul className="rc-ci-bars">
               {CORE_PULSE.map((question) => {
-                const counts = totals[question.key];
+                const counts = pulseTotals[question.key];
                 return (
                   <li className="rc-ci-pulse-row" key={question.key}>
                     <div className="rc-ci-pulse-question">

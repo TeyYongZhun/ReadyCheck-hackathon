@@ -119,6 +119,13 @@
 .rc-ci-journey-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: var(--space-4); }
 .rc-ci-dashboard .rc-panel-head { align-items: flex-start; }
 .rc-ci-response-count { flex: none; color: var(--ink-faint); font: 500 12px/17px var(--font-mono); }
+.rc-ci-dashboard .rc-ci-pulse-section .rc-panel-head { margin-bottom: 14px; }
+.rc-ci-pulse-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.rc-ci-pulse-seg { min-width: 0; max-width: 100%; margin: 0; overflow-x: auto; }
+.rc-ci-pulse-seg button { flex: none; }
+.rc-ci-name-share { flex: none; margin: 0; font: 400 12.5px/17px var(--font-sans); color: var(--ink-muted); white-space: nowrap; }
+.rc-ci-trends-link { display: block; width: fit-content; margin-top: 4px; padding: 0; border: 0; background: none; color: var(--ink-muted); font: 400 12px/16px var(--font-sans); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.rc-ci-trends-link:hover { color: var(--ink); }
 .rc-ci-dashboard .rc-ci-bars { gap: 18px; }
 .rc-ci-dashboard .rc-ci-bars li.rc-ci-pulse-row { grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 8px; }
 .rc-ci-pulse-section { min-height: 100%; }
