@@ -1,7 +1,10 @@
 // Onboarding milestone check-in sample data: one cohort, illustrative only.
 // Mira (the demo employee) has not checked in yet, so her check-in is the one the demo sends.
+// All dates are relative to "today", so the sample never goes stale and a milestone is always
+// derived from the hire's join date instead of being typed by hand.
 import type { CheckIn, MilestoneKey, NewHire, PulseAnswer, PulseKey, SupportAction } from '../types';
 
+/** `day` is the last day (counted from the join date) on which the milestone check-in is still open. */
 export const CHECKIN_MILESTONES: { key: MilestoneKey; label: string; title: string; order: number; day: number }[] = [
   { key: 'week1', label: 'Week 1', title: 'Getting Started', order: 1, day: 7 },
   { key: 'week2', label: 'Week 2', title: 'Early Adjustment', order: 2, day: 14 },
@@ -9,6 +12,7 @@ export const CHECKIN_MILESTONES: { key: MilestoneKey; label: string; title: stri
   { key: 'day60', label: 'Day 60', title: 'Growing Independence', order: 4, day: 60 },
   { key: 'day90', label: 'Day 90', title: 'Successful Integration', order: 5, day: 90 },
 ];
+
 const DAY = 86_400_000;
 export const daysSince = (iso: string, now = Date.now()) => Math.floor((now - Date.parse(iso)) / DAY);
 const daysAgo = (n: number) => new Date(Date.now() - n * DAY).toISOString().slice(0, 10);
@@ -18,6 +22,7 @@ const checkinDateDaysAgo = (n: number) => new Date(`${daysAgo(n)}T12:00:00`).toL
   month: 'short',
 });
 
+/** Window of a milestone in days since joining: Week 1 = day 0-7, Week 2 = day 8-14, Day 30 = day 15-30, ... */
 export const windowOf = (milestone: (typeof CHECKIN_MILESTONES)[number]) => {
   const index = CHECKIN_MILESTONES.indexOf(milestone);
   return { open: index ? CHECKIN_MILESTONES[index - 1].day + 1 : 0, close: milestone.day };
@@ -54,32 +59,42 @@ export const MIN_GROUP = 3;
 /** An employee may edit a submitted check-in for five minutes after its first submission. */
 export const CHECKIN_EDIT_WINDOW_MS = 5 * 60 * 1000;
 
-export const COHORT_LABEL = 'October–November cohort';
-
+// Join dates are deliberately away from window boundaries (day 7 / day 14), so nobody
+// silently jumps to the next milestone tomorrow.
+// mt: 2 days, sa: 4 days, ah/yl/pn/dw: 5 days (all in Week 1); fn/kc/jw: 12 days (Week 2).
 const RAW_COHORT: Omit<NewHire, 'milestone'>[] = [
-  { id: 'mt', name: 'Mira Tan', first: 'Mira', initials: 'MT', role: 'Product Designer', team: 'Product Design', joinedAt: daysAgo(3) },
-  { id: 'sa', name: 'Siti Aisyah', first: 'Siti', initials: 'SA', role: 'HR Executive', team: 'People Team', joinedAt: daysAgo(6) },
+  { id: 'mt', name: 'Mira Tan', first: 'Mira', initials: 'MT', role: 'Product Designer', team: 'Product Design', joinedAt: daysAgo(2) },
+  { id: 'sa', name: 'Siti Aisyah', first: 'Siti', initials: 'SA', role: 'HR Executive', team: 'People Team', joinedAt: daysAgo(4) },
   { id: 'ah', name: 'Aiman Hakim', first: 'Aiman', initials: 'AH', role: 'Process Engineer', team: 'Manufacturing',
-    joinedAt: daysAgo(7), signals: ['Asked 3 questions this week; 1 had no approved answer'] },
-  { id: 'yl', name: 'Yee Ling Ong', first: 'Yee Ling', initials: 'YO', role: 'Finance Associate', team: 'Finance Ops', joinedAt: daysAgo(7) },
+    joinedAt: daysAgo(5), signals: ['Asked 3 questions this week; 1 had no approved answer'] },
+  { id: 'yl', name: 'Yee Ling Ong', first: 'Yee Ling', initials: 'YO', role: 'Finance Associate', team: 'Finance Ops', joinedAt: daysAgo(5) },
   { id: 'pn', name: 'Priyanka Nair', first: 'Priyanka', initials: 'PN', role: 'QA Engineer', team: 'Product Engineering',
-    joinedAt: daysAgo(7), signals: ['Waiting 2 days for lab access (RC-1052)'] },
-  { id: 'dw', name: 'Daniel Wong', first: 'Daniel', initials: 'DW', role: 'Sales Executive', team: 'Commercial', joinedAt: daysAgo(7) },
-  { id: 'fn', name: 'Farah Nordin', first: 'Farah', initials: 'FN', role: 'Data Analyst', team: 'Data Platform', joinedAt: daysAgo(14) },
-  { id: 'kc', name: 'Kumar Chandran', first: 'Kumar', initials: 'KC', role: 'Test Engineer', team: 'Product Engineering', joinedAt: daysAgo(14) },
-  { id: 'jw', name: 'Jun Wei Lim', first: 'Jun Wei', initials: 'JW', role: 'Software Engineer', team: 'Platform', joinedAt: daysAgo(14) },
+    joinedAt: daysAgo(5), signals: ['Waiting 2 days for lab access (RC-1052)'] },
+  { id: 'dw', name: 'Daniel Wong', first: 'Daniel', initials: 'DW', role: 'Sales Executive', team: 'Commercial', joinedAt: daysAgo(5) },
+  { id: 'fn', name: 'Farah Nordin', first: 'Farah', initials: 'FN', role: 'Data Analyst', team: 'Data Platform', joinedAt: daysAgo(12) },
+  { id: 'kc', name: 'Kumar Chandran', first: 'Kumar', initials: 'KC', role: 'Test Engineer', team: 'Product Engineering', joinedAt: daysAgo(12) },
+  { id: 'jw', name: 'Jun Wei Lim', first: 'Jun Wei', initials: 'JW', role: 'Software Engineer', team: 'Platform', joinedAt: daysAgo(12) },
 ];
 export const COHORT: NewHire[] = RAW_COHORT.map((hire) => ({ ...hire, milestone: currentMilestone(hire.joinedAt) }));
 
+/** Built from the join dates, e.g. "October–November cohort". */
+const monthName = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-GB', { month: 'long' });
+const joinedSorted = RAW_COHORT.map((hire) => hire.joinedAt).sort();
+const firstMonth = monthName(joinedSorted[0]);
+const lastMonth = monthName(joinedSorted[joinedSorted.length - 1]);
+export const COHORT_LABEL = firstMonth === lastMonth ? `${firstMonth} cohort` : `${firstMonth}–${lastMonth} cohort`;
+
 const a = (clarity: PulseAnswer, tools: PulseAnswer, support: PulseAnswer, workload: PulseAnswer) => ({ clarity, tools, support, workload });
 
+// Every check-in is dated after the person joined and inside its milestone window:
+// Week 1 for Farah/Kumar/Jun Wei is on their day 6 (6 days ago); Week 2 is on their day 11 (1 day ago).
 export const SEED_CHECKINS: CheckIn[] = [
   // Earlier milestone check-ins. Farah and Kumar were reached out to afterwards.
-  { id: 'ci-fn-1', person: 'fn', milestone: 'week1', at: checkinDateDaysAgo(13), named: true, answers: a('notyet', 'partly', 'yes', 'notyet'),
+  { id: 'ci-fn-1', person: 'fn', milestone: 'week1', at: checkinDateDaysAgo(6), named: true, answers: a('notyet', 'partly', 'yes', 'notyet'),
     note: 'Tak pasti apa KPI saya untuk bulan pertama.' },
-  { id: 'ci-kc-1', person: 'kc', milestone: 'week1', at: checkinDateDaysAgo(13), named: true, answers: a('partly', 'notyet', 'partly', 'partly'),
+  { id: 'ci-kc-1', person: 'kc', milestone: 'week1', at: checkinDateDaysAgo(6), named: true, answers: a('partly', 'notyet', 'partly', 'partly'),
     note: 'Waited two days for my VPN certificate, so I couldn’t run any tests.' },
-  { id: 'ci-jw-1', person: 'jw', milestone: 'week1', at: checkinDateDaysAgo(13), named: false, answers: a('partly', 'yes', 'notyet', 'partly'),
+  { id: 'ci-jw-1', person: 'jw', milestone: 'week1', at: checkinDateDaysAgo(6), named: false, answers: a('partly', 'yes', 'notyet', 'partly'),
     note: 'On-call shadowing plus three trainings in week one is a lot.' },
   { id: 'ci-fn-2', person: 'fn', milestone: 'week2', at: checkinDateDaysAgo(1), named: true, answers: a('yes', 'partly', 'yes', 'partly'),
     note: 'Goals are clear now after the chat with my lead.' },
@@ -97,9 +112,10 @@ export const SEED_CHECKINS: CheckIn[] = [
     note: 'Still waiting on my lab access badge.' },
 ];
 
-/** Completed Week 1 actions with Week 2 check-ins, so the Check-ins tab can show a milestone comparison. */
+/** Completed Week 1 actions with Week 2 check-ins, so the Check-ins tab can show a milestone comparison.
+ *  The actions happened between the Week 1 check-in (6 days ago) and the Week 2 check-in (1 day ago). */
 export const SEED_ACTIONS: SupportAction[] = [
-  { id: 'act-fn', person: 'fn', label: '15-min priorities chat', owner: 'Rachel Goh', when: 'Mon 2 Nov', status: 'done', milestone: 'week1' },
-  { id: 'act-kc', person: 'kc', label: 'Ask Ana to follow up on the VPN certificate', owner: 'Ana Okafor', when: 'Mon 2 Nov', status: 'done', milestone: 'week1' },
+  { id: 'act-fn', person: 'fn', label: '15-min priorities chat', owner: 'Rachel Goh', when: checkinDateDaysAgo(5), status: 'done', milestone: 'week1' },
+  { id: 'act-kc', person: 'kc', label: 'Ask Ana to follow up on the VPN certificate', owner: 'Ana Okafor', when: checkinDateDaysAgo(5), status: 'done', milestone: 'week1' },
   { id: 'act-jw', theme: 'Workload concerns', label: 'Spread week-1 trainings over two weeks', owner: 'Sofia Hart', when: 'Next cohort', status: 'planned', milestone: 'week1' },
 ];

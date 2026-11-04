@@ -1,6 +1,6 @@
 import type { PulseAnswer } from '../../types';
 import { useApp } from '../../state/AppState';
-import { CHECKIN_MILESTONES, COHORT, CORE_PULSE, MIN_GROUP, PULSE_ANSWERS } from '../../data/checkins';
+import { CHECKIN_MILESTONES, COHORT, CORE_PULSE, MIN_GROUP, PULSE_ANSWERS, daysSince } from '../../data/checkins';
 import { followUpResults, milestoneParticipation, totalsOf } from '../../lib/checkins';
 import { cx } from '../../lib/util';
 import { Footnote, Icon, PageHead, Person } from '../../components/primitives';
@@ -16,16 +16,20 @@ const progressLabel = (status: 'improved' | 'persisted' | 'worsened') => ({
 export function CheckIns() {
   const app = useApp();
   const latest = [...app.latestCheckins.values()];
+
+  // Headcounts only: how many employees have checked in at the milestone they are currently in.
   const completedCurrent = COHORT.filter((hire) => app.checkins.some((checkin) => checkin.person === hire.id && checkin.milestone === hire.milestone)).length;
   const pending = Math.max(0, COHORT.length - completedCurrent);
-  const now = new Date();
-  const monthKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-  const newHiresThisMonth = COHORT.filter((hire) => hire.joinedAt.slice(0, 7) === monthKey(now)).length;
-  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const newHiresLastMonth = COHORT.filter((hire) => hire.joinedAt.slice(0, 7) === monthKey(lastMonth)).length;
+
+  // Rolling windows instead of calendar months, so the numbers don't jump on the 1st of the month.
+  const newHiresRecent = COHORT.filter((hire) => daysSince(hire.joinedAt) <= 7).length;
+  const newHiresPrevious = COHORT.filter((hire) => {
+    const age = daysSince(hire.joinedAt);
+    return age >= 8 && age <= 14;
+  }).length;
+
   const totals = totalsOf(latest);
   const results = followUpResults(app.checkins, app.actions, COHORT);
-
   const milestones = milestoneParticipation(app.checkins, COHORT);
 
   return (
@@ -46,14 +50,14 @@ export function CheckIns() {
           <p>Employees yet to check in</p>
         </div>
         <div className="rc-home-stat">
-          <dt>New hires this month<span className="rc-home-ic"><Icon name="users" size={18} /></span></dt>
-          <dd>{newHiresThisMonth}</dd>
-          <p>New employees who joined this month</p>
+          <dt>Joined in the last 7 days<span className="rc-home-ic"><Icon name="users" size={18} /></span></dt>
+          <dd>{newHiresRecent}</dd>
+          <p>New employees in their first week</p>
         </div>
         <div className="rc-home-stat">
-          <dt>New hires last month<span className="rc-home-ic"><Icon name="users" size={18} /></span></dt>
-          <dd>{newHiresLastMonth}</dd>
-          <p>New employees who joined last month</p>
+          <dt>Joined 8–14 days ago<span className="rc-home-ic"><Icon name="users" size={18} /></span></dt>
+          <dd>{newHiresPrevious}</dd>
+          <p>New employees in their second week</p>
         </div>
       </dl>
 
@@ -102,23 +106,29 @@ export function CheckIns() {
         <header className="rc-panel-head">
           <div>
             <h2 className="rc-panel-h" id="rc-ci-timeline-h">Check-in timeline</h2>
-            <p className="rc-panel-s">Participation among employees who have reached each milestone.</p>
+            <p className="rc-panel-s">Participation among employees who have reached each milestone. Open means some employees are still within the window.</p>
           </div>
         </header>
         <ol className="rc-ci-timeline">
-          {milestones.map(({ milestone, eligible, done, overdue, status }) => {
-            const completed = status === 'Completed';
-            const isUpcoming = status === 'Upcoming';
+          {milestones.map(({ milestone, eligible, done, missed, state }) => {
+            const isUpcoming = state === 'Upcoming';
+            // Tick only when everyone who has reached the milestone has checked in.
+            const allIn = eligible > 0 && done === eligible;
+            // Small groups only show the state, so a count like 1/2 can't point at one person.
+            const showCounts = eligible >= MIN_GROUP;
+            const status = isUpcoming
+              ? 'Upcoming'
+              : !showCounts
+                ? state
+                : [state, `${done}/${eligible}`, missed ? `${missed} missed` : ''].filter(Boolean).join(' · ');
             return (
-              <li key={milestone.key} className={cx('rc-ci-milestone', isUpcoming && 'is-upcoming', completed && 'is-completed')}>
-                <span className="rc-ci-milestone-mark" aria-hidden>{completed ? <Icon name="check" size={13} /> : null}</span>
+              <li key={milestone.key} className={cx('rc-ci-milestone', isUpcoming && 'is-upcoming', allIn && 'is-completed')}>
+                <span className="rc-ci-milestone-mark" aria-hidden>{allIn ? <Icon name="check" size={13} /> : null}</span>
                 <div className="rc-ci-milestone-copy">
                   <b>{milestone.label}</b>
                   <span>{milestone.title}</span>
                 </div>
-                <span className="rc-ci-milestone-status">
-                  {isUpcoming ? status : `${status} · ${done}/${eligible}${overdue ? ` · ${overdue} overdue` : ''}`}
-                </span>
+                <span className="rc-ci-milestone-status">{status}</span>
               </li>
             );
           })}

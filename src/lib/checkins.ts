@@ -18,10 +18,13 @@ const SCORE: Record<PulseAnswer, number | null> = { yes: 2, partly: 1, notyet: 0
 type ProgressStatus = 'improved' | 'persisted' | 'worsened';
 type DimensionProgress = { p: (typeof CORE_PULSE)[number]; from: PulseAnswer; to: PulseAnswer; status: ProgressStatus };
 
-/** Each person's most recent check-in. */
+/** Each person's most recent check-in: the highest milestone wins, and within one milestone the later submission wins. */
 export function latestByPerson(checkins: CheckIn[]): Map<string, CheckIn> {
   const out = new Map<string, CheckIn>();
-  [...checkins].reverse().forEach((c) => { const cur = out.get(c.person); if (!cur || milestoneOrder(c.milestone) >= milestoneOrder(cur.milestone)) out.set(c.person, c); });
+  checkins.forEach((c) => {
+    const cur = out.get(c.person);
+    if (!cur || milestoneOrder(c.milestone) >= milestoneOrder(cur.milestone)) out.set(c.person, c);
+  });
   return out;
 }
 
@@ -31,15 +34,33 @@ export function latestByPersonAtMilestone(checkins: CheckIn[], milestone: Milest
   return [...out.values()];
 }
 
+/**
+ * Upcoming: nobody has reached this milestone yet.
+ * Open:     at least one person is still inside this milestone's window (or has not reached it yet).
+ * Closed:   every person's window for this milestone has ended.
+ */
+export type MilestoneState = 'Upcoming' | 'Open' | 'Closed';
+
 export function milestoneParticipation(checkins: CheckIn[], cohort: NewHire[], now = Date.now()) {
   return CHECKIN_MILESTONES.map((milestone) => {
     const { open, close } = windowOf(milestone);
-    const eligible = cohort.filter((hire) => daysSince(hire.joinedAt, now) >= open);
-    const doneIds = new Set(checkins.filter((checkin) => checkin.milestone === milestone.key).map((checkin) => checkin.person));
-    const done = eligible.filter((hire) => doneIds.has(hire.id)).length;
-    const overdue = eligible.filter((hire) => daysSince(hire.joinedAt, now) > close && !doneIds.has(hire.id)).length;
-    const status = !eligible.length ? 'Upcoming' : done === eligible.length ? 'Completed' : 'In progress';
-    return { milestone, eligible: eligible.length, done, overdue, status };
+    const age = (hire: NewHire) => daysSince(hire.joinedAt, now);
+    const doneIds = new Set(checkins.filter((c) => c.milestone === milestone.key).map((c) => c.person));
+
+    // People who have reached this milestone (their window has opened).
+    const reached = cohort.filter((hire) => age(hire) >= open);
+    const done = reached.filter((hire) => doneIds.has(hire.id)).length;
+    // Only people whose window has already ended and who did not check in count as missed.
+    // People still inside the window are not penalised: they can still respond.
+    const missed = reached.filter((hire) => age(hire) > close && !doneIds.has(hire.id)).length;
+
+    const state: MilestoneState = !reached.length
+      ? 'Upcoming'
+      : cohort.every((hire) => age(hire) > close)
+        ? 'Closed'
+        : 'Open';
+
+    return { milestone, eligible: reached.length, done, missed, state };
   });
 }
 
