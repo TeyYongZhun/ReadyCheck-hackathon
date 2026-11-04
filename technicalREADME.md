@@ -328,14 +328,15 @@ The following rules are enforced:
 - Manager approval is required before solved-room summaries become employee knowledge.
 - AI recommendations do not automatically assign experts.
 
-## 11. Weekly check-ins
+## 11. Onboarding milestone check-ins
 
-The employee answers the same four onboarding dimensions each week: role clarity, tools and access, support, and workload. Each answer is `yes`, `partly`, `notyet` or `na`; an optional note may be in any language. The employee chooses whether the check-in carries their name. State lives in [`src/state/AppState.tsx`](./src/state/AppState.tsx); the maths is in [`src/lib/checkins.ts`](./src/lib/checkins.ts). `na` is excluded from concern counts and scores. Follow-up averages compare only dimensions applicable in both weeks.
+Check-ins are scheduled at five onboarding milestones: Week 1 (Getting Started), Week 2 (Early Adjustment), Day 30 (Building Competence), Day 60 (Growing Independence), and Day 90 (Successful Integration). In the demo check-in sheet, the Demo button lets a presenter switch which milestone is displayed; it does not advance the employee's real onboarding schedule. Each milestone has three stable core questions and a milestone-specific fourth question. Answers are `yes`, `partly`, `notyet` or `na`; Partly/Not yet can include an optional question-specific follow-up, and there is one optional open note in any language. The employee explicitly chooses whether the check-in carries their name. State lives in [`src/state/AppState.tsx`](./src/state/AppState.tsx); question text and milestones are in [`src/data/checkins.ts`](./src/data/checkins.ts), and the maths is in [`src/lib/checkins.ts`](./src/lib/checkins.ts). `na` is excluded from concern counts and scores. Follow-up comparisons use only the stable core questions; different milestone-specific questions are not treated as comparable.
 
-- **Reach out this week:** only named check-ins with a `notyet`, two `partly`, or an open ticket signal. Ticket signals are derived from the employee's own queue, rooms and history, with stable wording (no minute counts), so the AI isn't re-asked on every tick.
-- **Cohort totals:** every latest check-in, named or not, shown only from `MIN_GROUP` (3) responses.
+- **Reach out this week:** only explicitly named check-ins with a `notyet`, two `partly`, or an open ticket signal. Ticket signals are derived from the employee's own queue, rooms and history, with stable wording (no minute counts), so the AI isn't re-asked on every tick. This is a support queue, not a disengagement or resignation classification.
+- **Cohort totals:** stable core questions use each person's latest check-in; stage-specific results remain grouped by milestone and require `MIN_GROUP` (3) responses at that milestone. Anonymous responses never enter person-level follow-up. Anonymous comments are sent only as group-theme input after the overall minimum is met; the model is instructed not to quote them or reveal identifying details.
+- **Progress tracking:** comparisons require a completed follow-up and named check-ins at both consecutive milestones. Each stable core difficulty is labeled improved, persisted or worsened; a new difficulty is called out separately. The stage-specific item is never compared across milestones.
 
-`POST /api/checkin-insights` ([`server/checkinInsights.ts`](./server/checkinInsights.ts), summary model) receives counts, anonymous notes and, for named people only, `{ id, week, answers, note, signals }`. No names are sent. It returns:
+`POST /api/checkin-insights` ([`server/checkinInsights.ts`](./server/checkinInsights.ts), summary model) receives stable-question counts, threshold-gated anonymous comments and, for people explicitly marked named only, `{ id, named, milestone, answers, followUps, note, signals }`. The name or other direct employee identifier is not sent. It returns:
 
 ```ts
 { themes: { name, count, summary, action }[]; people: { id, why, action }[] }

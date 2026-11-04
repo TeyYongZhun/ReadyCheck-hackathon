@@ -52,8 +52,9 @@ export const DEFAULT_SUGGEST = [
   { label: 'Find a guide', icon: 'doc', query: 'Where can I find the guide to move MFA to my new phone?' },
   { label: 'Missing resources', icon: 'steps', query: 'I’m missing the schedule and resources for my first week' },
   // Demo questions: the leave one has an approved knowledge-base card, the database one has none and goes to an expert.
-  { label: 'Leave carry-over', icon: 'book', query: 'Can I carry my unused annual leave into next year?', demo: true },
-  { label: 'Database access', icon: 'expert', query: 'Staging Postgres rejects my password since this morning', demo: true },
+  // Demo questions: D1 has an approved knowledge-base card, D2 has none and goes to an expert.
+  { label: 'D1', icon: 'book', query: 'Can I carry my unused annual leave into next year?' },
+  { label: 'D2', icon: 'expert', query: 'Staging Postgres rejects my password since this morning' },
 ];
 
 /** How long the demo questions wait for the AI before the local matcher answers instead, so the demo never stalls. */

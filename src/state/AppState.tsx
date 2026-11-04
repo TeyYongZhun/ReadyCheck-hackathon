@@ -2,9 +2,9 @@
 // Everything is in-memory and starts fresh on every page load, so a demo can always be run again from the seed data.
 // TODO: move to a backend if it should survive a refresh.
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { Attachment, CardKind, CardSpec, CheckIn, HistoryEntry, KbItem, LibraryEntry, Message, Mode, Pic, PulseAnswer, PulseKey, QueueTicket, Room, SupportAction, ThemeKey } from '../types';
+import type { Attachment, CardKind, CardSpec, CheckIn, HistoryEntry, KbItem, LibraryEntry, Message, MilestoneKey, Mode, Pic, PulseAnswer, PulseKey, QueueTicket, Room, SupportAction, ThemeKey } from '../types';
 import { PICS, QUEUE, ROOMS, SEED_KB, THEMES_BY_KEY } from '../data/command';
-import { CHECKIN_EDIT_WINDOW_MS, COHORT, SEED_ACTIONS, SEED_CHECKINS } from '../data/checkins';
+import { CHECKIN_EDIT_WINDOW_MS, CHECKIN_MILESTONES, COHORT, SEED_ACTIONS, SEED_CHECKINS } from '../data/checkins';
 import { latestByPerson, reachOutList } from '../lib/checkins';
 import { SCENARIOS, SCEN_THEME } from '../data/scenarios';
 import { askRoomReply, askSummary } from '../lib/api';
@@ -36,13 +36,14 @@ export interface EscalationInput {
 }
 
 /** The demo employee, the same everywhere she appears. `id` is her place in the check-in cohort. */
-export const ME = { id: 'mt', person: 'Mira Tan', first: 'Mira', initials: 'MT', role: 'Product Designer · Day 3', team: 'Product Design', week: 1 };
+export const ME = { id: 'mt', person: 'Mira Tan', first: 'Mira', initials: 'MT', role: 'Product Designer · Day 3', team: 'Product Design', milestone: 'week1' as const };
 
-export interface CheckInInput { answers: Record<PulseKey, PulseAnswer>; note?: string; named: boolean }
+export interface CheckInInput { answers: Record<PulseKey, PulseAnswer>; followUps?: Partial<Record<PulseKey, string>>; note?: string; named: boolean }
 const NOT_YET = 'Not yet, it’s still not working.';
 
 function useAppStateValue() {
   const [mode, setMode] = useState<Mode>(location.hash === '#manager' ? 'manager' : 'employee');
+  const [demoMilestone, setDemoMilestone] = useState<MilestoneKey>(ME.milestone);
   const [queue, setQueue] = useState<QueueTicket[]>(() => QUEUE.map((q) => ({ ...q })));
   const [mine, setMine] = useState<string[]>([]); // ticket ids raised from this employee canvas
   const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
@@ -295,29 +296,30 @@ function useAppStateValue() {
     clear: () => setHistory([]),
   };
 
-  /** Mira sent her weekly check-in. It replaces any earlier one for the same week. */
+  /** Mira sent her milestone check-in. It replaces any earlier one for the same milestone. */
   function submitCheckIn(input: CheckInInput): boolean {
     const now = Date.now();
     const note = input.note?.trim();
-    const existing = checkins.find((c) => c.person === ME.id && c.week === ME.week);
+    const followUps = Object.fromEntries(Object.entries(input.followUps ?? {}).map(([key, value]) => [key, value.trim()]).filter(([, value]) => !!value)) as CheckIn['followUps'];
+    const existing = checkins.find((c) => c.person === ME.id && c.milestone === demoMilestone);
     if (existing) {
       if (!existing.submittedAt || now - existing.submittedAt >= CHECKIN_EDIT_WINDOW_MS) return false;
-      const updated: CheckIn = { ...existing, at: 'Today ' + clock(), answers: input.answers, note: note || undefined, named: input.named, isNew: true };
+      const updated: CheckIn = { ...existing, at: 'Today ' + clock(), answers: input.answers, followUps, note: note || undefined, named: input.named, isNew: true };
       setCheckins((l) => l.map((c) => (c.id === updated.id ? updated : c)));
       later(() => setCheckins((l) => l.map((c) => (c.id === updated.id ? { ...c, isNew: false } : c))), 8000);
       return true;
     }
 
-    const ci: CheckIn = { id: uid('ci'), person: ME.id, week: ME.week, at: 'Today ' + clock(), submittedAt: now, answers: input.answers, note: note || undefined, named: input.named, isNew: true };
+    const ci: CheckIn = { id: uid('ci'), person: ME.id, milestone: demoMilestone, at: 'Today ' + clock(), submittedAt: now, answers: input.answers, followUps, note: note || undefined, named: input.named, isNew: true };
     setCheckins((l) => [ci, ...l]);
     later(() => setCheckins((l) => l.map((c) => (c.id === ci.id ? { ...c, isNew: false } : c))), 8000);
     return true;
   }
 
   /** A manager chose a follow-up for one person, or for a cohort theme. */
-  function planAction({ owner, ...input }: { person?: string; theme?: string; label: string; week: number; owner?: string }) {
+  function planAction({ owner, ...input }: { person?: string; theme?: string; label: string; milestone: CheckIn['milestone']; owner?: string }) {
     const x: SupportAction = { ...input, id: uid('act'), owner: owner ?? 'Rachel Goh', when: 'Today ' + nextSlot().split('–')[0], status: 'planned' };
-    setActions((l) => [...l.filter((a) => !(a.status === 'planned' && ((x.person && a.person === x.person && a.week === x.week) || (x.theme && a.theme === x.theme)))), x]);
+    setActions((l) => [...l.filter((a) => !(a.status === 'planned' && ((x.person && a.person === x.person && a.milestone === x.milestone) || (x.theme && a.theme === x.theme)))), x]);
   }
   function completeAction(id: string) {
     setActions((l) => l.map((a) => (a.id === id ? { ...a, status: 'done' } : a)));
@@ -355,7 +357,7 @@ function useAppStateValue() {
   return {
     mode, go, queue, mine, assignments, rooms, roomList, load, history: history_, historyItems: history, knowledge, kb, library, lib,
     experts, setExperts, openRoom, setOpenRoom, newTicketId, escalate, assignTheme, send, answerFeedback, answer1v1, back1v1, playDemo, stopDemo, resolve, reopen,
-    checkins, latestCheckins, actions, reachOut, submitCheckIn, planAction, completeAction,
+    checkins, latestCheckins, actions, reachOut, demoMilestone, setDemoMilestone, demoMilestones: CHECKIN_MILESTONES, submitCheckIn, planAction, completeAction,
   };
 }
 

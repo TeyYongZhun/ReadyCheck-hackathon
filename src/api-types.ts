@@ -1,5 +1,5 @@
 // Request/response shapes for /api/*. Shared by the browser (src/lib/api.ts) and the server (server/).
-import type { CardSpec, Lang, PulseAnswer, PulseKey, ThemeKey } from './types';
+import type { CardSpec, CorePulseKey, Lang, MilestoneKey, PulseAnswer, PulseKey, ThemeKey } from './types';
 
 export interface ChatLine { from: 'pic' | 'employee' | 'manager'; text: string }
 export interface PicPersona { name: string; first: string; team: string; skills: string }
@@ -63,13 +63,14 @@ export interface MaterialExtractResponse {
   steps: string[];
 }
 
-/** Weekly check-ins for one cohort. Notes carry no names; `people` holds only those who chose to share theirs, by id. */
+/** Milestone check-ins for one cohort. Notes carry no names; `people` holds only those who chose to share theirs. */
 export interface CheckinInsightsRequest {
   cohort: number;
   responses: number;
-  totals: Record<PulseKey, Record<PulseAnswer, number>>;
-  notes: string[];
-  people: { id: string; week: number; answers: Record<PulseKey, PulseAnswer>; note?: string; signals: string[] }[];
+  totals: Record<CorePulseKey, Record<PulseAnswer, number>>;
+  stageTotals: Partial<Record<MilestoneKey, Record<PulseAnswer, number>>>;
+  anonymousNotes: string[];
+  people: { id: string; named: true; milestone: MilestoneKey; answers: Record<PulseKey, PulseAnswer>; followUps?: Partial<Record<PulseKey, string>>; note?: string; signals: string[] }[];
 }
 export interface CheckinInsightsResponse {
   themes: { name: string; count: number; summary: string; action: string }[];

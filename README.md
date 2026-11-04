@@ -39,8 +39,8 @@ ReadyCheck reads three signals, all of them voluntary:
 | Signal | Where it comes from |
 |---|---|
 | **Stuck** | The questions a new hire chooses to ask, and whether a card or a person solved them |
-| **Onboarding pulse** | A one-minute weekly check-in on role clarity, tools and access, support and workload; Yes, Partly, Not yet or Not applicable, plus an optional note in any language |
-| **Acted on** | The follow-up a manager chose, and whether the next week's check-in got better |
+| **Onboarding pulse** | Five milestone check-ins with three stable questions and one stage-specific question; Yes, Partly, Not yet or Not applicable, plus optional follow-up prompts and an open note |
+| **Acted on** | The follow-up a manager chose, and whether stable core answers improved at the next milestone |
 
 **For new employees**
 - Ask a question in plain words, in **English, Bahasa Melayu, 中文 or தமிழ்**.
@@ -48,17 +48,31 @@ ReadyCheck reads three signals, all of them voluntary:
 - "You're not the only one: 9 new hires asked about this this week", so asking feels normal.
 - If it doesn't help, tap **Need human expert**. The question becomes a ticket.
 - Chat with the assigned expert in a **ticket room**. If it's still not fixed, book a **1:1 session**.
-- **Weekly check-in:** The same four questions each week on role clarity, tools and access, support, and workload. Each answer is Yes, Partly, Not yet or Not applicable. An optional note accepts any language. Employees choose to share their name with Rachel for direct help or share anonymously for cohort insights; anonymous insights appear only after at least 3 people check in. A submitted check-in can be edited for 5 minutes.
+- **Onboarding check-ins:** Five milestones: Week 1 (Getting Started), Week 2 (Early Adjustment), Day 30 (Building Competence), Day 60 (Growing Independence), and Day 90 (Successful Integration). In the demo, use the **Demo** button to switch the displayed milestone. Each has the same three core questions plus one stage-specific question. Answers are Yes, Partly, Not yet or Not applicable. Partly/Not yet reveals a relevant optional follow-up; an optional open note accepts any language. Employees choose to share their name with Rachel for direct help or share anonymously for cohort insights; anonymous insights appear only after at least 3 people check in. A submitted check-in can be edited for 5 minutes.
 
 **For managers and HR**
-- **Check-ins:** a "Reach out this week" list of people who shared their name and said something isn't working yet. Each row shows their own evidence (answers, note, open tickets), an AI reason and a suggested human step. **Plan it** tracks the step until it's done, and the employee sees it too.
-- **Cohort pulse and themes:** totals across everyone (shown only from 3 check-ins up), and AI themes from notes in any language, each with a suggested HR action.
-- **Did it help?** Last week's follow-ups next to the person's answers before and after.
+- **Check-ins:** a "Reach out this week" list built only from feedback employees explicitly shared with their name. Each row shows their own answers, note and open tickets, with an AI reason and suggested human step. Anonymous responses never enter this list or individual follow-up.
+- **Cohort pulse and themes:** anonymous answers and comments contribute only to grouped insights, shown after at least 3 employees check in. Anonymous comments are never shown verbatim or in individual rows; AI is instructed to omit identifying details. Each milestone-specific question is shown separately only when at least 3 people checked in at that milestone.
+- **Did it help?** For named follow-ups, managers can see whether each previously reported difficulty improved, persisted or worsened at the next milestone. Only the same three core questions are compared; stage-specific questions are not treated as equivalent.
 - **Needs you:** questions are grouped into topics (for example "VPN" or "Payroll"), with an AI summary of why people are stuck.
 - **One click** assigns an expert to everyone stuck on that topic.
 - **Knowledge base:** when a problem is solved, AI writes a new answer card. A manager approves it, so the next new hire gets the answer instantly. Each live card shows how many new hires it has answered since.
 - **Home:** expert time saved, time to an answer, and a **business case** in RM with every assumption on screen and editable.
 - **Trends:** see which topics come up most, by day, week or month.
+
+## Version 1 vs Version 2
+
+Version 1 focused on helping new employees get answers and connecting unresolved questions to a human expert. Version 2 keeps that core workflow and adds an onboarding support and follow-up loop.
+
+| Area | Version 1 | Added or improved in Version 2 |
+|---|---|---|
+| **Employee questions** | Ask a question, get one recommended knowledge card, and request a human expert if it does not help. | Adds multilingual questions and translations of approved answer cards, with an option to show the original. |
+| **Onboarding check-ins** | Not included. | Adds five milestones, with three stable core questions and a stage-specific question at each milestone. Partly/Not yet opens a relevant optional follow-up; employees can also add an optional note in any language. Named or anonymous sharing and the 5-minute edit window are retained. |
+| **Cohort insights** | Not included. | AI summarizes check-in responses and notes into themes. Anonymous cohort insights appear only when at least 3 people have checked in. |
+| **Manager follow-up** | Managers review grouped question topics and assign experts to unresolved questions. | Individual follow-up uses only feedback explicitly shared by name; anonymous feedback is excluded from person-level workflows. |
+| **Follow-up impact** | Not included. | Tracks stable core answers across milestones and shows whether previously reported difficulties improved, persisted or worsened. Different stage-specific questions are not compared. |
+| **Business case** | Basic Home and Trends views for onboarding questions. | Adds estimated expert time saved, time to an answer, and an editable business case in RM. |
+| **Trends** | Shows which question topics come up most by day, week, or month. | Extends analytics with onboarding check-in themes and follow-up results. |
 
 ## Workflow
 
@@ -73,12 +87,12 @@ ReadyCheck reads three signals, all of them voluntary:
 7. **AI** drafts a knowledge card from the solved conversation.
 8. **Manager / HR** approves it, so the next new hire with the same question gets the answer straight away.
 
-Alongside it runs the weekly check-in loop:
+Alongside it runs the milestone check-in loop:
 
 1. **New hire** sends a check-in, named or anonymous.
 2. **AI** groups the answers and notes into themes, and for each named person writes a reason from their own evidence and suggests one human step.
 3. **Manager / HR** chooses the step (a 15-minute priorities chat, a buddy, an expert follow-up) and marks it done.
-4. **Next week's check-in** shows whether it helped.
+4. **The next milestone check-in** shows whether the stable core answers changed.
 
 This matches the challenge's required flow: **employee feedback → AI finds themes → HR/manager reviews → support action**, with the action tracked.
 
@@ -89,7 +103,7 @@ We use **three Google Gemini models**, each picked for its job:
 | Model | Used for | Why this model |
 |---|---|---|
 | **Gemini 3.5 Flash-Lite** (`GEMINI_CHAT_MODEL`) | Choosing the answer card, reranking search results, detecting the question's language, translating the approved card, small-talk replies, the AI expert in rooms, topic and Home summaries | Fast and low-cost for short, frequent answers |
-| **Gemini 3.6 Flash** (`GEMINI_SUMMARY_MODEL`) | Turning a solved chat into a knowledge card, turning an uploaded PDF into a knowledge card, reading the week's check-ins into themes and follow-ups | Stronger at reading longer content and writing accurate steps |
+| **Gemini 3.6 Flash** (`GEMINI_SUMMARY_MODEL`) | Turning a solved chat into a knowledge card, turning an uploaded PDF into a knowledge card, reading milestone check-ins into themes and follow-ups | Stronger at reading longer content and writing accurate steps |
 | **Gemini Embedding 001** (`GEMINI_EMBEDDING_MODEL`) | Semantic search: finds the knowledge-base cards that mean the same as the question, even with different words | Turns text into vectors for similarity search |
 
 | What AI does | What a person still decides |
@@ -109,7 +123,7 @@ We use **three Google Gemini models**, each picked for its job:
 
 **Responsible by design**
 - Uses only questions employees **choose** to ask and check-ins they **choose** to send. No monitoring, no emotion detection, no "flight risk" score.
-- The employee chooses whether to share a check-in with their name or anonymously. Rachel sees named answers for direct follow-up; anonymous feedback contributes to cohort insights shown only after at least 3 people check in. Check-ins can be edited for 5 minutes after submission.
+- The employee chooses whether to share a check-in with their name or anonymously. Only named feedback enters individual follow-up; anonymous answers and comments contribute to grouped insights only after at least 3 employees check in. Anonymous comments are not shown verbatim, and AI themes must omit identifying details. Check-ins can be edited for 5 minutes after submission.
 - The AI never predicts resignation or judges performance. It cites the person's own answers and suggests a human step; a manager decides.
 - Every AI output is **labelled** in the app.
 - Nothing AI writes reaches employees until a **manager approves** it. Translations are of approved cards only.
@@ -254,7 +268,7 @@ ReadyCheck-hackathon/
 │   └── eval-set.json          # The 53 test questions and what counts as correct
 ├── src/                       # Front end (React + TypeScript)
 │   ├── views/
-│   │   ├── employee/          # Ask a question, answer cards, My tickets, weekly check-in
+│   │   ├── employee/          # Ask a question, answer cards, My tickets, milestone check-ins
 │   │   └── manager/           # Home, Needs you, Check-ins, Ticket room, Trends, Knowledge base, Expert team
 │   ├── components/            # Answer cards, ticket room chat, shared UI
 │   ├── state/AppState.tsx     # Shared data: tickets, rooms, knowledge cards

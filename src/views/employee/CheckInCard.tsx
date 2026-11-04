@@ -1,9 +1,9 @@
-// The employee's weekly check-in: four statements, an optional note, and their choice of who sees it.
+// The employee's milestone check-in: four ratings, conditional follow-ups, an optional note, and a privacy choice.
 // Voluntary by design. The sheet says exactly what the manager will see before anything is sent.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { PulseAnswer, PulseKey } from '../../types';
 import { ME, useApp } from '../../state/AppState';
-import { CHECKIN_EDIT_WINDOW_MS, MIN_GROUP, PULSE, PULSE_ANSWERS } from '../../data/checkins';
+import { CHECKIN_EDIT_WINDOW_MS, CHECKIN_MILESTONES, MIN_GROUP, PULSE_ANSWERS, questionsForMilestone } from '../../data/checkins';
 import { cx } from '../../lib/util';
 import { Icon } from '../../components/primitives';
 
@@ -13,8 +13,7 @@ const LABEL = Object.fromEntries(PULSE_ANSWERS.map((a) => [a.key, a.label])) as 
 /** Side-menu card: due, sent, and any follow-up the manager planned for Mira. */
 export function CheckInEntry({ onOpen }: { onOpen: () => void }) {
   const app = useApp();
-  const mine = app.latestCheckins.get(ME.id);
-  const sent = mine?.week === ME.week ? mine : undefined;
+  const sent = app.checkins.find((checkin) => checkin.person === ME.id && checkin.milestone === app.demoMilestone);
   const [collapsed, setCollapsed] = useState(!!sent);
   const [now, setNow] = useState(Date.now());
   const details = useRef<HTMLDivElement>(null);
@@ -50,15 +49,16 @@ export function CheckInEntry({ onOpen }: { onOpen: () => void }) {
   const canEdit = !!sent?.submittedAt && remaining > 0;
   const remainingSeconds = Math.ceil(remaining / 1000);
   const editTime = `${Math.floor(remainingSeconds / 60)}:${String(remainingSeconds % 60).padStart(2, '0')}`;
-  const followUp = app.actions.filter((a) => a.person === ME.id && a.week === ME.week).slice(-1)[0];
+  const followUp = app.actions.filter((a) => a.person === ME.id && a.milestone === app.demoMilestone).slice(-1)[0];
+  const milestone = CHECKIN_MILESTONES.find((m) => m.key === app.demoMilestone)!;
   return (
     <section className={cx('rc-ci-entry rc-glass rc-glass-1', !sent && 'is-due', sent?.isNew && 'is-new', sent && collapsed && 'is-collapsed')} aria-labelledby="rc-ci-entry-h">
       {sent ? (
         <button type="button" className="rc-ci-entry-toggle" id="rc-ci-entry-h" aria-expanded={!collapsed} aria-controls="rc-ci-entry-details" onClick={() => setCollapsed((value) => !value)}>
-          <span className="rc-ci-entry-h"><Icon name="check" size={16} className={sent.isNew ? 'is-success' : undefined} />Week {ME.week} check-in</span>
+          <span className="rc-ci-entry-h"><Icon name="check" size={16} className={sent.isNew ? 'is-success' : undefined} />{milestone.label} check-in</span>
           <Icon name="chevron" size={15} className={cx('rc-ci-entry-chevron', !collapsed && 'is-open')} />
         </button>
-      ) : <div className="rc-ci-entry-h" id="rc-ci-entry-h"><Icon name="bell" size={16} />Week {ME.week} check-in</div>}
+      ) : <div className="rc-ci-entry-h" id="rc-ci-entry-h"><Icon name="bell" size={16} />{milestone.label} check-in</div>}
       <div
         id={sent ? 'rc-ci-entry-details' : undefined}
         className={cx('rc-ci-entry-details', sent && collapsed && 'is-collapsed')}
@@ -90,15 +90,26 @@ export function CheckInEntry({ onOpen }: { onOpen: () => void }) {
 
 export function CheckInSheet({ onClose, onSubmitted }: { onClose: () => void; onSubmitted: (edited: boolean) => void }) {
   const app = useApp();
-  const prev = app.latestCheckins.get(ME.id);
-  const start = prev?.week === ME.week ? prev : undefined;
+  const start = app.checkins.find((checkin) => checkin.person === ME.id && checkin.milestone === app.demoMilestone);
+  const questions = questionsForMilestone(app.demoMilestone);
+  const milestone = CHECKIN_MILESTONES.find((m) => m.key === app.demoMilestone)!;
   const [answers, setAnswers] = useState<Partial<Record<PulseKey, PulseAnswer>>>(start?.answers ?? {});
+  const [followUps, setFollowUps] = useState<Partial<Record<PulseKey, string>>>(start?.followUps ?? {});
   const [note, setNote] = useState(start?.note ?? '');
   const [named, setNamed] = useState<boolean | null>(null);
   const [submitError, setSubmitError] = useState('');
+  const [milestoneMenuOpen, setMilestoneMenuOpen] = useState(false);
   const first = useRef<HTMLButtonElement>(null);
   const close = useRef(onClose); close.current = onClose;
-  const done = PULSE.every((p) => answers[p.key]);
+  const done = questions.every((p) => answers[p.key]);
+
+  useEffect(() => {
+    setAnswers(start?.answers ?? {});
+    setFollowUps(start?.followUps ?? {});
+    setNote(start?.note ?? '');
+    setNamed(null);
+    setSubmitError('');
+  }, [app.demoMilestone]);
 
   useEffect(() => {
     first.current?.focus({ preventScroll: true });
@@ -110,7 +121,10 @@ export function CheckInSheet({ onClose, onSubmitted }: { onClose: () => void; on
   function send(e: React.FormEvent) {
     e.preventDefault();
     if (!done || named === null) return;
-    const submitted = app.submitCheckIn({ answers: answers as Record<PulseKey, PulseAnswer>, note, named });
+    const relevantFollowUps = Object.fromEntries(questions
+      .filter((p) => (answers[p.key] === 'partly' || answers[p.key] === 'notyet') && followUps[p.key]?.trim())
+      .map((p) => [p.key, followUps[p.key]!.trim()])) as Partial<Record<PulseKey, string>>;
+    const submitted = app.submitCheckIn({ answers: answers as Record<PulseKey, PulseAnswer>, followUps: relevantFollowUps, note, named });
     if (!submitted) {
       setSubmitError('The 5-minute edit window has expired. Your check-in was not changed.');
       return;
@@ -119,8 +133,10 @@ export function CheckInSheet({ onClose, onSubmitted }: { onClose: () => void; on
     onClose();
   }
 
-  const notYes = PULSE.filter((p) => answers[p.key] && answers[p.key] !== 'yes');
-  const preview = `${ME.person} · ${notYes.length ? notYes.map((p) => `${p.short}: ${LABEL[answers[p.key]!]}`).join(' · ') : 'All “yes”'}${note.trim() ? ' · your note' : ''}`;
+  const notYes = questions.filter((p) => answers[p.key] && answers[p.key] !== 'yes');
+  const followUpPreview = questions.filter((p) => (answers[p.key] === 'partly' || answers[p.key] === 'notyet') && followUps[p.key]?.trim())
+    .map((p) => `${p.short} follow-up: ${followUps[p.key]!.trim()}`);
+  const preview = `${ME.person} · ${notYes.length ? notYes.map((p) => `${p.short}: ${LABEL[answers[p.key]!]}`).join(' · ') : 'All “yes”'}${followUpPreview.length ? ' · ' + followUpPreview.join(' · ') : ''}${note.trim() ? ' · your note' : ''}`;
 
   return (
     <div className="rc-roomlayer" role="dialog" aria-modal="true" aria-labelledby="rc-ci-h">
@@ -128,13 +144,13 @@ export function CheckInSheet({ onClose, onSubmitted }: { onClose: () => void; on
       <section className="rc-troom rc-ci-sheet rc-glass rc-glass-3">
         <header className="rc-troom-head">
           <div className="rc-troom-row">
-            <h2 className="rc-ci-h" id="rc-ci-h">Week {ME.week} check-in</h2>
+            <h2 className="rc-ci-h" id="rc-ci-h">{milestone.label}: {milestone.title}</h2>
             <button type="button" className="rc-toast-x rc-troom-x" aria-label="Close check-in" onClick={onClose}><Icon name="close" size={16} /></button>
           </div>
           <p className="rc-ci-s">About one minute · no right or wrong answers.</p>
         </header>
         <form className="rc-ci-form" onSubmit={send}>
-          {PULSE.map((p, i) => (
+          {questions.map((p, i) => (
             <fieldset key={p.key} className="rc-ci-q">
               <legend className="rc-ci-qt"><span>{p.dimension}</span>{p.text}</legend>
               <div className="rc-seg rc-ci-seg" role="radiogroup" aria-label={p.text}>
@@ -144,9 +160,14 @@ export function CheckInSheet({ onClose, onSubmitted }: { onClose: () => void; on
                     onClick={() => setAnswers((s) => ({ ...s, [p.key]: a.key }))}>{a.label}</button>
                 ))}
               </div>
+              {answers[p.key] === 'partly' || answers[p.key] === 'notyet' ? (
+                <label className="rc-ci-followup">{p.followUp} <span>Optional · any language</span>
+                  <textarea className="rc-kb-area" rows={2} maxLength={300} value={followUps[p.key] ?? ''} placeholder="Share only what would be helpful" onChange={(e) => setFollowUps((s) => ({ ...s, [p.key]: e.target.value }))} />
+                </label>
+              ) : null}
             </fieldset>
           ))}
-          <label className="rc-kb-lab">What, if anything, is getting in the way of your work? <span>Optional · any language</span>
+          <label className="rc-kb-lab">What, if anything, is getting in the way of your progress? <span>Optional · any language</span>
             <textarea className="rc-kb-area" rows={3} maxLength={400} value={note} placeholder="e.g. Not sure what to focus on yet" onChange={(e) => setNote(e.target.value)} />
           </label>
           <fieldset className="rc-ci-q">
@@ -165,7 +186,22 @@ export function CheckInSheet({ onClose, onSubmitted }: { onClose: () => void; on
           {submitError ? <p className="rc-ci-error" role="alert">{submitError}</p> : null}
           <div className="rc-ci-foot">
             <button type="submit" className="rc-btn-primary is-sm" disabled={!done || named === null || !!submitError}><Icon name="check" size={16} strokeWidth={2.2} />{start ? 'Save changes' : 'Submit check-in'}</button>
-            <span className="rc-ci-foot-s">{start ? 'Edits are available for 5 minutes after sending.' : `${PULSE.filter((p) => answers[p.key]).length} of ${PULSE.length} answered`}</span>
+            <span className="rc-ci-foot-s">{start ? 'Edits are available for 5 minutes after sending.' : `${questions.filter((p) => answers[p.key]).length} of ${questions.length} answered`}</span>
+            <div className="rc-ci-demo-switch">
+              <button type="button" className="rc-btn-ghost is-sm" aria-expanded={milestoneMenuOpen} aria-controls="rc-ci-demo-milestones" onClick={() => setMilestoneMenuOpen((open) => !open)}>
+                Demo: {milestone.label}<Icon name="chevron" size={14} className={cx('rc-chev-down', milestoneMenuOpen && 'is-open')} />
+              </button>
+              {milestoneMenuOpen ? (
+                <div className="rc-ci-demo-options" id="rc-ci-demo-milestones" role="group" aria-label="Choose demo check-in milestone">
+                  {app.demoMilestones.map((option) => (
+                    <button key={option.key} type="button" className={cx('rc-ci-demo-option', option.key === app.demoMilestone && 'is-current')} aria-pressed={option.key === app.demoMilestone}
+                      onClick={() => { app.setDemoMilestone(option.key); setMilestoneMenuOpen(false); }}>
+                      <span>{option.label}</span><b>{option.title}</b>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           </div>
         </form>
       </section>

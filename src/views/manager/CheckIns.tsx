@@ -1,22 +1,27 @@
-// Manager view: weekly check-ins from new hires, read alongside the questions they asked.
+// Manager view: onboarding milestone check-ins, read alongside the questions employees asked.
 // "Reach out this week" lists only people who shared their name; everyone else is in cohort totals of 3 or more.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CheckinInsightsResponse } from '../../api-types';
-import type { PulseAnswer } from '../../types';
+import type { MilestoneKey, PulseAnswer } from '../../types';
 import { useApp } from '../../state/AppState';
-import { COHORT, COHORT_LABEL, MIN_GROUP, PULSE, PULSE_ANSWERS, PULSE_ACTION } from '../../data/checkins';
-import { fallbackThemes, fallbackWhy, followUpResults, insightsRequest, totalsOf, type ReachOut } from '../../lib/checkins';
+import { CHECKIN_MILESTONES, COHORT, COHORT_LABEL, CORE_PULSE, MIN_GROUP, PULSE_ANSWERS, PULSE_ACTION, STAGE_PULSE, questionsForMilestone } from '../../data/checkins';
+import { fallbackThemes, fallbackWhy, followUpResults, insightsRequest, latestByPersonAtMilestone, totalsOf, type ReachOut } from '../../lib/checkins';
 import { askCheckinInsights } from '../../lib/api';
 import { cx, plural } from '../../lib/util';
 import { AiLabel, Footnote, Icon, PageHead, Person } from '../../components/primitives';
 
 const LABEL = Object.fromEntries(PULSE_ANSWERS.map((a) => [a.key, a.label])) as Record<PulseAnswer, string>;
+const milestoneRange = (key: MilestoneKey) => {
+  const current = CHECKIN_MILESTONES.find((milestone) => milestone.key === key)!;
+  const next = CHECKIN_MILESTONES.find((milestone) => milestone.order === current.order + 1);
+  return `${current.label} → ${next?.label ?? 'next milestone'}`;
+};
 
 /** Gemini reads the cohort's check-ins. Mounted with the manager view, so a check-in sent from the employee
  *  side is already summarised by the time the manager opens the tab. Re-asked only when the inputs change. */
 export function useCheckinInsights() {
   const app = useApp();
-  const req = insightsRequest([...app.latestCheckins.values()], COHORT.length, app.reachOut);
+  const req = insightsRequest(app.checkins, COHORT.length, app.reachOut);
   const sig = JSON.stringify(req);
   const [res, setRes] = useState<{ sig: string; data: CheckinInsightsResponse | null } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -68,16 +73,18 @@ function PlanControl({ suggestion, options, onPlan }: { suggestion: string; opti
 function ReachOutRow({ r, ai }: { r: ReachOut; ai?: { why: string; action: string } }) {
   const app = useApp();
   const read = ai ?? fallbackWhy(r);
-  const concerns = PULSE.filter((p) => r.checkin.answers[p.key] === 'partly' || r.checkin.answers[p.key] === 'notyet');
+  const questions = questionsForMilestone(r.checkin.milestone);
+  const concerns = questions.filter((p) => r.checkin.answers[p.key] === 'partly' || r.checkin.answers[p.key] === 'notyet');
   const options = [read.action, ...concerns.map((p) => PULSE_ACTION[p.key]), 'Ask the expert to follow up on their ticket'];
   const x = r.action;
+  const milestone = CHECKIN_MILESTONES.find((m) => m.key === r.checkin.milestone)!;
   return (
     <li className={cx('rc-ci-row', r.checkin.isNew && 'is-new')}>
       <Person initials={r.hire.initials} />
       <div className="rc-ci-rowb">
         <div className="rc-need-pt">
           <span className="rc-need-pn">{r.hire.name}</span>
-          <span className="rc-need-pr">{r.hire.role} · {r.hire.team} · Week {r.checkin.week}</span>
+          <span className="rc-need-pr">{r.hire.role} · {r.hire.team} · {milestone.label}: {milestone.title}</span>
           {r.checkin.isNew ? <span className="rc-new">Just in</span> : null}
         </div>
         <ul className="rc-ci-chips" aria-label="What they told us">
@@ -87,6 +94,7 @@ function ReachOutRow({ r, ai }: { r: ReachOut; ai?: { why: string; action: strin
           {r.signals.map((s) => <li key={s} className="rc-ci-chip is-sig"><Icon name="route" size={12} />{s}</li>)}
         </ul>
         {r.checkin.note ? <p className="rc-ci-note">“{r.checkin.note}”</p> : null}
+        {concerns.map((p) => r.checkin.followUps?.[p.key] ? <p key={p.key} className="rc-ci-note"><b>{p.followUp}</b> “{r.checkin.followUps[p.key]}”</p> : null)}
         <p className="rc-ci-why">{ai ? <AiLabel>AI summary</AiLabel> : <span className="rc-ci-src">From their answers</span>}{read.why}</p>
         {x ? (
           <div className={cx('rc-ci-act', x.status === 'done' && 'is-done')}>
@@ -95,7 +103,7 @@ function ReachOutRow({ r, ai }: { r: ReachOut; ai?: { why: string; action: strin
             {x.status === 'planned' ? <button type="button" className="rc-link-btn" onClick={() => app.completeAction(x.id)}>Mark done</button> : null}
           </div>
         ) : (
-          <PlanControl suggestion={read.action} options={options} onPlan={(label) => app.planAction({ person: r.hire.id, label, week: r.checkin.week })} />
+          <PlanControl suggestion={read.action} options={options} onPlan={(label) => app.planAction({ person: r.hire.id, label, milestone: r.checkin.milestone })} />
         )}
       </div>
     </li>
@@ -106,6 +114,10 @@ export function CheckIns({ insights }: { insights: CheckinInsights }) {
   const app = useApp();
   const latest = [...app.latestCheckins.values()];
   const totals = totalsOf(latest);
+  const milestoneResults = CHECKIN_MILESTONES.map((milestone) => ({
+    milestone,
+    checkins: latestByPersonAtMilestone(app.checkins, milestone.key),
+  }));
   const { ai, fresh, loading } = insights;
   const aiPeople = new Map((ai?.people ?? []).map((p) => [p.id, p]));
   const themes = latest.length >= MIN_GROUP ? (ai?.themes.length ? ai.themes : fallbackThemes(latest)) : [];
@@ -120,12 +132,12 @@ export function CheckIns({ insights }: { insights: CheckinInsights }) {
     ['Checked in', `${latest.length} of ${COHORT.length}`, COHORT_LABEL, 'check', ''],
     ['Awaiting follow-up', String(awaitingFollowUp), 'Shared their name, no follow-up yet', 'users', awaitingFollowUp ? 'is-hot' : ''],
     ['Follow-ups planned', String(planned), 'Chosen by a manager', 'calendar', ''],
-    ['Follow-ups done', String(done), comparableResults.length ? `${better} of ${comparableResults.length} scored higher next week` : 'No comparable answers yet', 'ready', ''],
+    ['Follow-ups done', String(done), comparableResults.length ? `${better} of ${comparableResults.length} improved at the next milestone` : 'No comparable answers yet', 'ready', ''],
   ];
 
   return (
     <div className="rc-home rc-ci" role="tabpanel" id="rc-pane-checkins" aria-labelledby="rc-tab-checkins">
-      <PageHead title="Check-ins" sub="Weekly check-ins new hires chose to send, read with the questions they asked. Reach out early, then see if it helped.">
+      <PageHead title="Check-ins" sub="Onboarding milestone check-ins employees chose to send, read with the questions they asked. Offer support and see what changes by the next milestone.">
         <div className="rc-home-meta"><AiLabel>Sample cohort</AiLabel></div>
       </PageHead>
 
@@ -158,7 +170,7 @@ export function CheckIns({ insights }: { insights: CheckinInsights }) {
             {latest.length >= MIN_GROUP ? (
               <>
                 <ul className="rc-ci-bars">
-                  {PULSE.map((p) => {
+                  {CORE_PULSE.map((p) => {
                     const t = totals[p.key];
                     return (
                       <li key={p.key}>
@@ -174,6 +186,26 @@ export function CheckIns({ insights }: { insights: CheckinInsights }) {
                 <p className="rc-ci-legend">{PULSE_ANSWERS.map((a) => <span key={a.key}><i className={'is-' + a.key} />{a.label}</span>)}</p>
               </>
             ) : <p className="rc-sec-empty">Shown once {MIN_GROUP} or more people have checked in.</p>}
+            <h3 className="rc-panel-h rc-ci-stage-heading">Stage-specific questions</h3>
+            <p className="rc-panel-s">Each milestone has a different question; results are kept separate.</p>
+            {milestoneResults.some((result) => result.checkins.length >= MIN_GROUP) ? (
+              <ul className="rc-ci-stage-list">
+                {milestoneResults.filter((result) => result.checkins.length >= MIN_GROUP).map(({ milestone, checkins }) => {
+                  const counts = Object.fromEntries(PULSE_ANSWERS.map((answer) => [answer.key, 0])) as Record<PulseAnswer, number>;
+                  checkins.forEach((checkin) => { counts[checkin.answers.stage] += 1; });
+                  const question = STAGE_PULSE[milestone.key];
+                  return (
+                    <li key={milestone.key}>
+                      <p className="rc-ci-stage-title"><b>{milestone.label} · {milestone.title}:</b> {question.text}</p>
+                      <span className="rc-ci-bars-t" role="img" aria-label={`${milestone.label}: ${counts.yes} yes, ${counts.partly} partly, ${counts.notyet} not yet, ${counts.na} not applicable`}>
+                        {PULSE_ANSWERS.map((answer) => counts[answer.key] ? <i key={answer.key} className={'is-' + answer.key} style={{ flexGrow: counts[answer.key] }} /> : null)}
+                      </span>
+                      <span className="rc-ci-bars-n">{checkins.length} checked in</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : <p className="rc-ci-stage-empty">Stage-specific results appear when at least {MIN_GROUP} people have checked in at the same milestone.</p>}
           </section>
 
           <section className="rc-home-card rc-glass rc-glass-2" aria-labelledby="rc-ci-themes-h">
@@ -189,7 +221,7 @@ export function CheckIns({ insights }: { insights: CheckinInsights }) {
                     <div className="rc-ci-theme-a">
                       <span>Suggested: {t.action}</span>
                       {x ? <span className="rc-ci-theme-st"><Icon name={x.status === 'done' ? 'check' : 'calendar'} size={13} />{x.status === 'done' ? 'Done' : 'Planned'} · {x.owner}</span>
-                        : <button type="button" className="rc-link-btn" onClick={() => app.planAction({ theme: t.name, label: t.action, week: 1, owner: 'Sofia Hart' })}>Plan it</button>}
+                        : <button type="button" className="rc-link-btn" onClick={() => app.planAction({ theme: t.name, label: t.action, milestone: latest[0]?.milestone ?? 'week1', owner: 'Sofia Hart' })}>Plan it</button>}
                     </div>
                   </li>
                 );
@@ -198,24 +230,31 @@ export function CheckIns({ insights }: { insights: CheckinInsights }) {
           </section>
 
           <section className="rc-home-card rc-glass rc-glass-2" aria-labelledby="rc-ci-loop-h">
-            <h2 className="rc-panel-h" id="rc-ci-loop-h">Did last week’s follow-ups help?</h2>
-            <p className="rc-panel-s">Average of applicable answers: Yes = 2, Partly = 1, Not yet = 0; Not applicable is excluded.</p>
+            <h2 className="rc-panel-h" id="rc-ci-loop-h">Did follow-ups help at the next milestone?</h2>
+            <p className="rc-panel-s">Average across the three stable core questions: Yes = 2, Partly = 1, Not yet = 0; Not applicable is excluded.</p>
             <ul className="rc-ci-loop">
               {results.map((r) => (
                 <li key={r.action.id}>
-                  <div className="rc-ci-loop-h"><Person initials={r.hire.initials} /><span><b>{r.hire.name}</b><span className="rc-ci-loop-a">{r.action.label}</span></span></div>
+                  <div className="rc-ci-loop-h"><Person initials={r.hire.initials} /><span><b>{r.hire.name}</b><span className="rc-ci-loop-a">{r.action.label} · {milestoneRange(r.action.milestone)}</span></span></div>
                   <p className={cx('rc-ci-score', r.scoreChange !== null && r.scoreChange > 0 && 'is-better', r.scoreChange !== null && r.scoreChange < 0 && 'is-lower')}>
                     {r.scoreChange === null
-                      ? 'No dimensions were applicable in both weeks'
+                      ? 'No core questions were applicable at both milestones'
                       : `Average: ${r.beforeScore!.toFixed(1)}/2 → ${r.afterScore!.toFixed(1)}/2 (${r.scoreChange > 0 ? '+' : ''}${r.scoreChange.toFixed(1)}) · ${r.scoreChange > 0 ? 'Improved' : r.scoreChange < 0 ? 'Lower' : 'No change'}`}
                   </p>
                   <ul className="rc-ci-chips">
-                    {r.changed.map((c) => <li key={c.p.key} className={cx('rc-ci-chip', c.to === 'yes' && 'is-better')}>{c.p.short}: {LABEL[c.from]} → {LABEL[c.to]}</li>)}
+                    {r.dimensions.map((dimension) => (
+                      <li key={dimension.p.key} className={cx('rc-ci-chip',
+                        dimension.status === 'improved' && 'is-better',
+                        dimension.status === 'worsened' && 'is-not',
+                      )}>
+                        {dimension.p.short}: {dimension.status === 'new' ? 'New difficulty' : dimension.status === 'not-comparable' ? 'Not comparable' : dimension.status[0].toUpperCase() + dimension.status.slice(1)} ({LABEL[dimension.from]} → {LABEL[dimension.to]})
+                      </li>
+                    ))}
                   </ul>
                 </li>
               ))}
             </ul>
-            <p className="rc-home-note">Compares dimensions applicable both weeks; Not applicable is excluded. Score change does not prove the follow-up caused it. Sample data, not measured results.</p>
+            <p className="rc-home-note">Compares only stable core questions at consecutive milestones; Not applicable is excluded. Score change does not prove the follow-up caused it. Sample data, not measured results.</p>
           </section>
         </div>
       </div>

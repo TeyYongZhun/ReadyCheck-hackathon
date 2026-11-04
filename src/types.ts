@@ -146,28 +146,30 @@ export interface HistoryEntry {
 
 export type ManagerTab = 'home' | 'needs' | 'checkins' | 'rooms' | 'trends' | 'knowledge' | 'team';
 
-/** The four check-in statements. Each one is a cause of early disengagement the challenge brief names. */
-export type PulseKey = 'clarity' | 'tools' | 'support' | 'workload';
+export type MilestoneKey = 'week1' | 'week2' | 'day30' | 'day60' | 'day90';
+export type PulseKey = 'clarity' | 'support' | 'workload' | 'stage';
+export type CorePulseKey = Exclude<PulseKey, 'stage'>;
 export type PulseAnswer = 'yes' | 'partly' | 'notyet' | 'na';
 
 /** One person in the onboarding cohort, as the manager's Check-ins tab knows them. */
 export interface NewHire {
   id: string; name: string; first: string; initials: string; role: string; team: string;
-  /** Onboarding week they are in now (1 = first week). */
-  week: number;
+  /** Current onboarding milestone. */
+  milestone: MilestoneKey;
   /** Ticket signals from before this session (seed only). Live ones come from shared state. */
   signals?: string[];
 }
 
-/** A weekly check-in the employee chose to send. */
+/** A milestone check-in the employee chose to send. */
 export interface CheckIn {
   id: string; person: string;
-  /** The onboarding week it is for. */
-  week: number;
+  milestone: MilestoneKey;
   at: string;
   /** Timestamp of the original submission; editing does not extend the five-minute window. */
   submittedAt?: number;
   answers: Record<PulseKey, PulseAnswer>;
+  /** Optional, question-specific context shown only after Partly or Not yet. */
+  followUps?: Partial<Record<PulseKey, string>>;
   note?: string;
   /** The employee chose to share their name. If not, it only counts in cohort totals. */
   named: boolean;
@@ -181,6 +183,6 @@ export interface SupportAction {
   theme?: string;
   label: string; owner: string; when: string;
   status: 'planned' | 'done';
-  /** The onboarding week it was planned in, so the next check-in can show whether it helped. */
-  week: number;
+  /** The milestone it was planned in, so the next check-in can show whether it helped. */
+  milestone: MilestoneKey;
 }
