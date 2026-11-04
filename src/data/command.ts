@@ -50,13 +50,13 @@ export const SUGGEST: Record<ThemeKey, string> = { db: 'mc', vpn: 'ao', hw: 'ao'
 export const QUEUE: QueueTicket[] = [];
 
 export const ROOMS: Room[] = [
-  { id: 'r1', ticket: 'RC-1044', name: '#expenses-client-dinner', theme: 'exp', pic: 'dl', people: ['SK', 'BW'], status: 'live', elapsed: 14, last: 'Daniel: Retroactive approval is fine under RM 1,500. Sending the form now.' },
-  { id: 'r2', ticket: 'RC-1045', name: '#mfa-lost-phone', theme: 'mfa', pic: 'pr', people: ['OD'], status: 'live', elapsed: 6, last: 'Priya: Video call link sent. I’ll verify you in two minutes.' },
-  { id: 'r3', ticket: 'RC-1046', name: '#vpn-split-tunnel', theme: 'vpn', pic: 'ao', people: ['FN'], status: 'waiting', elapsed: 22, last: 'Ana: Can you reconnect and tell me what the status bar says?' },
-  { id: 'r4', ticket: 'RC-1039', name: '#payroll-bank-codes', theme: 'pay', pic: 'dl', people: ['HY', 'RT'], status: 'resolved', elapsed: 41, last: 'Resolved: Boost added to the supported banks list.' },
-  { id: 'r5', ticket: 'RC-1036', name: '#buddy-pairing', theme: 'onb', pic: 'sh', people: ['IC'], status: 'resolved', elapsed: 18, last: 'Resolved: Buddy assigned and invite sent for Friday.' },
-  { id: 'r6', ticket: 'RC-1034', name: '#vpn-cert-reset', theme: 'vpn', pic: 'ao', people: ['KC', 'AB'], status: 'resolved', elapsed: 27, last: 'Resolved: Certificates re-issued for both laptops.' },
-  { id: 'r7', ticket: 'RC-1031', name: '#warehouse-read-role', theme: 'db', pic: 'mc', people: ['RA'], status: 'resolved', elapsed: 35, last: 'Resolved: Read role granted by the data owner.' },
+  { id: 'r1', ticket: 'RC-1044', name: '#expenses-client-dinner', theme: 'exp', pic: 'dl', people: ['SK', 'BW'], who: 'Siti Kamal', status: 'live', elapsed: 14, last: 'Daniel: Retroactive approval is fine under RM 1,500. Sending the form now.' },
+  { id: 'r2', ticket: 'RC-1045', name: '#mfa-lost-phone', theme: 'mfa', pic: 'pr', people: ['OD'], who: 'Omar Daud', status: 'live', elapsed: 6, last: 'Priya: Video call link sent. I’ll verify you in two minutes.' },
+  { id: 'r3', ticket: 'RC-1046', name: '#vpn-split-tunnel', theme: 'vpn', pic: 'ao', people: ['FN'], who: 'Farah Nordin', status: 'waiting', elapsed: 22, last: 'Ana: Can you reconnect and tell me what the status bar says?' },
+  { id: 'r4', ticket: 'RC-1039', name: '#payroll-bank-codes', theme: 'pay', pic: 'dl', people: ['HY', 'RT'], who: 'Hui Yi Tan', status: 'resolved', elapsed: 41, last: 'Resolved: Boost added to the supported banks list.' },
+  { id: 'r5', ticket: 'RC-1036', name: '#buddy-pairing', theme: 'onb', pic: 'sh', people: ['IC'], who: 'Iris Chong', status: 'resolved', elapsed: 18, last: 'Resolved: Buddy assigned and invite sent for Friday.' },
+  { id: 'r6', ticket: 'RC-1034', name: '#vpn-cert-reset', theme: 'vpn', pic: 'ao', people: ['KC', 'AB'], who: 'Kumar Chandran', status: 'resolved', elapsed: 27, last: 'Resolved: Certificates re-issued for both laptops.' },
+  { id: 'r7', ticket: 'RC-1031', name: '#warehouse-read-role', theme: 'db', pic: 'mc', people: ['RA'], who: 'Rizal Ahmad', status: 'resolved', elapsed: 35, last: 'Resolved: Read role granted by the data owner.' },
 ];
 
 export const SEED_KB: KbItem[] = [

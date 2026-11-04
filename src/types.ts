@@ -89,6 +89,8 @@ export interface Room {
   /** Minutes since opened. */
   elapsed: number;
   last: string; isNew?: boolean;
+  /** Full name of the first employee, for seeded rooms that have no ticket to take it from. */
+  who?: string;
 }
 
 /** pic = the assigned expert, manager = Rachel replying from the Command Center. */
@@ -112,6 +114,9 @@ export interface KbItem {
   allowEmployeeAccess?: boolean;
 }
 
+/** The languages an employee can ask in: English, Bahasa Melayu, Chinese, Tamil. */
+export type Lang = 'en' | 'ms' | 'zh' | 'ta';
+
 /** What the canvas shows for one question: one card, plus who handles it if escalated. */
 export interface CanvasAnswer {
   heading: string;
@@ -121,6 +126,8 @@ export interface CanvasAnswer {
   card: CardSpec;
   /** "ai": Gemini chose or wrote it. "offline": keyword fallback because the AI call failed. */
   source: 'ai' | 'offline';
+  /** The employee asked in another language: `card` is the AI translation, `original` the approved English card. */
+  translated?: { lang: Lang; original: CardSpec };
 }
 
 /** A short conversational reply when the message isn't a work issue (e.g. "hi"). No card, nothing to escalate. */
@@ -133,6 +140,45 @@ export interface ChatReply {
 export interface HistoryEntry {
   id: string; query: string; answer: CanvasAnswer; cardType: CardKind; title: string; heading: string; at: string;
   state: 'viewed' | 'solved' | 'escalated'; ticketId?: string; files?: Pick<Attachment, 'name' | 'kind'>[];
+  /** Milliseconds from asking to the card, for Home's "Time to an answer". */
+  ms?: number;
 }
 
-export type ManagerTab = 'home' | 'needs' | 'rooms' | 'trends' | 'knowledge' | 'team';
+export type ManagerTab = 'home' | 'needs' | 'checkins' | 'rooms' | 'trends' | 'knowledge' | 'team';
+
+/** The four check-in statements. Each one is a cause of early disengagement the challenge brief names. */
+export type PulseKey = 'clarity' | 'support' | 'workload' | 'feedback';
+export type PulseAnswer = 'yes' | 'partly' | 'notyet';
+
+/** One person in the onboarding cohort, as the manager's Check-ins tab knows them. */
+export interface NewHire {
+  id: string; name: string; first: string; initials: string; role: string; team: string;
+  /** Onboarding week they are in now (1 = first week). */
+  week: number;
+  /** Ticket signals from before this session (seed only). Live ones come from shared state. */
+  signals?: string[];
+}
+
+/** A weekly check-in the employee chose to send. */
+export interface CheckIn {
+  id: string; person: string;
+  /** The onboarding week it is for. */
+  week: number;
+  at: string;
+  answers: Record<PulseKey, PulseAnswer>;
+  note?: string;
+  /** The employee chose to share their name. If not, it only counts in cohort totals. */
+  named: boolean;
+  isNew?: boolean;
+}
+
+/** A support step a manager chose, for one person or for a cohort theme, tracked until done. */
+export interface SupportAction {
+  id: string;
+  person?: string;
+  theme?: string;
+  label: string; owner: string; when: string;
+  status: 'planned' | 'done';
+  /** The onboarding week it was planned in, so the next check-in can show whether it helped. */
+  week: number;
+}

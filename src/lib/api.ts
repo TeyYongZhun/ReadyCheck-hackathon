@@ -3,6 +3,7 @@ import type {
   AnswerRequest, AnswerResponse, RoomReplyRequest, RoomReplyResponse,
   SummarizeRequest, SummarizeResponse, ThemeSummaryRequest, ThemeSummaryResponse,
   HomeSummaryRequest, HomeSummaryResponse, MaterialExtractRequest, MaterialExtractResponse,
+  CheckinInsightsRequest, CheckinInsightsResponse, TranslateCardRequest, TranslateCardResponse,
 } from '../api-types';
 import { markAiConnected, markAiOffline } from './ai-status';
 
@@ -32,3 +33,7 @@ export const askSummary = (b: SummarizeRequest) => post<SummarizeResponse>('summ
 export const askThemeSummary = (b: ThemeSummaryRequest) => post<ThemeSummaryResponse>('theme-summary', b);
 export const askHomeSummary = (b: HomeSummaryRequest) => post<HomeSummaryResponse>('home-summary', b);
 export const extractMaterial = (b: MaterialExtractRequest) => post<MaterialExtractResponse>('material-extract', b);
+export const askCheckinInsights = (b: CheckinInsightsRequest) => post<CheckinInsightsResponse>('checkin-insights', b, 20000);
+export const translateCard = (b: TranslateCardRequest) => post<TranslateCardResponse>('translate-card', b, 9000);
+/** Fire once on load: embeds the library on this server instance so the first question is fast. */
+export const warmUp = () => post<{ ok: true; cards: number }>('warmup', {}, 25000);

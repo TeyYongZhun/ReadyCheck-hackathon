@@ -1,8 +1,26 @@
 // Turns a question into the one card the canvas shows: Gemini first, keyword fallback if the API fails.
-import type { CanvasAnswer, CardSpec, ChatReply, Expert, KbItem, LibraryEntry, ThemeKey } from '../types';
-import { DEFAULT_SUGGEST, DEMO_ANSWER_BUDGET_MS, SCENARIOS, SCEN_THEME } from '../data/scenarios';
+import type { CanvasAnswer, CardSpec, ChatReply, Expert, KbItem, Lang, LibraryEntry, ThemeKey } from '../types';
+import { ANSWER_BUDGET_MS, DEFAULT_SUGGEST, DEMO_ANSWER_BUDGET_MS, SCENARIOS, SCEN_THEME } from '../data/scenarios';
 import { PICS } from '../data/command';
-import { askAnswer } from './api';
+import { askAnswer, translateCard } from './api';
+
+/** The approved card, translated into the language the employee asked in. Falls back to English if translation fails. */
+async function inLanguage(answer: CanvasAnswer, lang: Lang | undefined): Promise<CanvasAnswer> {
+  if (!lang || lang === 'en') return answer;
+  const original = answer.card;
+  // Materials stay out of the request (data URLs can be megabytes); the merge below keeps them.
+  const lean = { ...original, props: { ...original.props, materials: undefined } } as CardSpec;
+  const res = await translateCard({ lang, card: lean });
+  if (!res) return answer;
+  const card = { ...original, props: { ...original.props, ...res.card.props } } as CardSpec;
+  return { ...answer, card, translated: { lang, original } };
+}
+
+/** A few words in Malay, Chinese and Tamil, so the offline matcher still finds approved cards when Gemini is down. */
+const OFFLINE_HINTS: [RegExp, ThemeKey][] = [
+  [/cuti|年假|休假|விடுப்பு/i, 'leave'],
+  [/gaji|bank|工资|薪水|சம்பளம்/i, 'pay'],
+];
 
 function expertFor(theme: ThemeKey): Expert {
   const p = PICS.find((x) => x.covers.includes(theme)) ?? PICS[PICS.length - 1];
@@ -11,11 +29,11 @@ function expertFor(theme: ThemeKey): Expert {
 
 function themeForQuery(query: string, fallback: ThemeKey): ThemeKey {
   const q = query.toLocaleLowerCase();
-  if (/\b(database|staging|postgres|postgresql|sql|warehouse|db-?\d*|read role)\b/.test(q)) return 'db';
-  if (/\b(vpn|remote access|wi-?fi|network|globalconnect|split tunnel)\b/.test(q)) return 'vpn';
-  if (/\b(mfa|2fa|authenticator|authentication|new phone|sign.?in)\b/.test(q)) return 'mfa';
-  if (/\b(expense|receipt|reimburse|concur|claim)\b/.test(q)) return 'exp';
-  if (/\b(payroll|bank account|salary)\b/.test(q)) return 'pay';
+  if (/\b(database|staging|postgres|postgresql|sql|warehouse|db-?\d*|read role|pangkalan data)\b/.test(q)) return 'db';
+  if (/\b(vpn|remote access|wi-?fi|network|globalconnect|split tunnel|rangkaian)\b/.test(q)) return 'vpn';
+  if (/\b(mfa|2fa|authenticator|authentication|new phone|sign.?in|telefon baru)\b/.test(q)) return 'mfa';
+  if (/\b(expense|receipt|reimburse|concur|claim|tuntut|tuntutan|resit|perbelanjaan)\b/.test(q)) return 'exp';
+  if (/\b(payroll|bank account|salary|gaji)\b/.test(q)) return 'pay';
   return fallback;
 }
 
@@ -29,9 +47,13 @@ function learnedCard(k: KbItem): CardSpec {
       .filter((file) => file.mimeType === 'application/pdf' || file.mimeType.startsWith('video/'))
       .map(({ name, url, mimeType }) => ({ name, url, mimeType }))
     : undefined;
+  // Every new hire sees this line, so it names the expert, never the room (rooms can carry the employee's name).
+  const source = k.manual
+    ? `Written by ${k.pic.name} · approved for new hires`
+    : `${k.sample ? 'Sample summary' : 'AI summary'} of a solved ticket · solved by ${k.pic.first} (${k.pic.team}), approved by a manager`;
   return {
     id: 'learned-' + k.id, type: 'steps',
-    props: { title: k.title, kindLabel: 'From an expert', source: `${k.sample ? 'Sample summary' : 'AI summary'} of ${k.roomName} · solved by ${k.pic.first}, approved by Rachel`, steps: k.steps.map((label) => ({ label })), materials },
+    props: { title: k.title, kindLabel: 'From an expert', source, steps: k.steps.map((label) => ({ label })), materials },
   };
 }
 
@@ -57,12 +79,10 @@ export async function resolveAnswer(query: string, files: string[], knowledge: K
   const live = knowledge.filter((k) => k.status === 'live');
   const libraryCards = library.filter((e) => e.status === 'live').map((e) => e.card);
   const isDemo = DEFAULT_SUGGEST.some((s) => s.demo && s.query === query);
+  // Materials stay in the browser: their data URLs can be megabytes, and the server never reads them.
   const res = await askAnswer({ query, files, library: libraryCards, learned: live.map((k) => ({
     id: k.id, theme: k.theme, title: k.title, steps: k.steps,
-    materials: k.allowEmployeeAccess ? (k.files ?? []).filter((file): file is typeof file & { url: string; mimeType: string } => !!file.url && !!file.mimeType)
-      .filter((file) => file.mimeType === 'application/pdf' || file.mimeType.startsWith('video/'))
-      .map(({ name, url, mimeType }) => ({ name, url, mimeType })) : undefined,
-  })) }, isDemo ? DEMO_ANSWER_BUDGET_MS : undefined);
+  })) }, isDemo ? DEMO_ANSWER_BUDGET_MS : ANSWER_BUDGET_MS);
   if (res?.choice === 'chat' && res.message) return { heading: res.heading, message: res.message, source: 'ai' };
   if (res?.choice === 'unknown') {
     const message = res.message || 'Sorry, I couldn’t find any relevant knowledge. Please ask a human expert.';
@@ -92,15 +112,16 @@ export async function resolveAnswer(query: string, files: string[], knowledge: K
     const base = { heading: res.heading, theme: res.theme, queue: res.queue, expert: expertFor(res.theme), source: 'ai' as const };
     if (res.choice === 'library') {
       const card = libraryCards.find((c) => c.id === res.cardId);
-      if (card) return { ...base, card };
+      if (card) return inLanguage({ ...base, card }, res.lang);
     } else if (res.choice === 'learned') {
       const k = live.find((x) => x.id === res.cardId);
-      if (k) return { ...base, card: learnedCard(k) };
+      if (k) return inLanguage({ ...base, card: learnedCard(k) }, res.lang);
     }
   }
   // Offline: a manager-approved card that covers the question wins, then a built-in company scenario.
   // Anything else is "I don't know", so it goes to a human expert.
-  const approved = bestApproved(query, live);
+  const hint = OFFLINE_HINTS.find(([re]) => re.test(query))?.[1];
+  const approved = bestApproved(query, live) ?? (hint ? live.find((k) => k.theme === hint) : undefined);
   if (approved) {
     return { heading: 'Here’s what should help', theme: approved.theme, queue: queueFor(approved.theme), expert: expertFor(approved.theme), card: learnedCard(approved), source: 'offline' };
   }

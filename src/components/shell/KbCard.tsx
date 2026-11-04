@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { KbItem } from '../../types';
-import { cx } from '../../lib/util';
+import { useApp } from '../../state/AppState';
+import { cx, plural } from '../../lib/util';
 import { AttachChips, Icon } from '../primitives';
 
 export const REASONS = ['Not accurate', 'Already covered', 'Out of date', 'Too specific to one person', 'Other'];
@@ -21,6 +22,9 @@ export function KbCard({ kb: k, compact, onApprove, onEdit, onDiscard, onRestore
   const [problem, setProblem] = useState('');
   const [steps, setSteps] = useState('');
   const [reason, setReason] = useState('');
+  // The loop closing: how many new hires this card has answered since a manager approved it (this session).
+  const served = useApp().historyItems.filter((h) => h.answer.card.id === 'learned-' + k.id && h.state !== 'escalated');
+  const solved = served.filter((h) => h.state === 'solved').length;
 
   const reviewing = k.status === 'review', isLive = k.status === 'live';
   const meta = k.manual ? `Added by ${k.pic.name} · ${k.at ?? 'Today'}` : `From ${k.roomName} · solved by ${k.pic.first} with ${k.employee}`;
@@ -81,6 +85,9 @@ export function KbCard({ kb: k, compact, onApprove, onEdit, onDiscard, onRestore
       <ol className="rc-kb-steps">{k.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
       {k.files?.length ? <AttachChips items={k.files} className="rc-att-kb" /> : null}
       <p className="rc-kb-m">{meta}</p>
+      {isLive && served.length ? (
+        <p className="rc-kb-served"><Icon name="check" size={14} strokeWidth={2.2} />Answered {plural(served.length, 'new hire', 'new hires')} without an expert{solved ? ` · ${solved} marked it solved` : ''}</p>
+      ) : null}
       {k.status === 'discarded' ? (
         <div className="rc-kb-gone">
           <span>Reason: <b>{k.discardReason || 'No reason given'}</b></span>

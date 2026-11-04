@@ -12,6 +12,8 @@ import { TicketRooms } from './TicketRooms';
 import { ThemeTrends } from './ThemeTrends';
 import { KnowledgeBase } from './KnowledgeBase';
 import { ExpertTeam, type TeamDraft } from './ExpertTeam';
+import { CheckIns, useCheckinInsights } from './CheckIns';
+import { impactOf } from '../../lib/impact';
 
 export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
   const app = useApp();
@@ -22,8 +24,9 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
   const waiting = queue.filter((q) => !q.leaving);
   const liveRooms = app.roomList.filter((r) => r.status !== 'resolved').length;
   const reviewN = app.knowledge.filter((k) => k.status === 'review').length;
-  const asked = THEMES.reduce((s, t) => s + t.count, 0), byCards = THEMES.reduce((s, t) => s + t.cards, 0);
-  const solvedByCardsPct = Math.round((byCards / asked) * 100);
+  // This week's sample plus every question asked in this session, so the number moves during a demo.
+  const impact = impactOf(app.historyItems);
+  const solvedByCardsPct = Math.round(impact.deflection * 100);
 
   const groups: NeedsGroup[] = THEMES.flatMap((t) => {
     const tk = queue.filter((q) => q.theme === t.key);
@@ -63,9 +66,13 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
     window.setTimeout(() => setToast(null), 5200);
   }
 
+  const insights = useCheckinInsights();
+  const needSupport = app.reachOut.filter((r) => !r.action).length;
+
   const TABS: [ManagerTab, string, string, number | null, boolean?][] = [
     ['home', 'Home', 'home', null],
     ['needs', 'Needs you', 'inbox', openGroups || null],
+    ['checkins', 'Check-ins', 'pulse', needSupport || null],
     ['rooms', 'Ticket room', 'chat', liveRooms || null, true],
     ['trends', 'Trends', 'trends', null],
     ['knowledge', 'Knowledge base', 'book', reviewN || null],
@@ -100,7 +107,9 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
           <div className="rc-kpi is-prog"><dt>In progress</dt><dd>{liveRooms}</dd></div>
         </dl>
 
-        {tab === 'home' ? <HomeOverview pics={app.experts} waiting={waiting.length} tickets={waiting} rooms={app.roomList} solvedByCardsPct={solvedByCardsPct} onOpenNeeds={() => setTab('needs')} />
+        {tab === 'home' ? <HomeOverview visible={app.mode === 'manager'} pics={app.experts} waiting={waiting.length} tickets={waiting} rooms={app.roomList} impact={impact}
+            needSupport={needSupport} onOpenNeeds={() => setTab('needs')} onOpenCheckins={() => setTab('checkins')} />
+          : tab === 'checkins' ? <CheckIns insights={insights} />
           : tab === 'needs' ? (
             <div className="rc-home">
               <PageHead id="rc-needs-h" title="Needs you" sub="Where new hires are stuck. Overdue first, then longest wait. One click puts an expert in a room with them." />

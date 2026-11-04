@@ -34,17 +34,31 @@ These studies are a few years old and mostly from the US, but they point the sam
 
 ReadyCheck is one website with two views.
 
+ReadyCheck reads three signals, all of them voluntary:
+
+| Signal | Where it comes from |
+|---|---|
+| **Stuck** | The questions a new hire chooses to ask, and whether a card or a person solved them |
+| **Feeling** | A 30-second weekly check-in: four statements answered Yes, Partly or Not yet, plus an optional note in any language |
+| **Acted on** | The follow-up a manager chose, and whether the next week's check-in got better |
+
 **For new employees**
-- Ask a question in plain words.
-- AI gives **one answer card**: a short video, a policy summary, or a step-by-step checklist.
+- Ask a question in plain words, in **English, Bahasa Melayu, 中文 or தமிழ்**.
+- AI gives **one answer card**: a short video, a policy summary, or a step-by-step checklist. Asked in another language, the approved card is translated and labelled, with "Show original".
+- "You're not the only one: 9 new hires asked about this this week", so asking feels normal.
 - If it doesn't help, tap **Need human expert**. The question becomes a ticket.
 - Chat with the assigned expert in a **ticket room**. If it's still not fixed, book a **1:1 session**.
+- **Weekly check-in:** *I know what's expected of me this week · I can get help when I'm stuck · My workload feels manageable · I've had useful feedback from my manager.* The employee chooses to share their name or count anonymously, and sees exactly what the manager will see before sending.
 
 **For managers and HR**
+- **Check-ins:** a "Reach out this week" list of people who shared their name and said something isn't working yet. Each row shows their own evidence (answers, note, open tickets), an AI reason and a suggested human step. **Plan it** tracks the step until it's done, and the employee sees it too.
+- **Cohort pulse and themes:** totals across everyone (shown only from 3 check-ins up), and AI themes from notes in any language, each with a suggested HR action.
+- **Did it help?** Last week's follow-ups next to the person's answers before and after.
 - **Needs you:** questions are grouped into topics (for example "VPN" or "Payroll"), with an AI summary of why people are stuck.
 - **One click** assigns an expert to everyone stuck on that topic.
-- **Knowledge base:** when a problem is solved, AI writes a new answer card. A manager approves it, so the next new hire gets the answer instantly.
-- **Home and Trends:** see which topics come up most, by day, week or month.
+- **Knowledge base:** when a problem is solved, AI writes a new answer card. A manager approves it, so the next new hire gets the answer instantly. Each live card shows how many new hires it has answered since.
+- **Home:** expert time saved, time to an answer, and a **business case** in RM with every assumption on screen and editable.
+- **Trends:** see which topics come up most, by day, week or month.
 
 ## Workflow
 
@@ -59,7 +73,14 @@ ReadyCheck is one website with two views.
 7. **AI** drafts a knowledge card from the solved conversation.
 8. **Manager / HR** approves it, so the next new hire with the same question gets the answer straight away.
 
-This matches the challenge's required flow: **employee feedback → AI finds themes → HR/manager reviews → support action**.
+Alongside it runs the weekly check-in loop:
+
+1. **New hire** sends a check-in, named or anonymous.
+2. **AI** groups the answers and notes into themes, and for each named person writes a reason from their own evidence and suggests one human step.
+3. **Manager / HR** chooses the step (a 15-minute priorities chat, a buddy, an expert follow-up) and marks it done.
+4. **Next week's check-in** shows whether it helped.
+
+This matches the challenge's required flow: **employee feedback → AI finds themes → HR/manager reviews → support action**, with the action tracked.
 
 ## How we use AI
 
@@ -67,14 +88,16 @@ We use **three Google Gemini models**, each picked for its job:
 
 | Model | Used for | Why this model |
 |---|---|---|
-| **Gemini 3.5 Flash-Lite** (`GEMINI_CHAT_MODEL`) | Choosing the answer card, reranking search results, small-talk replies, the AI expert in rooms, topic and Home summaries | Fast and low-cost for short, frequent answers |
-| **Gemini 3.6 Flash** (`GEMINI_SUMMARY_MODEL`) | Turning a solved chat into a knowledge card, turning an uploaded PDF into a knowledge card | Stronger at reading longer content and writing accurate steps |
+| **Gemini 3.5 Flash-Lite** (`GEMINI_CHAT_MODEL`) | Choosing the answer card, reranking search results, detecting the question's language, translating the approved card, small-talk replies, the AI expert in rooms, topic and Home summaries | Fast and low-cost for short, frequent answers |
+| **Gemini 3.6 Flash** (`GEMINI_SUMMARY_MODEL`) | Turning a solved chat into a knowledge card, turning an uploaded PDF into a knowledge card, reading the week's check-ins into themes and follow-ups | Stronger at reading longer content and writing accurate steps |
 | **Gemini Embedding 001** (`GEMINI_EMBEDDING_MODEL`) | Semantic search: finds the knowledge-base cards that mean the same as the question, even with different words | Turns text into vectors for similarity search |
 
 | What AI does | What a person still decides |
 |---|---|
 | Finds the matching card in the knowledge base. If nothing matches, it says so and suggests a human expert instead of guessing | The employee says if it helped, or asks an expert |
 | Groups tickets into topics and summarises each topic | The manager decides who to assign |
+| Reads check-ins into themes, and suggests one follow-up per named person from their own evidence | The manager chooses the step, does it, and marks it done |
+| Translates an approved card into the employee's language | The approved English card stays one tap away ("Show original") |
 | Turns a solved chat, or an uploaded PDF, into a draft knowledge card | The manager approves, edits or discards it |
 | Plays the expert in the demo chat (labelled "AI expert (demo)") | In real use, real experts reply |
 
@@ -85,9 +108,12 @@ We use **three Google Gemini models**, each picked for its job:
 4. **Fallback:** if Gemini is unavailable, simple keyword matching takes over, so the app keeps working.
 
 **Responsible by design**
-- Uses only questions employees **choose** to ask. No monitoring, no emotion detection.
+- Uses only questions employees **choose** to ask and check-ins they **choose** to send. No monitoring, no emotion detection, no "flight risk" score.
+- The employee decides whether a check-in carries their name, and sees what the manager will see before sending. Anonymous check-ins only count in cohort totals, shown from 3 check-ins up.
+- The AI never predicts resignation or judges performance. It cites the person's own answers and suggests a human step; a manager decides.
 - Every AI output is **labelled** in the app.
-- Nothing AI writes reaches employees until a **manager approves** it.
+- Nothing AI writes reaches employees until a **manager approves** it. Translations are of approved cards only.
+- Cards shown to future hires name the expert, never the employee or their room.
 - The API key stays on the server, never in the browser.
 
 ## Tech stack
@@ -119,6 +145,9 @@ We use **three Google Gemini models**, each picked for its job:
 | `/api/room-reply` | Writes the expert's reply in the demo chat | 3.5 Flash-Lite |
 | `/api/summarize-room` | Turns a solved chat into a knowledge card | 3.6 Flash |
 | `/api/material-extract` | Turns an uploaded PDF into a knowledge card draft | 3.6 Flash |
+| `/api/checkin-insights` | Cohort themes from check-ins, and a reason plus one follow-up per named person | 3.6 Flash |
+| `/api/translate-card` | Translates the chosen approved card into Malay, Chinese or Tamil, string for string | 3.5 Flash-Lite |
+| `/api/warmup` | Embeds the library on page load so the first question is fast | Embedding 001 |
 
 The vector index is rebuilt on a cold start. For a multi-instance production deployment, replace the in-memory index with a persistent vector database.
 
@@ -189,12 +218,18 @@ Open http://localhost:3000. The container serves the Vite build and the `/api/*`
 
 ## Try it (2-minute demo)
 
-1. On the employee view, click **Access issue** and press Enter. An answer card appears.
-2. Click **Need human expert**. The ticket flies to **My tickets**.
-3. Switch to **Manager → Needs you**. Click **Assign Ana**.
-4. Open the ticket room and click **▶ Play sample conversation**.
-5. Answer **"Did Ana solve your problem?"**. Yes creates a knowledge card; Not yet offers a 1:1.
-6. In **Knowledge base**, approve the new card.
+Open the site with `?presenter` to see a small "Gemini live" status pill at the top (only you see it).
+
+1. On the employee view, ask *"Boleh saya bawa cuti tahunan ke tahun depan?"*. The approved leave card comes back in Bahasa Melayu, labelled as translated.
+2. Click **Database access** and press Enter. There is no approved answer, so ReadyCheck says so. Click **Need human expert**; the ticket flies to **My tickets**.
+3. In the side menu, click **Start check-in**. Answer *Not yet* to the first statement, add a note, keep **Share with my name**, and send.
+4. Switch to **Manager → Check-ins**. Mira is at the top with her answers and her open ticket. Click **Plan: 15-min priorities chat**. Back on the employee side, Mira sees it.
+5. **Needs you → Assign Marcus**, open the room and click **▶ Play sample conversation**. Answer **Yes** to "Did Marcus solve your problem?"; a knowledge card is drafted.
+6. In **Knowledge base**, approve the new card. On **Home**, see expert time saved and the business case.
+
+## Testing
+
+`npm run eval` sends 53 questions through the real answer pipeline and writes [docs/eval-results.md](docs/eval-results.md): English and Malay/Chinese/Tamil questions the library covers, out-of-scope questions that must get "I don't know", prompt injections, and small talk. It reports accuracy per group, invented cards (the server rejects any card id that wasn't retrieved), language detection, latency and tokens per question. On a free-tier key it paces itself to stay under the per-minute limit.
 
 ## Repository structure
 
@@ -210,11 +245,17 @@ ReadyCheck-hackathon/
 │   ├── materialExtract.ts     # Knowledge card from an uploaded PDF
 │   ├── themeSummary.ts        # Why new hires are stuck on a topic
 │   ├── homeSummary.ts         # Manager briefing on the Home dashboard
+│   ├── checkinInsights.ts     # Check-in themes and one follow-up per named person
+│   ├── translate.ts           # Approved card → Malay, Chinese or Tamil
+│   ├── warmup.ts              # Embeds the library on page load
 │   └── production.ts          # Server used by the Docker container
+├── scripts/
+│   ├── eval.ts                # npm run eval: answer-quality test → docs/eval-results.md
+│   └── eval-set.json          # The 53 test questions and what counts as correct
 ├── src/                       # Front end (React + TypeScript)
 │   ├── views/
-│   │   ├── employee/          # Ask a question, answer cards, My tickets
-│   │   └── manager/           # Home, Needs you, Ticket room, Trends, Knowledge base, Expert team
+│   │   ├── employee/          # Ask a question, answer cards, My tickets, weekly check-in
+│   │   └── manager/           # Home, Needs you, Check-ins, Ticket room, Trends, Knowledge base, Expert team
 │   ├── components/            # Answer cards, ticket room chat, shared UI
 │   ├── state/AppState.tsx     # Shared data: tickets, rooms, knowledge cards
 │   └── data/                  # Sample answers, topics, experts, demo chats
@@ -227,6 +268,7 @@ ReadyCheck-hackathon/
 
 ## Limitations
 
-- This is a prototype. Charts and counts use **sample data**.
+- This is a prototype. Charts, counts and the check-in cohort use **sample data**; the business case is an estimate with editable assumptions.
 - Data resets when the page is refreshed (no database or login yet).
 - In the demo, AI plays the expert in chats.
+- A free-tier Gemini key allows about 15 requests a minute, which a busy demo can reach. Use a paid-tier key for live use (paid-tier prompts are also not used to improve Google's models).

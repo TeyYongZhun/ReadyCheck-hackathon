@@ -328,11 +328,36 @@ The following rules are enforced:
 - Manager approval is required before solved-room summaries become employee knowledge.
 - AI recommendations do not automatically assign experts.
 
-## 11. Current limitations
+## 11. Weekly check-ins
+
+The employee answers four statements with `yes`, `partly` or `notyet` (clarity, support, workload, feedback), may add a note in any language, and chooses whether the check-in carries their name. State lives in [`src/state/AppState.tsx`](./src/state/AppState.tsx); the maths is in [`src/lib/checkins.ts`](./src/lib/checkins.ts).
+
+- **Reach out this week:** only named check-ins with a `notyet`, two `partly`, or an open ticket signal. Ticket signals are derived from the employee's own queue, rooms and history, with stable wording (no minute counts), so the AI isn't re-asked on every tick.
+- **Cohort totals:** every latest check-in, named or not, shown only from `MIN_GROUP` (3) responses.
+
+`POST /api/checkin-insights` ([`server/checkinInsights.ts`](./server/checkinInsights.ts), summary model) receives counts, anonymous notes and, for named people only, `{ id, week, answers, note, signals }`. No names are sent. It returns:
+
+```ts
+{ themes: { name, count, summary, action }[]; people: { id, why, action }[] }
+```
+
+The server drops unknown ids, caps counts at the number of responses and trims every string. The prompt forbids emotion inference, resignation prediction, scores and performance judgement. The client shows a rule-based reading immediately (`fallbackThemes`, `fallbackWhy`) and swaps in the AI one when it arrives. The hook is mounted with the manager view, so a check-in sent from the employee side is already being read when the manager opens the tab.
+
+## 12. Multilingual answers
+
+`/api/answer` also returns `lang` (`en`, `ms`, `zh`, `ta`). Heading and chat replies come back in that language, and the fixed "I don't know" reply has one approved wording per language. Retrieval needs no change because `gemini-embedding-001` embeds across languages.
+
+When `lang` isn't English, the client calls `POST /api/translate-card` ([`server/translate.ts`](./server/translate.ts)). The server flattens the card's own strings into an array, Gemini translates them one for one, and the server rejects a reply with a different count or an empty string where the source had text. Numbers, RM amounts, page numbers and system names stay unchanged. The card is labelled "Translated by AI from the approved English card", with "Show original". If translation fails, the English card is shown.
+
+## 13. Evaluation
+
+`npm run eval` ([`scripts/eval.ts`](./scripts/eval.ts), cases in [`scripts/eval-set.json`](./scripts/eval-set.json)) calls `answer()` directly, so it tests the same embeddings, rerank, decision and validation as the app. It writes [`docs/eval-results.md`](./docs/eval-results.md). On a free-tier key, `EVAL_DELAY_MS` (default 9000) paces it, and a 429 is waited out and retried rather than counted as a wrong answer.
+
+## 14. Current limitations
 
 This implementation is optimized for the hackathon demo:
 
-- The vector index is in memory and rebuilt after cold starts.
+- The vector index is in memory and rebuilt after cold starts. `POST /api/warmup` embeds the built-in library on page load to hide most of that.
 - There is no persistent vector database yet.
 - Embeddings are generated lazily on first retrieval.
 - Embeddings are generated per candidate rather than from a prebuilt batch index.

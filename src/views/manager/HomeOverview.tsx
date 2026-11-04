@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Pic, QueueTicket, Room } from '../../types';
 import { HOME, QUEUE, ROOMS, SLA_MINUTES, THEMES_BY_KEY } from '../../data/command';
+import { useApp } from '../../state/AppState';
+import { MIN_PER_TICKET, SAMPLE_EXPERT_WAIT, type Impact } from '../../lib/impact';
+import { BusinessCase } from './BusinessCase';
 import { DEFAULT_WEEK, addDays, isoDate, rangeLabel, weekData, weekStart } from '../../data/homeWeeks';
 import { cx } from '../../lib/util';
 import { AiLabel, Footnote, Icon, PicAvatar } from '../../components/primitives';
@@ -95,14 +98,21 @@ function WeekPicker({ start, onChange }: { start: Date; onChange: (d: Date) => v
 }
 
 /** Manager Home: the weekly overview. Trend history remains sample data; live counts come from shared state. */
-export function HomeOverview({ pics, waiting, rooms, tickets, solvedByCardsPct, onOpenNeeds }: {
+export function HomeOverview({ visible, pics, waiting, rooms, tickets, impact, needSupport, onOpenNeeds, onOpenCheckins }: {
+  /** False while the employee view is showing: Home stays mounted, but shouldn't call Gemini for nobody. */
+  visible: boolean;
   pics: Pic[];
   waiting: number;
   rooms: Room[];
   tickets: QueueTicket[];
-  solvedByCardsPct: number;
+  impact: Impact;
+  /** New hires who shared a check-in that needs a follow-up nobody has planned yet. */
+  needSupport: number;
   onOpenNeeds: () => void;
+  onOpenCheckins: () => void;
 }) {
+  const app = useApp();
+  const followUps = { planned: app.actions.filter((a) => a.status === 'planned').length, done: app.actions.filter((a) => a.status === 'done').length };
   const [span, setSpan] = useState<'daily' | 'weekly'>('daily');
   const [week, setWeek] = useState<Date>(DEFAULT_WEEK);
   const W = weekData(week);
@@ -224,13 +234,14 @@ export function HomeOverview({ pics, waiting, rooms, tickets, solvedByCardsPct, 
   const [summaryRefresh, setSummaryRefresh] = useState(0);
   const [summaryLoading, setSummaryLoading] = useState(false);
   useEffect(() => {
+    if (!visible) return;
     let active = true;
     setSummaryLoading(true);
     const fallback = () => {
       const theme = topThemes[0];
       const summary = overdue
         ? `${overdue} waiting ticket${overdue === 1 ? '' : 's'} may need attention${theme ? `, mainly in ${theme.name}` : ''}.`
-        : `${openTickets} unresolved ticket${openTickets === 1 ? '' : 's'} are spread across ${liveRooms.length} active room${liveRooms.length === 1 ? '' : 's'}.`;
+        : `${openTickets} unresolved ticket${openTickets === 1 ? ' is' : 's are'} spread across ${liveRooms.length} active room${liveRooms.length === 1 ? '' : 's'}.`;
       const expert = recommendedExpertData;
       const action = theme && expert && expert.displayedLoad >= 8
         ? `Review ${theme.name}; confirm ${expert.name}'s capacity before assigning the ticket.`
@@ -253,12 +264,13 @@ export function HomeOverview({ pics, waiting, rooms, tickets, solvedByCardsPct, 
         });
     }, 800);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [summarySignature, summaryRefresh]);
+  }, [summarySignature, summaryRefresh, visible]);
+  // "Solved by cards" and "In progress" are already in the strip above every tab, so Home shows what they add up to instead.
   const STATS: [string, string, string, string, string][] = [
     ['Open tickets', String(openTickets), 'Current unresolved tickets', 'doc', ''],
-    ['Overdue', String(overdue), `Waiting over ${SLA_MINUTES}m for response or assignment`, 'clock', 'is-hot'],
-    ['Employee-confirmed resolved', solvedByCardsPct + '%', 'Solved by answer cards', 'check', ''],
-    ['Active rooms', String(liveRooms.length), 'Unresolved ticket rooms', 'users', ''],
+    ['Overdue', String(overdue), `Waiting over ${SLA_MINUTES}m for response or assignment`, 'clock', overdue ? 'is-hot' : ''],
+    ['Expert time saved', impact.hoursSaved.toFixed(1) + ' h', `This week · ${impact.answered} answers × ${MIN_PER_TICKET} min an expert would spend`, 'expert', ''],
+    ['Time to an answer', impact.answerSecs ? impact.answerSecs.toFixed(1) + ' s' : '< 3 s', `By card${impact.timed ? `, median of ${impact.timed} this session` : ''} · ${SAMPLE_EXPERT_WAIT} min by expert`, 'ready', ''],
   ];
   return (
     <div className="rc-home" role="tabpanel" id="rc-pane-home" aria-labelledby="rc-tab-home">
@@ -272,6 +284,13 @@ export function HomeOverview({ pics, waiting, rooms, tickets, solvedByCardsPct, 
           <i className="rc-state-dot is-waiting" />
           <span><b>{waiting}</b>{waiting === 1 ? ' person is waiting on you' : ' people are waiting on you'}</span>
           <span className="rc-home-wait-go">Open Needs you<Icon name="chevron" size={14} /></span>
+        </button>
+      ) : null}
+      {needSupport ? (
+        <button type="button" className="rc-home-wait" onClick={onOpenCheckins}>
+          <i className="rc-state-dot is-waiting" />
+          <span><b>{needSupport}</b>{needSupport === 1 ? ' new hire may need a follow-up' : ' new hires may need a follow-up'} · {followUps.planned} planned, {followUps.done} done</span>
+          <span className="rc-home-wait-go">Open Check-ins<Icon name="chevron" size={14} /></span>
         </button>
       ) : null}
       <section className="rc-home-card rc-glass rc-glass-2 rc-home-readout" aria-labelledby="rc-home-readout-h">
@@ -293,6 +312,8 @@ export function HomeOverview({ pics, waiting, rooms, tickets, solvedByCardsPct, 
           </div>
         ))}
       </dl>
+
+      <BusinessCase deflection={impact.deflection} />
 
       <section className="rc-home-card rc-glass rc-glass-2" aria-labelledby="rc-oit-h">
         <header className="rc-panel-head">

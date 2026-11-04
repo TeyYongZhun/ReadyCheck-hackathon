@@ -1,0 +1,36 @@
+/* ================= Home: business case ================= */
+.rc-bc-head { display: flex; align-items: center; gap: 10px; margin: var(--space-4) 0 0; font: 600 18px/24px var(--font-sans); color: var(--ink); }
+.rc-bc-head .rc-icon { flex: none; color: var(--ready); }
+.rc-bc-nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); margin: var(--space-4) 0 0; }
+.rc-bc-nums > div { min-width: 0; padding: 12px 14px; border-radius: var(--radius-md); background: var(--glass-100); border: 1px solid var(--hairline); }
+.rc-bc-nums dt { font: 400 12.5px/16px var(--font-sans); color: var(--ink-muted); }
+.rc-bc-nums dd { margin: 4px 0 0; font: 600 20px/26px var(--font-sans); font-variant-numeric: tabular-nums; color: var(--ink); }
+.rc-bc-nums p { margin: 4px 0 0; font: 400 11.5px/16px var(--font-mono); color: var(--ink-faint); overflow-wrap: anywhere; }
+.rc-bc-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); margin-top: var(--space-4); align-items: end; }
+.rc-bc-in { display: flex; align-items: center; gap: 6px; }
+.rc-bc-in > span { flex: none; font: 400 12.5px/16px var(--font-sans); color: var(--ink-muted); }
+.rc-bc-in .rc-kb-input { min-width: 0; }
+.rc-bc .rc-home-note { margin-top: var(--space-3); text-align: left; font-family: var(--font-sans); }
+@media (max-width: 900px) {
+  .rc-bc-nums { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rc-bc-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .rc-bc-nums, .rc-bc-form { grid-template-columns: minmax(0, 1fr); }
+  .rc-bc-head { font-size: 16px; line-height: 22px; }
+}
+
+/* ================= Presenter-only Gemini status (open the site with ?presenter) ================= */
+.rc-presenter { position: fixed; left: 50%; top: 6px; transform: translateX(-50%); z-index: 80; display: inline-flex; align-items: center; gap: 7px; min-height: 28px; padding: 0 12px; border-radius: var(--radius-pill); border: 1px solid var(--glass-edge); background: var(--glass-300); -webkit-backdrop-filter: blur(var(--blur-glass)); backdrop-filter: blur(var(--blur-glass)); font: 600 11.5px/1 var(--font-sans); color: var(--ink-muted); pointer-events: none; }
+.rc-presenter i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-faint); }
+.rc-presenter.is-connected i { background: var(--ready); box-shadow: 0 0 0 3px var(--ready-soft); }
+.rc-presenter.is-offline { border-color: var(--escalate); color: var(--escalate); }
+.rc-presenter.is-offline i { background: var(--escalate); box-shadow: 0 0 0 3px var(--escalate-soft); }
+
+/* ================= Answer translated from the approved English card ================= */
+.rc-translated { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin-top: 4px; font: 400 12.5px/16px var(--font-sans); color: var(--ink-muted); }
+.rc-translated .rc-icon { color: var(--ready); }
+.rc-translated .rc-quiet { height: auto; padding: 0; font-size: 12.5px !important; text-decoration: underline; text-underline-offset: 2px; }
+
+/* ================= Knowledge card: how often it has answered since approval ================= */
+.rc-kb-served { display: inline-flex; align-items: center; gap: 6px; font: 400 12.5px/16px var(--font-sans); color: var(--ready); }

@@ -73,7 +73,7 @@ export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve,
 
         {ticket ? (
           <div className="rc-troom-ctx">
-            <div className="rc-troom-ctx-k"><Icon name="route" size={13} />Escalated {ticket.id} · skipped the {ticket.from}</div>
+            <div className="rc-troom-ctx-k"><Icon name="route" size={13} />Escalated {ticket.id} · {ticket.from.endsWith(' card') ? 'skipped the ' + ticket.from : ticket.from}</div>
             <p className="rc-troom-ctx-q">{ticket.q}</p>
             {ticket.files?.length ? <AttachChips items={ticket.files} className="rc-att-ctx" /> : null}
           </div>

@@ -2,7 +2,7 @@
 // At rest: greeting, omni bar, starters. Asking: bar rises, skeleton. Answered: one card. Esc clears.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Attachment, CanvasAnswer, CardSpec, CardState, ChatReply, DashboardItem, HistoryEntry } from '../../types';
-import { useApp } from '../../state/AppState';
+import { ME, useApp } from '../../state/AppState';
 import { DEFAULT_SUGGEST } from '../../data/scenarios';
 import { isChat, resolveAnswer } from '../../lib/answer';
 import { clock, cx, greeting, uid } from '../../lib/util';
@@ -11,10 +11,15 @@ import { ActionCard, ChecklistCard, DocSummaryCard, VideoCard } from '../../comp
 import { DashboardDock, EscalatedReceipt, EscalationFlight, rectWithin, type Rect } from '../../components/cards/Escalation';
 import { OmniBar } from './OmniBar';
 import { HistorySidebar, type HistoryItem } from './HistorySidebar';
+import { CheckInEntry, CheckInSheet } from './CheckInCard';
+import { THEMES_BY_KEY } from '../../data/command';
 
-const USER = { first: 'Mira', last: 'Tan', role: 'Day 3 · Product Design' };
+const USER = { first: ME.first, last: ME.person.split(' ')[1], role: ME.role };
 interface Flight { id: string; from: Rect; to: Rect; card: CardSpec; ans: CanvasAnswer; query: string; files: Attachment[]; entryId: string | null }
 const MIN_LOADING_MS = 700;
+
+const isNoAnswer = (card: CardSpec) => card.id.startsWith('unknown-');
+const clip = (text: string, max: number) => (text.length > max ? text.slice(0, max - 1).trimEnd() + '…' : text);
 
 export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   const app = useApp();
@@ -39,6 +44,10 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   const [entryId, setEntryId] = useState<string | null>(null);
   // Closed by default so the first screen stays clear; the count on "Your questions" still updates.
   const [sideOpen, setSideOpen] = useState(false);
+  const [checkInOpen, setCheckInOpen] = useState(false);
+  // A translated answer can be flipped back to the approved English card it came from.
+  const [showOriginal, setShowOriginal] = useState(false);
+  useEffect(() => { setShowOriginal(false); }, [ans]);
   const [winH, setHeight] = useState(() => window.innerHeight);
   // Bottom edge of the answer card, so the canvas (which clips its children) grows with it and the page can scroll.
   const gridRef = useRef<HTMLDivElement>(null);
@@ -65,7 +74,8 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
     const no = ++askNo.current, mine = files;
     setDraft(q); setQuery(q); setPhase('loading'); setCs({}); setAns(null); setChat(null); setSent(mine); setFiles([]);
     const started = performance.now();
-    const answer = resolveAnswer(q, mine.map((f) => f.name), app.knowledge, app.library);
+    let took = 0;
+    const answer = resolveAnswer(q, mine.map((f) => f.name), app.knowledge, app.library).then((r) => { took = performance.now() - started; return r; });
     const [a] = await Promise.all([
       answer,
       new Promise<void>((resolve) => window.setTimeout(resolve, Math.max(0, MIN_LOADING_MS - (performance.now() - started)))),
@@ -78,7 +88,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
     }
     const id = uid('h');
     setAns(a); setPhase('results'); setEntryId(id);
-    app.history.add({ id, query: q, answer: a, cardType: a.card.type, title: a.card.props.title, heading: a.heading, at: clock(), state: 'viewed', files: mine.map(({ name, kind }) => ({ name, kind })) });
+    app.history.add({ id, query: q, answer: a, cardType: a.card.type, title: a.card.props.title, heading: a.heading, at: clock(), state: 'viewed', files: mine.map(({ name, kind }) => ({ name, kind })), ms: Math.round(took) });
   }
 
   function clear() {
@@ -96,7 +106,8 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   }
 
   useEffect(() => {
-    const k = (ev: KeyboardEvent) => { if (ev.key === 'Escape' && root.current?.offsetParent !== null) clear(); };
+    // Esc inside the check-in sheet closes the sheet only, not the card behind it.
+    const k = (ev: KeyboardEvent) => { if (ev.key === 'Escape' && !checkInOpen && root.current?.offsetParent !== null) clear(); };
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   });
@@ -112,12 +123,15 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
 
   function arrive() {
     const fl = flight; if (!fl) return;
+    // An "I don't know" card's title is the refusal itself, so the ticket is named after the question instead.
+    const noAnswer = isNoAnswer(fl.card);
+    const title = noAnswer ? clip(fl.query, 70) : fl.card.props.title;
     setPulse((n) => n + 1);
-    setEsc((l) => [{ id: fl.id, title: fl.card.props.title, state: 'waiting', status: 'Waiting for an expert' }, ...l]);
+    setEsc((l) => [{ id: fl.id, title, state: 'waiting', status: 'Waiting for an expert' }, ...l]);
     setCard(fl.card.id, 'routing');
     setDockOpen(true);
     setToast(fl.id);
-    app.escalate({ id: fl.id, title: fl.card.props.title, query: fl.query, kind: fl.card.type, theme: fl.ans.theme, entryId: fl.entryId, files: fl.files.map(({ name, kind }) => ({ name, kind })) });
+    app.escalate({ id: fl.id, title, query: fl.query, kind: fl.card.type, theme: fl.ans.theme, entryId: fl.entryId, noAnswer, files: fl.files.map(({ name, kind }) => ({ name, kind })) });
     window.setTimeout(() => setDockOpen(false), 4200);
     window.setTimeout(() => setToast((t) => (t === fl.id ? null : t)), 5600);
   }
@@ -125,7 +139,9 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   const active = phase !== 'idle';
   // At rest the canvas fits the window exactly (no scroll); with a card on it, leave room for the card.
   const height = active ? Math.max(820, winH, contentBottom + 64) : Math.max(560, winH);
-  const cards = ans ? [ans.card] : [];
+  const cards = ans ? [showOriginal && ans.translated ? ans.translated.original : ans.card] : [];
+  // A count only, never names: it tells a new hire the question is normal to ask.
+  const peers = ans ? THEMES_BY_KEY[ans.theme]?.count ?? 0 : 0;
   const dockItems: DashboardItem[] = esc.map((x) => {
     const a = app.assignments[x.id];
     if (!a) return x;
@@ -143,7 +159,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
 
   return (
     <div ref={root} className={cx('rc-canvas', active && 'is-active', 'is-single', 'has-side')}
-      style={{ height, '--rc-head-top': 200 + (files.length ? 44 : 0) + 'px', '--rc-grid-top': 242 + (files.length ? 44 : 0) + (ans && sent.length ? 26 : 0) + 'px' } as React.CSSProperties}>
+      style={{ height, '--rc-head-top': 200 + (files.length ? 44 : 0) + 'px', '--rc-grid-top': 242 + (files.length ? 44 : 0) + (ans && sent.length ? 26 : 0) + (peers >= 3 ? 24 : 0) + (ans?.translated ? 24 : 0) + 'px' } as React.CSSProperties}>
       <div className="rc-canvas-orb rc-canvas-orb-a" aria-hidden />
       <div className="rc-canvas-orb rc-canvas-orb-b" aria-hidden />
 
@@ -152,6 +168,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
         <div className="rc-side-mode">{modeSwitch}</div>
         <HistorySidebar items={historyItems} activeId={entryId} open={sideOpen} onToggle={() => setSideOpen((v) => !v)}
           onNew={clear} onPick={restore} onOpenRoom={(id) => app.setOpenRoom({ id, viewer: 'employee' })} onClear={() => { app.history.clear(); setEntryId(null); }} />
+        <CheckInEntry onOpen={() => setCheckInOpen(true)} />
         <div className="rc-user rc-side-user">
           <span className="rc-avatar">{USER.first[0] + USER.last[0]}</span>
           <div><div className="rc-user-n">{USER.first} {USER.last}</div><div className="rc-user-s">{USER.role}</div></div>
@@ -184,6 +201,12 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
             <div>
               <span className="rc-results-h">{ans ? ans.heading : chat ? chat.heading : 'Looking across policies, videos and how-tos'}</span>
               {ans ? <span className="rc-results-n">Best match for “{query}”</span> : null}
+              {ans && peers >= 3 ? <span className="rc-results-peers"><Icon name="users" size={13} />You’re not the only one: {peers} new hires asked about {THEMES_BY_KEY[ans.theme].name.toLowerCase()} this week</span> : null}
+              {ans?.translated ? (
+                <span className="rc-translated"><Icon name="globe" size={13} />Translated by AI from the approved English card
+                  <button type="button" className="rc-quiet" onClick={() => setShowOriginal((v) => !v)}>{showOriginal ? 'Show translation' : 'Show original'}</button>
+                </span>
+              ) : null}
               {chat ? <span className="rc-results-n">Reply to “{query}”</span> : null}
               {ans && sent.length ? <span className="rc-results-files"><Icon name="clip" size={13} />{sent.length === 1 ? '1 attachment: ' : sent.length + ' attachments: '}{sent.map((f) => f.name).join(', ')}</span> : null}
             </div>
@@ -204,7 +227,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
                 const tid = tickets.current[card.id], a = app.assignments[tid];
                 return (
                   <div key={card.id} className="rc-grid-item">
-                    <EscalatedReceipt id={tid} title={card.props.title} queue={a ? a.pic.team : ans!.queue}
+                    <EscalatedReceipt id={tid} title={isNoAnswer(card) ? clip(query, 70) : card.props.title} queue={a ? a.pic.team : ans!.queue}
                       expert={a ? { name: a.pic.name, initials: a.pic.initials, eta: 'a few min' } : ans!.expert}
                       status={a ? (a.status === 'resolved' ? 'resolved' : 'picked') : 'routing'} roomName={a?.roomName}
                       onOpenRoom={a ? () => app.setOpenRoom({ id: a.roomId, viewer: 'employee' }) : undefined} />
@@ -233,6 +256,8 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
           <EscalationFlight key={flight.id} from={flight.from} to={flight.to} ticket={{ id: flight.id, title: flight.card.props.title, queue: flight.ans.queue }}
             card={{ kind: flight.card.type, title: flight.card.props.title }} onArrive={arrive} onDone={() => setFlight(null)} />
         ) : null}
+
+        {checkInOpen ? <CheckInSheet onClose={() => setCheckInOpen(false)} /> : null}
 
         {toast ? (
           <Toast onClose={() => setToast(null)}>
