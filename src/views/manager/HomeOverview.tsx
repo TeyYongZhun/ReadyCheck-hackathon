@@ -3,7 +3,7 @@ import type { Pic, QueueTicket, Room } from '../../types';
 import { HOME, QUEUE, ROOMS, SLA_MINUTES, THEMES_BY_KEY } from '../../data/command';
 import { useApp } from '../../state/AppState';
 import { MIN_PER_TICKET, SAMPLE_EXPERT_WAIT, type Impact } from '../../lib/impact';
-import { BusinessCase } from './BusinessCase';
+//import { BusinessCase } from './BusinessCase';
 import { DEFAULT_WEEK, addDays, isoDate, rangeLabel, weekData, weekStart } from '../../data/homeWeeks';
 import { cx } from '../../lib/util';
 import { AiLabel, Footnote, Icon, PicAvatar } from '../../components/primitives';
@@ -313,7 +313,7 @@ export function HomeOverview({ visible, pics, waiting, rooms, tickets, impact, n
         ))}
       </dl>
 
-      <BusinessCase deflection={impact.deflection} />
+      {/* <BusinessCase deflection={impact.deflection} /> */}
 
       <section className="rc-home-card rc-glass rc-glass-2" aria-labelledby="rc-oit-h">
         <header className="rc-panel-head">
