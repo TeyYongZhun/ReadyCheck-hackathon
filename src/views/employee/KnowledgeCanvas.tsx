@@ -45,7 +45,9 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   const [entryId, setEntryId] = useState<string | null>(null);
   // Closed by default so the first screen stays clear; the count on "Your questions" still updates.
   const [sideOpen, setSideOpen] = useState(false);
+  const [checkInDemoStarted, setCheckInDemoStarted] = useState(false);
   const [checkInOpen, setCheckInOpen] = useState(false);
+  const userRole = checkInDemoStarted ? 'Product Designer · Day 7' : USER.role;
   useEffect(() => {
     if (!checkInNotice) return;
     const timer = window.setTimeout(() => setCheckInNotice(null), 4500);
@@ -174,10 +176,26 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
         <div className="rc-side-mode">{modeSwitch}</div>
         <HistorySidebar items={historyItems} activeId={entryId} open={sideOpen} onToggle={() => setSideOpen((v) => !v)}
           onNew={clear} onPick={restore} onOpenRoom={(id) => app.setOpenRoom({ id, viewer: 'employee' })} onClear={() => { app.history.clear(); setEntryId(null); }} />
-        <CheckInEntry onOpen={() => setCheckInOpen(true)} />
-        <div className="rc-user rc-side-user">
-          <span className="rc-avatar">{USER.first[0] + USER.last[0]}</span>
-          <div><div className="rc-user-n">{USER.first} {USER.last}</div><div className="rc-user-s">{USER.role}</div></div>
+        <div className="rc-ci-demo-footer">
+          {checkInDemoStarted ? (
+            <CheckInEntry onOpen={() => setCheckInOpen(true)} />
+          ) : (
+            <button
+              type="button"
+              className="rc-btn-ghost is-sm rc-ci-demo-trigger"
+              onClick={() => {
+                app.setDemoMilestone('week1');
+                setCheckInDemoStarted(true);
+                setCheckInNotice('Week 1 check-in is ready.');
+              }}
+            >
+              Demo Week 1 check-in
+            </button>
+          )}
+          <div className="rc-user rc-side-user">
+            <span className="rc-avatar">{USER.first[0] + USER.last[0]}</span>
+            <div><div className="rc-user-n">{USER.first} {USER.last}</div><div className="rc-user-s">{userRole}</div></div>
+          </div>
         </div>
       </aside>
 

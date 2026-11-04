@@ -1,6 +1,9 @@
 /* ================= Weekly check-in: employee side ================= */
-.rc-ci-entry { margin-top: auto; display: grid; gap: 6px; padding: 12px 12px 10px; border-radius: var(--radius-md); }
+.rc-ci-demo-footer { display: grid; gap: 8px; margin-top: auto; }
+.rc-ci-demo-footer .rc-side-user { margin-top: 0; }
+.rc-ci-entry { display: grid; gap: 6px; padding: 12px 12px 10px; border-radius: var(--radius-md); }
 .rc-ci-entry + .rc-side-user { margin-top: 0; }
+.rc-side-emp .rc-ci-demo-trigger { width: 100%; justify-content: center; }
 .rc-ci-entry.is-due { border-color: var(--ready); box-shadow: 0 0 0 1px var(--ready-soft); }
 .rc-ci-entry-h { display: flex; align-items: center; gap: 8px; font: 600 13.5px/18px var(--font-sans); color: var(--ink); }
 .rc-ci-entry.is-due .rc-ci-entry-h .rc-icon { color: var(--ready); }
@@ -95,6 +98,8 @@
 .rc-ci-bars-t i.is-notyet { background: var(--escalate); }
 .rc-ci-bars-t i.is-na { background: repeating-linear-gradient(135deg, var(--ink-faint) 0 2px, var(--glass-200) 2px 4px); }
 @media (max-width: 900px) {
+  .rc-side-emp .rc-ci-demo-footer { grid-column: 1 / -1; }
+  .rc-side-emp .rc-ci-demo-footer .rc-side-user { grid-area: auto; display: flex; margin: 0; padding: var(--space-4) 6px 2px; border-top: 1px solid var(--hairline); }
   .rc-side-emp .rc-ci-entry { grid-column: 1 / -1; margin-top: 0; }
 }
 @media (max-width: 560px) {
