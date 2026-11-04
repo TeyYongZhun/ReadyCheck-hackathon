@@ -12,7 +12,7 @@ import { TicketRooms } from './TicketRooms';
 import { ThemeTrends } from './ThemeTrends';
 import { KnowledgeBase } from './KnowledgeBase';
 import { ExpertTeam, type TeamDraft } from './ExpertTeam';
-import { CheckIns, useCheckinInsights } from './CheckIns';
+import { CheckIns } from './CheckIns';
 import { impactOf } from '../../lib/impact';
 
 export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
@@ -66,13 +66,12 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
     window.setTimeout(() => setToast(null), 5200);
   }
 
-  const insights = useCheckinInsights();
   const needSupport = app.reachOut.filter((r) => !r.action).length;
 
   const TABS: [ManagerTab, string, string, number | null, boolean?][] = [
     ['home', 'Home', 'home', null],
     ['needs', 'Needs you', 'inbox', openGroups || null],
-    ['checkins', 'Check-ins', 'pulse', needSupport || null],
+    ['checkins', 'Check-ins', 'pulse', null],
     ['rooms', 'Ticket room', 'chat', liveRooms || null, true],
     ['trends', 'Trends', 'trends', null],
     ['knowledge', 'Knowledge base', 'book', reviewN || null],
@@ -101,15 +100,17 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
       </aside>
 
       <div className="rc-cc2-main">
-        <dl className="rc-kpi3">
-          <div className={cx('rc-kpi', waiting.length && 'is-need')}><dt>Need you</dt><dd>{waiting.length}</dd></div>
-          <div className="rc-kpi"><dt>Solved by cards</dt><dd>{solvedByCardsPct}%</dd></div>
-          <div className="rc-kpi is-prog"><dt>In progress</dt><dd>{liveRooms}</dd></div>
-        </dl>
+        {tab === 'home' ? (
+          <dl className="rc-kpi3">
+            <div className={cx('rc-kpi', waiting.length && 'is-need')}><dt>Need you</dt><dd>{waiting.length}</dd></div>
+            <div className="rc-kpi"><dt>Solved by cards</dt><dd>{solvedByCardsPct}%</dd></div>
+            <div className="rc-kpi is-prog"><dt>In progress</dt><dd>{liveRooms}</dd></div>
+          </dl>
+        ) : null}
 
         {tab === 'home' ? <HomeOverview visible={app.mode === 'manager'} pics={app.experts} waiting={waiting.length} tickets={waiting} rooms={app.roomList} impact={impact}
             needSupport={needSupport} onOpenNeeds={() => setTab('needs')} onOpenCheckins={() => setTab('checkins')} />
-          : tab === 'checkins' ? <CheckIns insights={insights} />
+          : tab === 'checkins' ? <CheckIns />
           : tab === 'needs' ? (
             <div className="rc-home">
               <PageHead id="rc-needs-h" title="Needs you" sub="Where new hires are stuck. Overdue first, then longest wait. One click puts an expert in a room with them." />

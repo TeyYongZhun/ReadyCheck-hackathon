@@ -147,13 +147,15 @@ export interface HistoryEntry {
 export type ManagerTab = 'home' | 'needs' | 'checkins' | 'rooms' | 'trends' | 'knowledge' | 'team';
 
 export type MilestoneKey = 'week1' | 'week2' | 'day30' | 'day60' | 'day90';
-export type PulseKey = 'clarity' | 'support' | 'workload' | 'stage';
-export type CorePulseKey = Exclude<PulseKey, 'stage'>;
+export type PulseKey = 'clarity' | 'tools' | 'support' | 'workload';
+export type CorePulseKey = PulseKey;
 export type PulseAnswer = 'yes' | 'partly' | 'notyet' | 'na';
 
 /** One person in the onboarding cohort, as the manager's Check-ins tab knows them. */
 export interface NewHire {
   id: string; name: string; first: string; initials: string; role: string; team: string;
+  /** Illustrative onboarding start date used for monthly cohort counts. */
+  joinedAt: string;
   /** Current onboarding milestone. */
   milestone: MilestoneKey;
   /** Ticket signals from before this session (seed only). Live ones come from shared state. */

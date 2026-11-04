@@ -68,7 +68,6 @@ export interface CheckinInsightsRequest {
   cohort: number;
   responses: number;
   totals: Record<CorePulseKey, Record<PulseAnswer, number>>;
-  stageTotals: Partial<Record<MilestoneKey, Record<PulseAnswer, number>>>;
   anonymousNotes: string[];
   people: { id: string; named: true; milestone: MilestoneKey; answers: Record<PulseKey, PulseAnswer>; followUps?: Partial<Record<PulseKey, string>>; note?: string; signals: string[] }[];
 }

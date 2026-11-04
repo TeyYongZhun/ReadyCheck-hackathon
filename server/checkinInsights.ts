@@ -3,27 +3,13 @@ import type { CheckinInsightsRequest, CheckinInsightsResponse } from '../src/api
 import type { MilestoneKey, PulseAnswer, PulseKey } from '../src/types.js';
 import { HttpError, generateJson } from './gemini.js';
 
-const CORE_KEYS = ['clarity', 'support', 'workload'] as const;
-const QUESTION_KEYS: PulseKey[] = [...CORE_KEYS, 'stage'];
+const QUESTION_KEYS: PulseKey[] = ['clarity', 'tools', 'support', 'workload'];
 const MILESTONES: MilestoneKey[] = ['week1', 'week2', 'day30', 'day60', 'day90'];
 const ANSWERS: PulseAnswer[] = ['yes', 'partly', 'notyet', 'na'];
 const MIN_GROUP = 3;
-const STAGE_QUESTIONS: Record<MilestoneKey, string> = {
-  week1: 'I have the tools and access I need to get started.',
-  week2: 'I have received enough guidance to complete my initial tasks.',
-  day30: 'I can complete my core tasks with increasing confidence.',
-  day60: 'I can manage most of my responsibilities with less day-to-day guidance.',
-  day90: 'I understand how my performance is evaluated and what I should focus on improving.',
-};
-
 const SYSTEM = `You help an HR team offer practical support to new employees at a Malaysian company.
 You receive voluntary onboarding check-ins at five milestones: Week 1 (Getting Started), Week 2 (Early Adjustment), Day 30 (Building Competence), Day 60 (Growing Independence), and Day 90 (Successful Integration).
-Each check-in has three stable core questions: "I understand what is expected of me at this stage.", "I know who to ask when I need help.", and "My current workload feels manageable.", plus one stage-specific question:
-Week 1: "${STAGE_QUESTIONS.week1}"
-Week 2: "${STAGE_QUESTIONS.week2}"
-Day 30: "${STAGE_QUESTIONS.day30}"
-Day 60: "${STAGE_QUESTIONS.day60}"
-Day 90: "${STAGE_QUESTIONS.day90}"
+Every check-in repeats the same four questions: "I understand what is expected of me at this stage.", "I have the tools and resources I need to do my work.", "I know where to get help when I’m stuck.", and "My workload feels manageable."
 Answers are yes, partly, notyet or na (not applicable). Treat not applicable as excluded, not as a negative answer. Adaptive follow-up text appears only for partly/notyet answers. Notes and follow-ups may be in any language. Signals come from questions the employee chose to ask.
 Do not label or classify people as disengaged, likely to resign, at risk, or as having a psychological condition. Do not treat this as performance evaluation or diagnosis. Summarize only evidence and suggest supportive human actions.
 
@@ -101,25 +87,14 @@ export async function checkinInsights(body: Partial<CheckinInsightsRequest>): Pr
       signals: (person.signals ?? []).map((signal) => text(signal, 160)).filter(Boolean).slice(0, 5),
     };
   }).filter((person) => person.id && person.named);
-  const totals = Object.fromEntries(CORE_KEYS.map((key) => [
+  const totals = Object.fromEntries(QUESTION_KEYS.map((key) => [
     key,
     Object.fromEntries(ANSWERS.map((answer) => [answer, Math.max(0, Number(body.totals?.[key]?.[answer]) || 0)])),
   ]));
-  const stageTotals = Object.fromEntries(MILESTONES.flatMap((milestone) => {
-    const source = body.stageTotals?.[milestone];
-    if (!source) return [];
-    const counts = Object.fromEntries(ANSWERS.map((answer) => [
-      answer,
-      Math.max(0, Math.min(500, Number(source[answer]) || 0)),
-    ])) as Record<PulseAnswer, number>;
-    if (Object.values(counts).reduce((sum, count) => sum + count, 0) < MIN_GROUP) return [];
-    return [[milestone, counts]];
-  }));
 
   const prompt = [
     `Cohort: ${Math.max(responses, Number(body.cohort) || 0)} new hires, ${responses} checked in.`,
     `Stable core-question totals: ${JSON.stringify(totals)}`,
-    `Milestone-specific question totals (only groups with at least ${MIN_GROUP} responses): ${JSON.stringify(stageTotals)}`,
     '<checkins>',
     'Anonymous comments for aggregate themes only; do not identify or quote individuals:', ...anonymousNotes.map((note) => '- ' + note),
     '', 'People who shared their name:', JSON.stringify(people),
