@@ -133,7 +133,13 @@ export function CheckInSheet({ onClose, onSubmitted }: { onClose: () => void; on
     onClose();
   }
 
-  const notYes = questions.filter((p) => answers[p.key] && answers[p.key] !== 'yes');
+  // const notYes = questions.filter((p) => answers[p.key] && answers[p.key] !== 'yes');
+  const notYes = questions.filter(
+  (p) =>
+    answers[p.key] === 'partly' ||
+    answers[p.key] === 'notyet'
+);
+
   const followUpPreview = questions.filter((p) => (answers[p.key] === 'partly' || answers[p.key] === 'notyet') && followUps[p.key]?.trim())
     .map((p) => `${p.short} follow-up: ${followUps[p.key]!.trim()}`);
   const preview = `${ME.person} · ${notYes.length ? notYes.map((p) => `${p.short}: ${LABEL[answers[p.key]!]}`).join(' · ') : 'All “yes”'}${followUpPreview.length ? ' · ' + followUpPreview.join(' · ') : ''}${note.trim() ? ' · your note' : ''}`;
@@ -147,7 +153,7 @@ export function CheckInSheet({ onClose, onSubmitted }: { onClose: () => void; on
             <h2 className="rc-ci-h" id="rc-ci-h">{milestone.label}: {milestone.title}</h2>
             <button type="button" className="rc-toast-x rc-troom-x" aria-label="Close check-in" onClick={onClose}><Icon name="close" size={16} /></button>
           </div>
-          <p className="rc-ci-s">About one minute · no right or wrong answers.</p>
+          <p className="rc-ci-s">About 1–2 minutes · no right or wrong answers.</p>
         </header>
         <form className="rc-ci-form" onSubmit={send}>
           {questions.map((p, i) => (
