@@ -330,7 +330,7 @@ The following rules are enforced:
 
 ## 11. Weekly check-ins
 
-The employee answers four statements with `yes`, `partly` or `notyet` (clarity, support, workload, feedback), may add a note in any language, and chooses whether the check-in carries their name. State lives in [`src/state/AppState.tsx`](./src/state/AppState.tsx); the maths is in [`src/lib/checkins.ts`](./src/lib/checkins.ts).
+The employee answers the same four onboarding dimensions each week: role clarity, tools and access, support, and workload. Each answer is `yes`, `partly`, `notyet` or `na`; an optional note may be in any language. The employee chooses whether the check-in carries their name. State lives in [`src/state/AppState.tsx`](./src/state/AppState.tsx); the maths is in [`src/lib/checkins.ts`](./src/lib/checkins.ts). `na` is excluded from concern counts and scores. Follow-up averages compare only dimensions applicable in both weeks.
 
 - **Reach out this week:** only named check-ins with a `notyet`, two `partly`, or an open ticket signal. Ticket signals are derived from the employee's own queue, rooms and history, with stable wording (no minute counts), so the AI isn't re-asked on every tick.
 - **Cohort totals:** every latest check-in, named or not, shown only from `MIN_GROUP` (3) responses.

@@ -39,7 +39,7 @@ ReadyCheck reads three signals, all of them voluntary:
 | Signal | Where it comes from |
 |---|---|
 | **Stuck** | The questions a new hire chooses to ask, and whether a card or a person solved them |
-| **Feeling** | A 30-second weekly check-in: four statements answered Yes, Partly or Not yet, plus an optional note in any language |
+| **Onboarding pulse** | A one-minute weekly check-in on role clarity, tools and access, support and workload; Yes, Partly, Not yet or Not applicable, plus an optional note in any language |
 | **Acted on** | The follow-up a manager chose, and whether the next week's check-in got better |
 
 **For new employees**
@@ -48,7 +48,7 @@ ReadyCheck reads three signals, all of them voluntary:
 - "You're not the only one: 9 new hires asked about this this week", so asking feels normal.
 - If it doesn't help, tap **Need human expert**. The question becomes a ticket.
 - Chat with the assigned expert in a **ticket room**. If it's still not fixed, book a **1:1 session**.
-- **Weekly check-in:** *I know what's expected of me this week · I can get help when I'm stuck · My workload feels manageable · I've had useful feedback from my manager.* The employee chooses to share their name or count anonymously, and sees exactly what the manager will see before sending.
+- **Weekly check-in:** The same four questions each week on role clarity, tools and access, support, and workload. Each answer is Yes, Partly, Not yet or Not applicable. An optional note accepts any language. Employees choose to share their name with Rachel for direct help or share anonymously for cohort insights; anonymous insights appear only after at least 3 people check in. A submitted check-in can be edited for 5 minutes.
 
 **For managers and HR**
 - **Check-ins:** a "Reach out this week" list of people who shared their name and said something isn't working yet. Each row shows their own evidence (answers, note, open tickets), an AI reason and a suggested human step. **Plan it** tracks the step until it's done, and the employee sees it too.
@@ -109,7 +109,7 @@ We use **three Google Gemini models**, each picked for its job:
 
 **Responsible by design**
 - Uses only questions employees **choose** to ask and check-ins they **choose** to send. No monitoring, no emotion detection, no "flight risk" score.
-- The employee decides whether a check-in carries their name, and sees what the manager will see before sending. Anonymous check-ins only count in cohort totals, shown from 3 check-ins up.
+- The employee chooses whether to share a check-in with their name or anonymously. Rachel sees named answers for direct follow-up; anonymous feedback contributes to cohort insights shown only after at least 3 people check in. Check-ins can be edited for 5 minutes after submission.
 - The AI never predicts resignation or judges performance. It cites the person's own answers and suggests a human step; a manager decides.
 - Every AI output is **labelled** in the app.
 - Nothing AI writes reaches employees until a **manager approves** it. Translations are of approved cards only.
@@ -222,7 +222,7 @@ Open the site with `?presenter` to see a small "Gemini live" status pill at the 
 
 1. On the employee view, ask *"Boleh saya bawa cuti tahunan ke tahun depan?"*. The approved leave card comes back in Bahasa Melayu, labelled as translated.
 2. Click **Database access** and press Enter. There is no approved answer, so ReadyCheck says so. Click **Need human expert**; the ticket flies to **My tickets**.
-3. In the side menu, click **Start check-in**. Answer *Not yet* to the first statement, add a note, keep **Share with my name**, and send.
+3. In the side menu, click **Start check-in**. Answer *Not yet* to the first statement, add a note, choose **Share with my name**, and submit.
 4. Switch to **Manager → Check-ins**. Mira is at the top with her answers and her open ticket. Click **Plan: 15-min priorities chat**. Back on the employee side, Mira sees it.
 5. **Needs you → Assign Marcus**, open the room and click **▶ Play sample conversation**. Answer **Yes** to "Did Marcus solve your problem?"; a knowledge card is drafted.
 6. In **Knowledge base**, approve the new card. On **Home**, see expert time saved and the business case.

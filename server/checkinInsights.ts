@@ -4,16 +4,18 @@ import type { CheckinInsightsRequest, CheckinInsightsResponse } from '../src/api
 import type { PulseAnswer, PulseKey } from '../src/types.js';
 import { HttpError, generateJson } from './gemini.js';
 
-const KEYS: PulseKey[] = ['clarity', 'support', 'workload', 'feedback'];
-const ANSWERS: PulseAnswer[] = ['yes', 'partly', 'notyet'];
+const KEYS: PulseKey[] = ['clarity', 'tools', 'support', 'workload'];
+const ANSWERS: PulseAnswer[] = ['yes', 'partly', 'notyet', 'na'];
 
 const SYSTEM = `You help an HR team support new employees in their first weeks at a Malaysian company.
-You get voluntary weekly check-ins. Each answers four statements with yes, partly or notyet:
-- clarity: "I know what's expected of me this week"
-- support: "I can get help when I'm stuck"
-- workload: "My workload feels manageable"
-- feedback: "I've had useful feedback from my manager"
+You get voluntary weekly check-ins. Each answers four onboarding dimensions with yes, partly, notyet or na (not applicable):
+- Role clarity: "I understand what is expected of me this week."
+- Tools & access: "I have the tools and access I need to do my work."
+- Support: "I know who to ask when I need help."
+- Workload: "My workload feels manageable this week."
+The same four dimensions are used every week to support trend comparisons.
 Notes are optional and may be in English, Bahasa Melayu, Chinese or Tamil. Signals come from questions the employee chose to ask.
+Treat not applicable as excluded, not as a negative answer. Do not treat this as performance evaluation or psychological diagnosis.
 
 Write everything in plain, short English, no markdown, no names.
 themes: 2-4 recurring themes across the answers and notes, most common first. name: 2-4 words, sentence case. count: how many check-ins show it (never more than responses). summary: one sentence under 110 characters on what is going on. action: one concrete, supportive step HR or managers can take this week, under 70 characters, no full stop.

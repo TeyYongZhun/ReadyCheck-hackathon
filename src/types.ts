@@ -147,8 +147,8 @@ export interface HistoryEntry {
 export type ManagerTab = 'home' | 'needs' | 'checkins' | 'rooms' | 'trends' | 'knowledge' | 'team';
 
 /** The four check-in statements. Each one is a cause of early disengagement the challenge brief names. */
-export type PulseKey = 'clarity' | 'support' | 'workload' | 'feedback';
-export type PulseAnswer = 'yes' | 'partly' | 'notyet';
+export type PulseKey = 'clarity' | 'tools' | 'support' | 'workload';
+export type PulseAnswer = 'yes' | 'partly' | 'notyet' | 'na';
 
 /** One person in the onboarding cohort, as the manager's Check-ins tab knows them. */
 export interface NewHire {
@@ -165,6 +165,8 @@ export interface CheckIn {
   /** The onboarding week it is for. */
   week: number;
   at: string;
+  /** Timestamp of the original submission; editing does not extend the five-minute window. */
+  submittedAt?: number;
   answers: Record<PulseKey, PulseAnswer>;
   note?: string;
   /** The employee chose to share their name. If not, it only counts in cohort totals. */

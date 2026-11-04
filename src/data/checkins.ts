@@ -2,21 +2,25 @@
 // Mira (the demo employee) has not checked in yet, so her check-in is the one the demo sends.
 import type { CheckIn, NewHire, PulseAnswer, PulseKey, SupportAction } from '../types';
 
-export const PULSE: { key: PulseKey; text: string; short: string }[] = [
-  { key: 'clarity', text: 'I know what’s expected of me this week', short: 'Clear priorities' },
-  { key: 'support', text: 'I can get help when I’m stuck', short: 'Help when stuck' },
-  { key: 'workload', text: 'My workload feels manageable', short: 'Workload' },
-  { key: 'feedback', text: 'I’ve had useful feedback from my manager', short: 'Manager feedback' },
+export const PULSE: { key: PulseKey; dimension: string; text: string; short: string }[] = [
+  { key: 'clarity', dimension: 'Role clarity', text: 'I understand what is expected of me this week.', short: 'Role clarity' },
+  { key: 'tools', dimension: 'Tools & access', text: 'I have the tools and access I need to do my work.', short: 'Tools & access' },
+  { key: 'support', dimension: 'Support', text: 'I know who to ask when I need help.', short: 'Support' },
+  { key: 'workload', dimension: 'Workload', text: 'My workload feels manageable this week.', short: 'Workload' },
 ];
 
 export const PULSE_ANSWERS: { key: PulseAnswer; label: string }[] = [
   { key: 'yes', label: 'Yes' },
   { key: 'partly', label: 'Partly' },
   { key: 'notyet', label: 'Not yet' },
+  { key: 'na', label: 'Not applicable' },
 ];
 
 /** Cohort totals are shown only from this many check-ins, so no single answer can be singled out. */
 export const MIN_GROUP = 3;
+
+/** An employee may edit a submitted check-in for five minutes after its first submission. */
+export const CHECKIN_EDIT_WINDOW_MS = 5 * 60 * 1000;
 
 export const COHORT_LABEL = 'October–November cohort';
 
@@ -34,7 +38,7 @@ export const COHORT: NewHire[] = [
   { id: 'dw', name: 'Daniel Wong', first: 'Daniel', initials: 'DW', role: 'Sales Executive', team: 'Commercial', week: 1 },
 ];
 
-const a = (clarity: PulseAnswer, support: PulseAnswer, workload: PulseAnswer, feedback: PulseAnswer) => ({ clarity, support, workload, feedback });
+const a = (clarity: PulseAnswer, tools: PulseAnswer, support: PulseAnswer, workload: PulseAnswer) => ({ clarity, tools, support, workload });
 
 export const SEED_CHECKINS: CheckIn[] = [
   // Week 1 for the people who started a week earlier. Farah and Kumar were reached out to afterwards.
@@ -65,21 +69,21 @@ export const SEED_CHECKINS: CheckIn[] = [
 export const SEED_ACTIONS: SupportAction[] = [
   { id: 'act-fn', person: 'fn', label: '15-min priorities chat', owner: 'Rachel Goh', when: 'Mon 2 Nov', status: 'done', week: 1 },
   { id: 'act-kc', person: 'kc', label: 'Ask Ana to follow up on the VPN certificate', owner: 'Ana Okafor', when: 'Mon 2 Nov', status: 'done', week: 1 },
-  { id: 'act-jw', theme: 'Heavy first-week schedule', label: 'Spread week-1 trainings over two weeks', owner: 'Sofia Hart', when: 'Next cohort', status: 'planned', week: 1 },
+  { id: 'act-jw', theme: 'Workload concerns', label: 'Spread week-1 trainings over two weeks', owner: 'Sofia Hart', when: 'Next cohort', status: 'planned', week: 1 },
 ];
 
 /** Plain, supportive next steps, used when the AI suggestion is unavailable. Never a score or a label. */
 export const PULSE_ACTION: Record<PulseKey, string> = {
   clarity: '15-min priorities chat',
-  feedback: 'Book a first 1:1 with their manager',
-  support: 'Pair them with their buddy for a day',
-  workload: 'Review their week-1 schedule together',
+  tools: 'Check their tools and access',
+  support: 'Pair them with someone they can ask',
+  workload: 'Review their workload together',
 };
 
 /** Rule-based cohort themes, used before (or without) the AI summary. */
 export const PULSE_THEME: Record<PulseKey, { name: string; action: string }> = {
   clarity: { name: 'Unclear priorities', action: 'Ask managers to share written first-month goals' },
-  support: { name: 'Hard to get help', action: 'Check every new hire has a buddy and knows where to ask' },
-  workload: { name: 'Heavy workload', action: 'Spread week-1 trainings over two weeks' },
-  feedback: { name: 'Little manager feedback', action: 'Remind managers to book a 15-min weekly 1:1' },
+  tools: { name: 'Tools or access needed', action: 'Check new hires have the tools and access they need' },
+  support: { name: 'Support needed', action: 'Make sure new hires know who to ask for help' },
+  workload: { name: 'Workload concerns', action: 'Review workload and priorities with new hires' },
 };

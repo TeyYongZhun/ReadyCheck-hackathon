@@ -65,6 +65,7 @@
 .rc-ring-fill { stroke: var(--ready); stroke-linecap: round; }
 
 .rc-toast { position: absolute; left: 50%; bottom: 28px; z-index: var(--z-flight); transform: translateX(-50%); display: flex; align-items: center; gap: 12px; max-width: 720px; padding: 10px 8px 10px 16px; border-radius: var(--radius-pill); font: 400 13px/18px var(--font-sans); color: var(--ink); animation: rc-toast-in 520ms var(--rc-ease-out) both; }
+.rc-canvas.has-side .rc-toast.rc-ci-toast { left: calc(50% + 148px); right: auto; width: max-content; max-width: min(720px, calc(100vw - 320px)); }
 @keyframes rc-toast-in { from { opacity: 0; transform: translate(-50%, 16px) scale(.97); } }
 .rc-toast-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--escalate); box-shadow: 0 0 0 4px var(--escalate-soft); }
 .rc-toast-id { font: 500 12px/16px var(--font-mono); color: var(--escalate); }
@@ -74,5 +75,4 @@
 @media (prefers-reduced-motion: reduce) {
   .rc-canvas *, .rc-stage *, .rc-cc *, .rc-cc2 * { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
 }
-
 

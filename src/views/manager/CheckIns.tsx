@@ -68,7 +68,7 @@ function PlanControl({ suggestion, options, onPlan }: { suggestion: string; opti
 function ReachOutRow({ r, ai }: { r: ReachOut; ai?: { why: string; action: string } }) {
   const app = useApp();
   const read = ai ?? fallbackWhy(r);
-  const concerns = PULSE.filter((p) => r.checkin.answers[p.key] !== 'yes');
+  const concerns = PULSE.filter((p) => r.checkin.answers[p.key] === 'partly' || r.checkin.answers[p.key] === 'notyet');
   const options = [read.action, ...concerns.map((p) => PULSE_ACTION[p.key]), 'Ask the expert to follow up on their ticket'];
   const x = r.action;
   return (
@@ -108,18 +108,19 @@ export function CheckIns({ insights }: { insights: CheckinInsights }) {
   const totals = totalsOf(latest);
   const { ai, fresh, loading } = insights;
   const aiPeople = new Map((ai?.people ?? []).map((p) => [p.id, p]));
-  const themes = ai?.themes.length ? ai.themes : fallbackThemes(latest);
+  const themes = latest.length >= MIN_GROUP ? (ai?.themes.length ? ai.themes : fallbackThemes(latest)) : [];
   const results = followUpResults(app.checkins, app.actions, COHORT);
-  const better = results.filter((r) => r.better).length;
+  const comparableResults = results.filter((r) => r.comparableCount > 0);
+  const better = comparableResults.filter((r) => r.better).length;
   const planned = app.actions.filter((a) => a.status === 'planned').length, done = app.actions.filter((a) => a.status === 'done').length;
-  const waiting = app.reachOut.filter((r) => !r.action).length;
+  const awaitingFollowUp = app.reachOut.filter((r) => !r.action).length;
   const themeAction = (name: string) => app.actions.filter((a) => a.theme === name).slice(-1)[0];
 
   const STATS: [string, string, string, string, string][] = [
     ['Checked in', `${latest.length} of ${COHORT.length}`, COHORT_LABEL, 'check', ''],
-    ['May need support', String(waiting), 'Shared their name, no follow-up yet', 'users', waiting ? 'is-hot' : ''],
+    ['Awaiting follow-up', String(awaitingFollowUp), 'Shared their name, no follow-up yet', 'users', awaitingFollowUp ? 'is-hot' : ''],
     ['Follow-ups planned', String(planned), 'Chosen by a manager', 'calendar', ''],
-    ['Follow-ups done', String(done), better ? `${better} of ${results.length} answered better the next week` : 'This cohort', 'ready', ''],
+    ['Follow-ups done', String(done), comparableResults.length ? `${better} of ${comparableResults.length} scored higher next week` : 'No comparable answers yet', 'ready', ''],
   ];
 
   return (
@@ -162,10 +163,10 @@ export function CheckIns({ insights }: { insights: CheckinInsights }) {
                     return (
                       <li key={p.key}>
                         <span className="rc-ci-bars-l">{p.short}</span>
-                        <span className="rc-ci-bars-t" role="img" aria-label={`${p.short}: ${t.yes} yes, ${t.partly} partly, ${t.notyet} not yet`}>
+                        <span className="rc-ci-bars-t" role="img" aria-label={`${p.short}: ${t.yes} yes, ${t.partly} partly, ${t.notyet} not yet, ${t.na} not applicable`}>
                           {PULSE_ANSWERS.map((a) => (t[a.key] ? <i key={a.key} className={'is-' + a.key} style={{ flexGrow: t[a.key] }} /> : null))}
                         </span>
-                        <span className="rc-ci-bars-n">{t.notyet ? `${t.notyet} not yet` : `${t.yes} yes`}</span>
+                        <span className="rc-ci-bars-n">{t.partly} partly</span>
                       </li>
                     );
                   })}
@@ -176,9 +177,9 @@ export function CheckIns({ insights }: { insights: CheckinInsights }) {
           </section>
 
           <section className="rc-home-card rc-glass rc-glass-2" aria-labelledby="rc-ci-themes-h">
-            <h2 className="rc-panel-h" id="rc-ci-themes-h">{ai?.themes.length ? <AiLabel>What new hires are telling us</AiLabel> : 'What new hires are telling us'}</h2>
-            <p className="rc-panel-s">{ai?.themes.length ? 'Grouped by AI from answers and notes in any language. No names.' : 'From the answers. The AI summary appears when it’s ready.'}</p>
-            <ul className="rc-ci-themes">
+            <h2 className="rc-panel-h" id="rc-ci-themes-h">{ai?.themes.length && latest.length >= MIN_GROUP ? <AiLabel>What new hires are telling us</AiLabel> : 'What new hires are telling us'}</h2>
+            <p className="rc-panel-s">{ai?.themes.length && latest.length >= MIN_GROUP ? 'Grouped by AI from answers and notes in any language. No names.' : 'From the answers. The AI summary appears when it’s ready.'}</p>
+            {latest.length >= MIN_GROUP ? <ul className="rc-ci-themes">
               {themes.map((t) => {
                 const x = themeAction(t.name);
                 return (
@@ -193,23 +194,28 @@ export function CheckIns({ insights }: { insights: CheckinInsights }) {
                   </li>
                 );
               })}
-            </ul>
+            </ul> : <p className="rc-sec-empty">Anonymous cohort insights appear once at least {MIN_GROUP} people have checked in.</p>}
           </section>
 
           <section className="rc-home-card rc-glass rc-glass-2" aria-labelledby="rc-ci-loop-h">
             <h2 className="rc-panel-h" id="rc-ci-loop-h">Did last week’s follow-ups help?</h2>
-            <p className="rc-panel-s">Their answers before and after</p>
+            <p className="rc-panel-s">Average of applicable answers: Yes = 2, Partly = 1, Not yet = 0; Not applicable is excluded.</p>
             <ul className="rc-ci-loop">
               {results.map((r) => (
                 <li key={r.action.id}>
                   <div className="rc-ci-loop-h"><Person initials={r.hire.initials} /><span><b>{r.hire.name}</b><span className="rc-ci-loop-a">{r.action.label}</span></span></div>
+                  <p className={cx('rc-ci-score', r.scoreChange !== null && r.scoreChange > 0 && 'is-better', r.scoreChange !== null && r.scoreChange < 0 && 'is-lower')}>
+                    {r.scoreChange === null
+                      ? 'No dimensions were applicable in both weeks'
+                      : `Average: ${r.beforeScore!.toFixed(1)}/2 → ${r.afterScore!.toFixed(1)}/2 (${r.scoreChange > 0 ? '+' : ''}${r.scoreChange.toFixed(1)}) · ${r.scoreChange > 0 ? 'Improved' : r.scoreChange < 0 ? 'Lower' : 'No change'}`}
+                  </p>
                   <ul className="rc-ci-chips">
                     {r.changed.map((c) => <li key={c.p.key} className={cx('rc-ci-chip', c.to === 'yes' && 'is-better')}>{c.p.short}: {LABEL[c.from]} → {LABEL[c.to]}</li>)}
                   </ul>
                 </li>
               ))}
             </ul>
-            <p className="rc-home-note">Sample data from last week, not measured results</p>
+            <p className="rc-home-note">Compares dimensions applicable both weeks; Not applicable is excluded. Score change does not prove the follow-up caused it. Sample data, not measured results.</p>
           </section>
         </div>
       </div>

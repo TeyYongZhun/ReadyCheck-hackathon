@@ -4,7 +4,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Attachment, CardKind, CardSpec, CheckIn, HistoryEntry, KbItem, LibraryEntry, Message, Mode, Pic, PulseAnswer, PulseKey, QueueTicket, Room, SupportAction, ThemeKey } from '../types';
 import { PICS, QUEUE, ROOMS, SEED_KB, THEMES_BY_KEY } from '../data/command';
-import { COHORT, SEED_ACTIONS, SEED_CHECKINS } from '../data/checkins';
+import { CHECKIN_EDIT_WINDOW_MS, COHORT, SEED_ACTIONS, SEED_CHECKINS } from '../data/checkins';
 import { latestByPerson, reachOutList } from '../lib/checkins';
 import { SCENARIOS, SCEN_THEME } from '../data/scenarios';
 import { askRoomReply, askSummary } from '../lib/api';
@@ -296,11 +296,22 @@ function useAppStateValue() {
   };
 
   /** Mira sent her weekly check-in. It replaces any earlier one for the same week. */
-  function submitCheckIn(input: CheckInInput) {
+  function submitCheckIn(input: CheckInInput): boolean {
+    const now = Date.now();
     const note = input.note?.trim();
-    const ci: CheckIn = { id: uid('ci'), person: ME.id, week: ME.week, at: 'Today ' + clock(), answers: input.answers, note: note || undefined, named: input.named, isNew: true };
-    setCheckins((l) => [ci, ...l.filter((c) => !(c.person === ME.id && c.week === ME.week))]);
+    const existing = checkins.find((c) => c.person === ME.id && c.week === ME.week);
+    if (existing) {
+      if (!existing.submittedAt || now - existing.submittedAt >= CHECKIN_EDIT_WINDOW_MS) return false;
+      const updated: CheckIn = { ...existing, at: 'Today ' + clock(), answers: input.answers, note: note || undefined, named: input.named, isNew: true };
+      setCheckins((l) => l.map((c) => (c.id === updated.id ? updated : c)));
+      later(() => setCheckins((l) => l.map((c) => (c.id === updated.id ? { ...c, isNew: false } : c))), 8000);
+      return true;
+    }
+
+    const ci: CheckIn = { id: uid('ci'), person: ME.id, week: ME.week, at: 'Today ' + clock(), submittedAt: now, answers: input.answers, note: note || undefined, named: input.named, isNew: true };
+    setCheckins((l) => [ci, ...l]);
     later(() => setCheckins((l) => l.map((c) => (c.id === ci.id ? { ...c, isNew: false } : c))), 8000);
+    return true;
   }
 
   /** A manager chose a follow-up for one person, or for a cohort theme. */

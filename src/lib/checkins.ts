@@ -14,7 +14,14 @@ export interface ReachOut {
   action?: SupportAction;
 }
 
-const SCORE: Record<PulseAnswer, number> = { yes: 2, partly: 1, notyet: 0 };
+const SCORE: Record<PulseAnswer, number | null> = { yes: 2, partly: 1, notyet: 0, na: null };
+
+/** Average over applicable answers, excluding N/A so scores remain comparable. */
+export function checkInScore(checkin: CheckIn, keys = PULSE.map((p) => p.key)): number | null {
+  const applicable = keys.filter((key) => SCORE[checkin.answers[key]] !== null);
+  if (!applicable.length) return null;
+  return applicable.reduce((total, key) => total + (SCORE[checkin.answers[key]] ?? 0), 0) / applicable.length;
+}
 
 /** Each person's most recent check-in. */
 export function latestByPerson(checkins: CheckIn[]): Map<string, CheckIn> {
@@ -24,12 +31,10 @@ export function latestByPerson(checkins: CheckIn[]): Map<string, CheckIn> {
 }
 
 export function totalsOf(list: CheckIn[]): Totals {
-  const t = Object.fromEntries(PULSE.map((p) => [p.key, { yes: 0, partly: 0, notyet: 0 }])) as Totals;
+  const t = Object.fromEntries(PULSE.map((p) => [p.key, { yes: 0, partly: 0, notyet: 0, na: 0 }])) as Totals;
   list.forEach((c) => PULSE.forEach((p) => { t[p.key][c.answers[p.key]] += 1; }));
   return t;
 }
-
-const concern = (c: CheckIn) => PULSE.filter((p) => c.answers[p.key] !== 'yes');
 
 /** People who shared their name and may need someone to reach out: a "not yet", two "partly", or an open ticket signal. */
 export function reachOutList(cohort: NewHire[], latest: Map<string, CheckIn>, signalsFor: (id: string) => string[], actions: SupportAction[]): ReachOut[] {
@@ -89,9 +94,14 @@ export function followUpResults(checkins: CheckIn[], actions: SupportAction[], c
     const after = checkins.find((c) => c.person === x.person && c.week === x.week + 1);
     const hire = cohort.find((h) => h.id === x.person);
     if (!before || !after || !hire) return [];
-    const changed = concern(before).map((p) => ({ p, from: before.answers[p.key], to: after.answers[p.key] }));
-    const better = PULSE.reduce((s, p) => s + SCORE[after.answers[p.key]] - SCORE[before.answers[p.key]], 0) > 0;
-    return [{ action: x, hire, changed, better }];
+    const comparable = PULSE.filter((p) => SCORE[before.answers[p.key]] !== null && SCORE[after.answers[p.key]] !== null);
+    const changed = comparable
+      .filter((p) => before.answers[p.key] !== after.answers[p.key])
+      .map((p) => ({ p, from: before.answers[p.key], to: after.answers[p.key] }));
+    const beforeScore = checkInScore(before, comparable.map((p) => p.key));
+    const afterScore = checkInScore(after, comparable.map((p) => p.key));
+    const scoreChange = beforeScore === null || afterScore === null ? null : afterScore - beforeScore;
+    return [{ action: x, hire, changed, comparableCount: comparable.length, beforeScore, afterScore, scoreChange, better: scoreChange !== null && scoreChange > 0 }];
   });
 }
 

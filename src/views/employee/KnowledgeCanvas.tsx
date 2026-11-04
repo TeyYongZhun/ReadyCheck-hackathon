@@ -39,12 +39,18 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   const [esc, setEsc] = useState<DashboardItem[]>([]);
   const [flight, setFlight] = useState<Flight | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [checkInNotice, setCheckInNotice] = useState<string | null>(null);
   const [pulse, setPulse] = useState(0);
   const [dockOpen, setDockOpen] = useState(false);
   const [entryId, setEntryId] = useState<string | null>(null);
   // Closed by default so the first screen stays clear; the count on "Your questions" still updates.
   const [sideOpen, setSideOpen] = useState(false);
   const [checkInOpen, setCheckInOpen] = useState(false);
+  useEffect(() => {
+    if (!checkInNotice) return;
+    const timer = window.setTimeout(() => setCheckInNotice(null), 4500);
+    return () => window.clearTimeout(timer);
+  }, [checkInNotice]);
   // A translated answer can be flipped back to the approved English card it came from.
   const [showOriginal, setShowOriginal] = useState(false);
   useEffect(() => { setShowOriginal(false); }, [ans]);
@@ -257,9 +263,16 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
             card={{ kind: flight.card.type, title: flight.card.props.title }} onArrive={arrive} onDone={() => setFlight(null)} />
         ) : null}
 
-        {checkInOpen ? <CheckInSheet onClose={() => setCheckInOpen(false)} /> : null}
+        {checkInOpen ? (
+          <CheckInSheet
+            onClose={() => setCheckInOpen(false)}
+            onSubmitted={(edited) => setCheckInNotice(edited ? 'Your check-in was updated.' : 'Check-in submitted. You can edit it for 5 minutes.')}
+          />
+        ) : null}
 
-        {toast ? (
+        {checkInNotice ? (
+          <Toast className="rc-ci-toast" tone="ready" onClose={() => setCheckInNotice(null)}>{checkInNotice}</Toast>
+        ) : toast ? (
           <Toast onClose={() => setToast(null)}>
             <span className="rc-toast-id">{toast}</span> is with the support team. They’ll pick the right expert, and you’ll chat in a room from My tickets.
           </Toast>
