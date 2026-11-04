@@ -12,7 +12,6 @@ import { DashboardDock, EscalatedReceipt, EscalationFlight, rectWithin, type Rec
 import { OmniBar } from './OmniBar';
 import { HistorySidebar, type HistoryItem } from './HistorySidebar';
 import { CheckInEntry, CheckInSheet } from './CheckInCard';
-import { THEMES_BY_KEY } from '../../data/command';
 
 const USER = { first: ME.first, last: ME.person.split(' ')[1], role: ME.role };
 interface Flight { id: string; from: Rect; to: Rect; card: CardSpec; ans: CanvasAnswer; query: string; files: Attachment[]; entryId: string | null }
@@ -149,7 +148,6 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   const height = active ? Math.max(820, winH, contentBottom + 64) : Math.max(560, winH);
   const cards = ans ? [showOriginal && ans.translated ? ans.translated.original : ans.card] : [];
   // A count only, never names: it tells a new hire the question is normal to ask.
-  const peers = ans ? THEMES_BY_KEY[ans.theme]?.count ?? 0 : 0;
   const dockItems: DashboardItem[] = esc.map((x) => {
     const a = app.assignments[x.id];
     if (!a) return x;
@@ -167,7 +165,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
 
   return (
     <div ref={root} className={cx('rc-canvas', active && 'is-active', 'is-single', 'has-side')}
-      style={{ height, '--rc-head-top': 200 + (files.length ? 44 : 0) + 'px', '--rc-grid-top': 242 + (files.length ? 44 : 0) + (ans && sent.length ? 26 : 0) + (peers >= 3 ? 24 : 0) + (ans?.translated ? 24 : 0) + 'px' } as React.CSSProperties}>
+      style={{ height, '--rc-head-top': 200 + (files.length ? 44 : 0) + 'px', '--rc-grid-top': 242 + (files.length ? 44 : 0) + (ans && sent.length ? 26 : 0) + (ans?.translated ? 24 : 0) + 'px' } as React.CSSProperties}>
       <div className="rc-canvas-orb rc-canvas-orb-a" aria-hidden />
       <div className="rc-canvas-orb rc-canvas-orb-b" aria-hidden />
 
@@ -225,7 +223,6 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
             <div>
               <span className="rc-results-h">{ans ? ans.heading : chat ? chat.heading : 'Looking across policies, videos and how-tos'}</span>
               {ans ? <span className="rc-results-n">Best match for “{query}”</span> : null}
-              {ans && peers >= 3 ? <span className="rc-results-peers"><Icon name="users" size={13} />You’re not the only one: {peers} new hires asked about {THEMES_BY_KEY[ans.theme].name.toLowerCase()} this week</span> : null}
               {ans?.translated ? (
                 <span className="rc-translated"><Icon name="globe" size={13} />Translated by AI from the approved English card
                   <button type="button" className="rc-quiet" onClick={() => setShowOriginal((v) => !v)}>{showOriginal ? 'Show translation' : 'Show original'}</button>

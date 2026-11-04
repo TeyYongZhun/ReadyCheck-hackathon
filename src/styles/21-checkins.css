@@ -81,9 +81,6 @@
 .rc-ci-foot-s { font: 400 12.5px/16px var(--font-sans); color: var(--ink-muted); }
 .rc-ci-error { margin: 0; font: 500 13px/18px var(--font-sans); color: var(--escalate); }
 
-.rc-results-peers { display: flex; align-items: center; gap: 6px; margin-top: 4px; font: 400 12.5px/16px var(--font-sans); color: var(--ink-muted); }
-.rc-results-peers .rc-icon { color: var(--ready); }
-
 /* ================= Check-ins: manager tab ================= */
 .rc-ci-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .rc-ci-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: var(--radius-pill); background: var(--glass-200); border: 1px solid var(--hairline); font: 400 12.5px/17px var(--font-sans); color: var(--ink); }
