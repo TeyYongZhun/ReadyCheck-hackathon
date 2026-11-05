@@ -68,7 +68,6 @@ Version 1 helped new employees get answers and connected unresolved questions to
 
 | Area | Version 1 | Version 2 |
 |---|---|---|
-| **Employee questions** | Ask a question, get one recommended card, and request a human expert if it doesn't help. | Adds questions in Bahasa Melayu, Chinese and Tamil, with approved cards translated and "Show original". |
 | **Onboarding check-ins** | Not included. | Five milestones with stage-specific questions, optional follow-up prompts and notes in any language, named or anonymous sharing, and a 5-minute edit window. |
 | **Manager view of onboarding** | Not included. Managers only saw questions and tickets. | New **Check-ins** tab with the onboarding pulse, milestone timeline and sharing overview. Cohort details need at least 3 check-ins. |
 | **Responding to difficulties** | Assign an expert to a stuck topic. | Keeps expert assignment and adds **Support priorities** for cohort-level difficulties: AI insight, manager action, and a message to the cohort. |

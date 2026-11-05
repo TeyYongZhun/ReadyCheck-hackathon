@@ -442,17 +442,11 @@ These map to the Onboarding Bottleneck, Supporting Evidence and Recommended Mana
 | Add check-in cases to `npm run eval` | Test for leaked names, risk language, prompt injection in notes, and notes in all four languages |
 | Use a paid-tier Gemini key | Employee feedback should not be used to improve Google's models |
 
-## 13. Multilingual answers
-
-`/api/answer` also returns `lang` (`en`, `ms`, `zh`, `ta`). Heading and chat replies come back in that language, and the fixed "I don't know" reply has one approved wording per language. Retrieval needs no change because `gemini-embedding-001` embeds across languages.
-
-When `lang` isn't English, the client calls `POST /api/translate-card` ([`server/translate.ts`](./server/translate.ts)). The server flattens the card's own strings into an array, Gemini translates them one for one, and the server rejects a reply with a different count or an empty string where the source had text. Numbers, RM amounts, page numbers and system names stay unchanged. The card is labelled "Translated by AI from the approved English card", with "Show original". If translation fails, the English card is shown.
-
-## 14. Evaluation
+## 13. Evaluation
 
 `npm run eval` ([`scripts/eval.ts`](./scripts/eval.ts), cases in [`scripts/eval-set.json`](./scripts/eval-set.json)) calls `answer()` directly, so it tests the same embeddings, rerank, decision and validation as the app. It writes [`docs/eval-results.md`](./docs/eval-results.md). On a free-tier key, `EVAL_DELAY_MS` (default 9000) paces it, and a 429 is waited out and retried rather than counted as a wrong answer.
 
-## 15. Current limitations
+## 14. Current limitations
 
 This implementation is optimized for the hackathon demo:
 
@@ -466,3 +460,13 @@ This implementation is optimized for the hackathon demo:
 - Session state lives in browser memory, so it resets on refresh and is not shared between users.
 
 For production, add a persistent vector store such as pgvector, Supabase Vector, Pinecone or another managed vector database. Precompute embeddings when a library or Knowledge Base card is created or approved, and store material files in private object storage.
+
+## 15. Future expansion
+
+### Multilingual answers
+
+Multilingual answers are outside the 2.0 release scope. The code path below is the starting point for expanding them.
+
+`/api/answer` also returns `lang` (`en`, `ms`, `zh`, `ta`). Heading and chat replies come back in that language, and the fixed "I don't know" reply has one approved wording per language. Retrieval needs no change because `gemini-embedding-001` embeds across languages.
+
+When `lang` isn't English, the client calls `POST /api/translate-card` ([`server/translate.ts`](./server/translate.ts)). The server flattens the card's own strings into an array, Gemini translates them one for one, and the server rejects a reply with a different count or an empty string where the source had text. Numbers, RM amounts, page numbers and system names stay unchanged. The card is labelled "Translated by AI from the approved English card", with "Show original". If translation fails, the English card is shown.
