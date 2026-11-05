@@ -2,6 +2,8 @@
 import { GoogleGenAI } from '@google/genai';
 
 const TIMEOUT_MS = 15000;
+/** An embedding is one short call; past this the keyword fallback answers instead of the question hanging. */
+const EMBED_TIMEOUT_MS = 8000;
 
 let client: GoogleGenAI | null = null;
 function gemini(): GoogleGenAI {
@@ -17,6 +19,11 @@ export class HttpError extends Error {
 
 type GenerationModel = 'chat' | 'summary';
 
+/** Token counts per generation call, for the eval script's cost report. Nothing listens in the app. */
+export type Usage = { model: string; input: number; output: number };
+let usageListener: ((u: Usage) => void) | null = null;
+export function onUsage(fn: ((u: Usage) => void) | null): void { usageListener = fn; }
+
 function generationModel(role: GenerationModel): string {
   if (role === 'summary') return process.env.GEMINI_SUMMARY_MODEL || 'gemini-3.6-flash';
   return process.env.GEMINI_CHAT_MODEL || 'gemini-3.5-flash-lite';
@@ -24,8 +31,9 @@ function generationModel(role: GenerationModel): string {
 
 /** One Gemini call with a JSON Schema-constrained response, parsed. */
 export async function generateJson<T>(opts: { system: string; prompt: string; schema: object; temperature?: number; contents?: unknown; model?: GenerationModel }): Promise<T> {
+  const model = generationModel(opts.model ?? 'chat');
   const res = await gemini().models.generateContent({
-    model: generationModel(opts.model ?? 'chat'),
+    model,
     contents: opts.contents ?? opts.prompt,
     config: {
       systemInstruction: opts.system,
@@ -35,6 +43,7 @@ export async function generateJson<T>(opts: { system: string; prompt: string; sc
       abortSignal: AbortSignal.timeout(TIMEOUT_MS),
     },
   });
+  usageListener?.({ model, input: res.usageMetadata?.promptTokenCount ?? 0, output: (res.usageMetadata?.candidatesTokenCount ?? 0) + (res.usageMetadata?.thoughtsTokenCount ?? 0) });
   const text = res.text;
   if (!text) throw new HttpError(502, 'Gemini returned an empty response');
   try { return JSON.parse(text) as T; } catch { throw new HttpError(502, 'Gemini returned invalid JSON'); }
@@ -45,6 +54,7 @@ export async function embedText(text: string): Promise<number[]> {
   const res = await gemini().models.embedContent({
     model: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001',
     contents: text,
+    config: { abortSignal: AbortSignal.timeout(EMBED_TIMEOUT_MS) },
   });
   const values = res.embeddings?.[0]?.values;
   if (!values?.length || values.some((value) => !Number.isFinite(value))) {

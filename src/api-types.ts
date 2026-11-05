@@ -1,5 +1,5 @@
 // Request/response shapes for /api/*. Shared by the browser (src/lib/api.ts) and the server (server/).
-import type { CardSpec, ThemeKey } from './types';
+import type { CardSpec, CorePulseKey, Lang, MilestoneKey, PulseAnswer, PulseKey, ThemeKey } from './types';
 
 export interface ChatLine { from: 'pic' | 'employee' | 'manager'; text: string }
 export interface PicPersona { name: string; first: string; team: string; skills: string }
@@ -23,7 +23,13 @@ export interface AnswerResponse {
   /** Library card id or learned KB id, when the answer is based on company knowledge. */
   cardId?: string;
   card?: { title: string; steps: { label: string; detail?: string }[] };
+  /** The language the question was written in; heading and message come back in it. */
+  lang?: Lang;
 }
+
+/** Translate one approved card's text into the employee's language. Same shape back; nothing added. */
+export interface TranslateCardRequest { lang: Exclude<Lang, 'en'>; card: CardSpec }
+export interface TranslateCardResponse { card: CardSpec }
 
 export interface RoomReplyRequest { pic: PicPersona; employee: string; ticket: TicketContext | null; messages: ChatLine[] }
 export interface RoomReplyResponse { reply: string; solved: boolean }
@@ -55,4 +61,19 @@ export interface MaterialExtractResponse {
   theme: ThemeKey;
   problem: string;
   steps: string[];
+}
+
+/** Milestone check-ins for one cohort. Notes carry no names; `people` holds only those who chose to share theirs. */
+export interface CheckinInsightsRequest {
+  cohort: number;
+  responses: number;
+  focusDimension?: string;
+  focusMilestone?: MilestoneKey;
+  totals: Record<MilestoneKey, Record<CorePulseKey, Record<PulseAnswer, number>>>;
+  anonymousNotes: string[];
+  people: { id: string; named: true; milestone: MilestoneKey; answers: Record<PulseKey, PulseAnswer>; followUps?: Partial<Record<PulseKey, string>>; note?: string; signals: string[] }[];
+}
+export interface CheckinInsightsResponse {
+  themes: { name: string; count: number; summary: string; action: string; note: string }[];
+  people: { id: string; why: string; action: string }[];
 }

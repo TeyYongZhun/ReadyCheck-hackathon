@@ -1,20 +1,25 @@
 // Design View 1 — the employee's Dynamic Knowledge Canvas.
 // At rest: greeting, omni bar, starters. Asking: bar rises, skeleton. Answered: one card. Esc clears.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type { Attachment, CanvasAnswer, CardSpec, CardState, ChatReply, DashboardItem, HistoryEntry } from '../../types';
-import { useApp } from '../../state/AppState';
+import type { Attachment, CanvasAnswer, CardSpec, CardState, ChatReply, DashboardItem, HistoryEntry, KbItem } from '../../types';
+import { ME, useApp } from '../../state/AppState';
 import { DEFAULT_SUGGEST } from '../../data/scenarios';
-import { isChat, resolveAnswer } from '../../lib/answer';
+import { milestoneOrder } from '../../data/checkins';
+import { answerFromKnowledge, isChat, resolveAnswer } from '../../lib/answer';
 import { clock, cx, greeting, uid } from '../../lib/util';
 import { Brand, Icon, Toast, toAttachment } from '../../components/primitives';
 import { ActionCard, ChecklistCard, DocSummaryCard, VideoCard } from '../../components/cards/ActionCard';
 import { DashboardDock, EscalatedReceipt, EscalationFlight, rectWithin, type Rect } from '../../components/cards/Escalation';
 import { OmniBar } from './OmniBar';
 import { HistorySidebar, type HistoryItem } from './HistorySidebar';
+import { CheckInEntry, CheckInSheet } from './CheckInCard';
 
-const USER = { first: 'Mira', last: 'Tan', role: 'Day 3 · Product Design' };
+const USER = { first: ME.first, last: ME.person.split(' ')[1], role: ME.role };
 interface Flight { id: string; from: Rect; to: Rect; card: CardSpec; ans: CanvasAnswer; query: string; files: Attachment[]; entryId: string | null }
 const MIN_LOADING_MS = 700;
+
+const isNoAnswer = (card: CardSpec) => card.id.startsWith('unknown-');
+const clip = (text: string, max: number) => (text.length > max ? text.slice(0, max - 1).trimEnd() + '…' : text);
 
 export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   const app = useApp();
@@ -34,11 +39,25 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   const [esc, setEsc] = useState<DashboardItem[]>([]);
   const [flight, setFlight] = useState<Flight | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [checkInNotice, setCheckInNotice] = useState<string | null>(null);
   const [pulse, setPulse] = useState(0);
   const [dockOpen, setDockOpen] = useState(false);
+  const [teamResponseOpen, setTeamResponseOpen] = useState(false);
+  const [seenTeamResponseId, setSeenTeamResponseId] = useState<string | null>(null);
   const [entryId, setEntryId] = useState<string | null>(null);
   // Closed by default so the first screen stays clear; the count on "Your questions" still updates.
   const [sideOpen, setSideOpen] = useState(false);
+  const [checkInDemoStarted, setCheckInDemoStarted] = useState(false);
+  const [checkInOpen, setCheckInOpen] = useState(false);
+  const userRole = checkInDemoStarted ? 'Product Designer · Day 7' : USER.role;
+  useEffect(() => {
+    if (!checkInNotice) return;
+    const timer = window.setTimeout(() => setCheckInNotice(null), 4500);
+    return () => window.clearTimeout(timer);
+  }, [checkInNotice]);
+  // A translated answer can be flipped back to the approved English card it came from.
+  const [showOriginal, setShowOriginal] = useState(false);
+  useEffect(() => { setShowOriginal(false); }, [ans]);
   const [winH, setHeight] = useState(() => window.innerHeight);
   // Bottom edge of the answer card, so the canvas (which clips its children) grows with it and the page can scroll.
   const gridRef = useRef<HTMLDivElement>(null);
@@ -65,7 +84,8 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
     const no = ++askNo.current, mine = files;
     setDraft(q); setQuery(q); setPhase('loading'); setCs({}); setAns(null); setChat(null); setSent(mine); setFiles([]);
     const started = performance.now();
-    const answer = resolveAnswer(q, mine.map((f) => f.name), app.knowledge, app.library);
+    let took = 0;
+    const answer = resolveAnswer(q, mine.map((f) => f.name), app.knowledge, app.library).then((r) => { took = performance.now() - started; return r; });
     const [a] = await Promise.all([
       answer,
       new Promise<void>((resolve) => window.setTimeout(resolve, Math.max(0, MIN_LOADING_MS - (performance.now() - started)))),
@@ -78,7 +98,16 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
     }
     const id = uid('h');
     setAns(a); setPhase('results'); setEntryId(id);
-    app.history.add({ id, query: q, answer: a, cardType: a.card.type, title: a.card.props.title, heading: a.heading, at: clock(), state: 'viewed', files: mine.map(({ name, kind }) => ({ name, kind })) });
+    app.history.add({ id, query: q, answer: a, cardType: a.card.type, title: a.card.props.title, heading: a.heading, at: clock(), state: 'viewed', files: mine.map(({ name, kind }) => ({ name, kind })), ms: Math.round(took) });
+  }
+
+  /** Opens a guide from a team update like any answer, so it stays in "Your questions" and can still be escalated. */
+  function openGuide(item: KbItem) {
+    askNo.current++;
+    const answer = answerFromKnowledge(item), id = uid('h');
+    setDraft(item.title); setQuery(item.title); setAns(answer); setChat(null); setCs({}); setSent([]); setPhase('results'); setEntryId(id);
+    setTeamResponseOpen(false);
+    app.history.add({ id, query: item.title, answer, cardType: answer.card.type, title: answer.card.props.title, heading: answer.heading, at: clock(), state: 'viewed', files: [], ms: 0 });
   }
 
   function clear() {
@@ -96,7 +125,8 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   }
 
   useEffect(() => {
-    const k = (ev: KeyboardEvent) => { if (ev.key === 'Escape' && root.current?.offsetParent !== null) clear(); };
+    // Esc inside the check-in sheet closes the sheet only, not the card behind it.
+    const k = (ev: KeyboardEvent) => { if (ev.key === 'Escape' && !checkInOpen && root.current?.offsetParent !== null) clear(); };
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   });
@@ -112,12 +142,15 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
 
   function arrive() {
     const fl = flight; if (!fl) return;
+    // An "I don't know" card's title is the refusal itself, so the ticket is named after the question instead.
+    const noAnswer = isNoAnswer(fl.card);
+    const title = noAnswer ? clip(fl.query, 70) : fl.card.props.title;
     setPulse((n) => n + 1);
-    setEsc((l) => [{ id: fl.id, title: fl.card.props.title, state: 'waiting', status: 'Waiting for an expert' }, ...l]);
+    setEsc((l) => [{ id: fl.id, title, state: 'waiting', status: 'Waiting for an expert' }, ...l]);
     setCard(fl.card.id, 'routing');
     setDockOpen(true);
     setToast(fl.id);
-    app.escalate({ id: fl.id, title: fl.card.props.title, query: fl.query, kind: fl.card.type, theme: fl.ans.theme, entryId: fl.entryId, files: fl.files.map(({ name, kind }) => ({ name, kind })) });
+    app.escalate({ id: fl.id, title, shown: fl.card.props.title, query: fl.query, kind: fl.card.type, theme: fl.ans.theme, entryId: fl.entryId, noAnswer, files: fl.files.map(({ name, kind }) => ({ name, kind })) });
     window.setTimeout(() => setDockOpen(false), 4200);
     window.setTimeout(() => setToast((t) => (t === fl.id ? null : t)), 5600);
   }
@@ -125,13 +158,19 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
   const active = phase !== 'idle';
   // At rest the canvas fits the window exactly (no scroll); with a card on it, leave room for the card.
   const height = active ? Math.max(820, winH, contentBottom + 64) : Math.max(560, winH);
-  const cards = ans ? [ans.card] : [];
+  const cards = ans ? [showOriginal && ans.translated ? ans.translated.original : ans.card] : [];
+  // A count only, never names: it tells a new hire the question is normal to ask.
   const dockItems: DashboardItem[] = esc.map((x) => {
     const a = app.assignments[x.id];
     if (!a) return x;
     const solved = a.status === 'resolved' || app.rooms[a.roomId]?.room.status === 'resolved';
     return { ...x, state: solved ? 'solved' : 'live', status: solved ? 'Solved' : 'With ' + a.pic.first, roomId: a.roomId };
   });
+  const teamResponse = app.actions
+    .filter((action) => !action.person && !!action.publicNote && !!action.publishedAt)
+    .filter((action) => milestoneOrder(action.milestone) < milestoneOrder(app.demoMilestone))
+    .slice(-1)[0];
+  const teamGuide = app.knowledge.find((item) => item.id === teamResponse?.resourceId && item.status === 'live');
 
   const historyItems: HistoryItem[] = app.historyItems.map((e) => {
     if (!e.ticketId) return { entry: e, room: null };
@@ -143,7 +182,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
 
   return (
     <div ref={root} className={cx('rc-canvas', active && 'is-active', 'is-single', 'has-side')}
-      style={{ height, '--rc-head-top': 200 + (files.length ? 44 : 0) + 'px', '--rc-grid-top': 242 + (files.length ? 44 : 0) + (ans && sent.length ? 26 : 0) + 'px' } as React.CSSProperties}>
+      style={{ height, '--rc-head-top': 200 + (files.length ? 44 : 0) + 'px', '--rc-grid-top': 242 + (files.length ? 44 : 0) + (ans && sent.length ? 26 : 0) + (ans?.translated ? 24 : 0) + 'px' } as React.CSSProperties}>
       <div className="rc-canvas-orb rc-canvas-orb-a" aria-hidden />
       <div className="rc-canvas-orb rc-canvas-orb-b" aria-hidden />
 
@@ -152,9 +191,31 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
         <div className="rc-side-mode">{modeSwitch}</div>
         <HistorySidebar items={historyItems} activeId={entryId} open={sideOpen} onToggle={() => setSideOpen((v) => !v)}
           onNew={clear} onPick={restore} onOpenRoom={(id) => app.setOpenRoom({ id, viewer: 'employee' })} onClear={() => { app.history.clear(); setEntryId(null); }} />
-        <div className="rc-user rc-side-user">
-          <span className="rc-avatar">{USER.first[0] + USER.last[0]}</span>
-          <div><div className="rc-user-n">{USER.first} {USER.last}</div><div className="rc-user-s">{USER.role}</div></div>
+        <div className="rc-ci-demo-footer">
+          {checkInDemoStarted ? (
+            <CheckInEntry
+              onOpen={() => setCheckInOpen(true)}
+              onOpenAnotherWeek={(milestone) => {
+                app.setDemoMilestone(milestone);
+              }}
+            />
+          ) : (
+            <button
+              type="button"
+              className="rc-btn-ghost is-sm rc-ci-demo-trigger"
+              onClick={() => {
+                app.setDemoMilestone('week1');
+                setCheckInDemoStarted(true);
+                setCheckInNotice('Week 1 check-in is ready.');
+              }}
+            >
+              Demo Week 1 check-in
+            </button>
+          )}
+          <div className="rc-user rc-side-user">
+            <span className="rc-avatar">{USER.first[0] + USER.last[0]}</span>
+            <div><div className="rc-user-n">{USER.first} {USER.last}</div><div className="rc-user-s">{userRole}</div></div>
+          </div>
         </div>
       </aside>
 
@@ -162,6 +223,42 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
         <header className="rc-topbar">
           <div className="rc-topbar-right">
             <div className="rc-dock-slot">
+              <aside
+                className={cx('rc-dock rc-glass rc-glass-2 rc-team-notification', teamResponseOpen && 'is-open')}
+                aria-label="Notifications"
+                onMouseEnter={() => setTeamResponseOpen(true)}
+                onMouseLeave={() => setTeamResponseOpen(false)}
+              >
+                <button
+                  type="button"
+                  className="rc-dock-head rc-dock-toggle"
+                  aria-expanded={teamResponseOpen}
+                  aria-controls="rc-team-response"
+                  onFocus={() => setTeamResponseOpen(true)}
+                  onClick={() => {
+                    setTeamResponseOpen((open) => !open);
+                    if (teamResponse) setSeenTeamResponseId(teamResponse.id);
+                  }}
+                >
+                  <span className="rc-dock-icon"><Icon name="bell" size={16} /></span>
+                  <span className="rc-dock-text">
+                    <span className="rc-dock-title">Notification</span>
+                    <span className="rc-dock-sub">{teamResponse ? seenTeamResponseId === teamResponse.id ? '1 notification' : '1 new response' : 'No new notifications'}</span>
+                  </span>
+                  {teamResponse && seenTeamResponseId !== teamResponse.id ? <span className="rc-team-notification-dot" aria-label="Unread notification" /> : null}
+                </button>
+                <div className="rc-dock-drawer" id="rc-team-response">
+                  <div className="rc-team-notification-content" role="status">
+                    {teamResponse ? (
+                      <>
+                        <p><b>Your team responded:</b> {teamResponse.publicNote}</p>
+                        {teamGuide ? <button type="button" className="rc-btn-primary is-sm rc-team-notification-guide" onClick={() => { setSeenTeamResponseId(teamResponse.id); openGuide(teamGuide); }}>View guide</button> : null}
+                        <em>If this affected you, we’ll ask whether it helped in your check-in.</em>
+                      </>
+                    ) : <p>No notification yet. We’ll let you know when your team responds.</p>}
+                  </div>
+                </div>
+              </aside>
               <DashboardDock ref={dock} items={dockItems} pulse={pulse} open={dockOpen} onOpenRoom={(id) => app.setOpenRoom({ id, viewer: 'employee' })} />
             </div>
           </div>
@@ -183,7 +280,12 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
           <div className="rc-results-head">
             <div>
               <span className="rc-results-h">{ans ? ans.heading : chat ? chat.heading : 'Looking across policies, videos and how-tos'}</span>
-              {ans ? <span className="rc-results-n">Best match for “{query}”</span> : null}
+              {ans ? <span className="rc-results-n">{query === ans.card.props.title ? 'Shared in your team’s update' : `Best match for “${query}”`}</span> : null}
+              {ans?.translated ? (
+                <span className="rc-translated"><Icon name="globe" size={13} />Translated by AI from the approved English card
+                  <button type="button" className="rc-quiet" onClick={() => setShowOriginal((v) => !v)}>{showOriginal ? 'Show translation' : 'Show original'}</button>
+                </span>
+              ) : null}
               {chat ? <span className="rc-results-n">Reply to “{query}”</span> : null}
               {ans && sent.length ? <span className="rc-results-files"><Icon name="clip" size={13} />{sent.length === 1 ? '1 attachment: ' : sent.length + ' attachments: '}{sent.map((f) => f.name).join(', ')}</span> : null}
             </div>
@@ -204,7 +306,7 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
                 const tid = tickets.current[card.id], a = app.assignments[tid];
                 return (
                   <div key={card.id} className="rc-grid-item">
-                    <EscalatedReceipt id={tid} title={card.props.title} queue={a ? a.pic.team : ans!.queue}
+                    <EscalatedReceipt id={tid} title={isNoAnswer(card) ? clip(query, 70) : card.props.title} queue={a ? a.pic.team : ans!.queue}
                       expert={a ? { name: a.pic.name, initials: a.pic.initials, eta: 'a few min' } : ans!.expert}
                       status={a ? (a.status === 'resolved' ? 'resolved' : 'picked') : 'routing'} roomName={a?.roomName}
                       onOpenRoom={a ? () => app.setOpenRoom({ id: a.roomId, viewer: 'employee' }) : undefined} />
@@ -234,7 +336,16 @@ export function KnowledgeCanvas({ modeSwitch }: { modeSwitch: ReactNode }) {
             card={{ kind: flight.card.type, title: flight.card.props.title }} onArrive={arrive} onDone={() => setFlight(null)} />
         ) : null}
 
-        {toast ? (
+        {checkInOpen ? (
+          <CheckInSheet
+            onClose={() => setCheckInOpen(false)}
+            onSubmitted={(edited) => setCheckInNotice(edited ? 'Your check-in was updated.' : 'Check-in submitted. You can edit it for 5 minutes.')}
+          />
+        ) : null}
+
+        {checkInNotice ? (
+          <Toast className="rc-ci-toast" tone="ready" onClose={() => setCheckInNotice(null)}>{checkInNotice}</Toast>
+        ) : toast ? (
           <Toast onClose={() => setToast(null)}>
             <span className="rc-toast-id">{toast}</span> is with the support team. They’ll pick the right expert, and you’ll chat in a room from My tickets.
           </Toast>

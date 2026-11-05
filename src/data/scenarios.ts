@@ -3,7 +3,7 @@ import type { Scenario } from '../types';
 
 export const SCENARIOS: Scenario[] = [
   {
-    key: 'vpn', match: /vpn|remote|network|wi-?fi|sso|connect|laptop|access/i,
+    key: 'vpn', match: /vpn|remote|network|wi-?fi|sso|connect|laptop|access|rangkaian|sambung/i,
     heading: 'Getting connected on day one', queue: 'IT Enablement', expert: { name: 'Ana Okafor', initials: 'AO', eta: '12 min' },
     cards: [
       { id: 'v1', type: 'video', props: { title: 'Day-1 setup: VPN, SSO and your laptop', source: 'IT Enablement · Onboarding library', duration: 184, chapters: [{ t: 0, label: 'Unbox and sign in' }, { t: 42, label: 'Install GlobalConnect VPN' }, { t: 96, label: 'Approve your first SSO prompt' }, { t: 150, label: 'Check you’re green' }] } },
@@ -12,7 +12,7 @@ export const SCENARIOS: Scenario[] = [
     ],
   },
   {
-    key: 'expense', match: /expens|dinner|claim|receipt|reimburs|travel|lunch/i,
+    key: 'expense', match: /expens|dinner|claim|receipt|reimburs|travel|lunch|tuntut|resit|perbelanjaan|makan malam|报销|收据/i,
     heading: 'Expensing a client dinner', queue: 'Finance Ops', expert: { name: 'Daniel Lim', initials: 'DL', eta: '25 min' },
     cards: [
       { id: 'd2', type: 'doc', props: { title: 'Client entertainment: the short version', source: 'Summarised from Travel & Expenses Policy', file: 'Travel-and-Expenses-Policy-2026.pdf', pages: 22, updated: 'Updated 14 Jul 2026 · Finance', points: [{ text: 'Up to RM 250 per head; alcohol capped at a third of the bill.', page: 7 }, { text: 'Submit within 30 days with an itemised receipt.', page: 8 }, { text: 'Name every attendee and their company.', page: 8 }, { text: 'Over RM 1,000 in total needs your manager’s approval first.', page: 9 }] } },
@@ -21,7 +21,7 @@ export const SCENARIOS: Scenario[] = [
     ],
   },
   {
-    key: 'mfa', match: /mfa|password|authenticat|2fa|locked|phone|reset/i,
+    key: 'mfa', match: /mfa|password|authenticat|2fa|locked|phone|reset|kata laluan|telefon baru/i,
     heading: 'Moving MFA to a new phone', queue: 'Identity & Access', expert: { name: 'Priya Raman', initials: 'PR', eta: '8 min' },
     cards: [
       { id: 's3', type: 'steps', props: { title: 'Move your authenticator', source: 'Keep the old phone until step 4', steps: [{ label: 'Open mysignins on your laptop', detail: 'Security info → Add method' }, { label: 'Scan the QR code with the new phone' }, { label: 'Approve the test prompt' }, { label: 'Remove the old phone from the list' }] } },
@@ -30,7 +30,7 @@ export const SCENARIOS: Scenario[] = [
     ],
   },
   {
-    key: 'onboarding', match: /first week|onboarding|new joiner|new hire|buddy|schedule|welcome/i,
+    key: 'onboarding', match: /first week|onboarding|new joiner|new hire|buddy|schedule|welcome|minggu pertama|jadual|第一周/i,
     heading: 'Your first week', queue: 'People Team', expert: { name: 'Sofia Hart', initials: 'SH', eta: '20 min' },
     cards: [
       { id: 'v4', type: 'video', props: { title: 'Welcome aboard: how your first week works', source: 'People Team · Onboarding', duration: 236, chapters: [{ t: 0, label: 'Monday: kit and accounts' }, { t: 70, label: 'Meet your buddy' }, { t: 140, label: 'Mandatory training' }, { t: 200, label: 'Friday check-in' }] } },
@@ -58,3 +58,5 @@ export const DEFAULT_SUGGEST = [
 
 /** How long the demo questions wait for the AI before the local matcher answers instead, so the demo never stalls. */
 export const DEMO_ANSWER_BUDGET_MS = 3000;
+/** Every other question: long enough for a cold server, short enough that the skeleton never hangs. */
+export const ANSWER_BUDGET_MS = 10000;

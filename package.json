@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "start": "tsx server/production.ts",
     "preview": "vite preview",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "eval": "tsx scripts/eval.ts"
   },
   "dependencies": {
     "@google/genai": "^2.30.0",

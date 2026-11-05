@@ -21,13 +21,16 @@ export function markAiOffline(): void {
   notify();
 }
 
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
 export function useAiOffline(): boolean {
-  return useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    () => status === 'offline',
-    () => false,
-  );
+  return useSyncExternalStore(subscribe, () => status === 'offline', () => false);
+}
+
+/** The last AI call's outcome, for the presenter's status pill. */
+export function useAiStatus(): AiStatus {
+  return useSyncExternalStore(subscribe, () => status, () => 'unknown' as const);
 }

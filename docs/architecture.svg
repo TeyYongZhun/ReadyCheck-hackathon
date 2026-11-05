@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="640" viewBox="0 0 1100 640" font-family="Segoe UI, Inter, Helvetica Neue, Arial, sans-serif" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="828" viewBox="0 0 1100 828" font-family="Segoe UI, Inter, Helvetica Neue, Arial, sans-serif" role="img" aria-labelledby="t d">
   <title id="t">ReadyCheck architecture</title>
-  <desc id="d">New hires and managers use the ReadyCheck web app (React, TypeScript, Vite) in the browser. Vercel serves the static site and runs one serverless API function with four endpoints: answer, theme-summary, room-reply and summarize-room. The function holds the Gemini API key, sends prompts with a JSON schema to Google Gemini and returns structured JSON. If Gemini is unavailable the web app falls back to keyword matching.</desc>
+  <desc id="d">New hires and managers use the ReadyCheck web app (React, TypeScript, Vite) in the browser. The app holds the knowledge canvas, ticket rooms, onboarding check-ins and a seven-tab Command Center, with session-only shared state. Vercel serves the static site and runs one serverless API function. The app calls seven endpoints: answer, translate-card, room-reply, summarize-room, home-summary, material-extract and warmup. Two more endpoints, theme-summary and checkin-insights, are built but not called by the app yet. The function holds the Gemini API key, sends prompts with a JSON schema to Google Gemini and returns structured JSON. If Gemini is unavailable the web app falls back to keyword matching.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#0d1719"/><stop offset="1" stop-color="#090f11"/>
@@ -35,17 +35,18 @@
       .eps { fill: #8fa39d; font-size: 11.5px; }
       .lbl { fill: #8fa39d; font-size: 11px; }
       .flow { stroke: #7d928c; stroke-width: 2; fill: none; }
+      .dim { fill: #7d928c; font-size: 12px; }
       .chip { fill: #142024; stroke: #2a3b3f; }
       .chipt { fill: #dbe6e2; font-size: 12.5px; }
     </style>
   </defs>
 
   <!-- Background -->
-  <rect width="1100" height="640" rx="24" fill="url(#bg)"/>
-  <rect width="1100" height="640" rx="24" fill="url(#dots)" opacity=".7"/>
-  <rect width="1100" height="640" rx="24" fill="url(#glowA)"/>
-  <rect width="1100" height="640" rx="24" fill="url(#glowB)"/>
-  <rect x=".75" y=".75" width="1098.5" height="638.5" rx="23.5" fill="none" stroke="#223236"/>
+  <rect width="1100" height="828" rx="24" fill="url(#bg)"/>
+  <rect width="1100" height="828" rx="24" fill="url(#dots)" opacity=".7"/>
+  <rect width="1100" height="828" rx="24" fill="url(#glowA)"/>
+  <rect width="1100" height="828" rx="24" fill="url(#glowB)"/>
+  <rect x=".75" y=".75" width="1098.5" height="826.5" rx="23.5" fill="none" stroke="#223236"/>
 
   <!-- Header -->
   <g transform="translate(48 40)">
@@ -83,7 +84,7 @@
   <path class="flow" d="M188 389 H222" marker-end="url(#a)"/>
 
   <!-- ===== Browser: web app ===== -->
-  <g filter="url(#shadow)"><rect class="card" x="228" y="150" width="280" height="330" rx="16"/></g>
+  <g filter="url(#shadow)"><rect class="card" x="228" y="150" width="280" height="384" rx="16"/></g>
   <path d="M228 166 a16 16 0 0 1 16 -16 h248 a16 16 0 0 1 16 16 v14 h-280 z" fill="#1c2c30"/>
   <circle cx="246" cy="165" r="4" fill="#ff7b72"/><circle cx="260" cy="165" r="4" fill="#ffad5c"/><circle cx="274" cy="165" r="4" fill="#5fe3b5"/>
   <text x="392" y="169" text-anchor="middle" fill="#8fa39d" font-size="10.5" class="mono">ready-check-hackathon.vercel.app</text>
@@ -95,15 +96,18 @@
   <rect class="row" x="246" y="288" width="244" height="34" rx="10"/>
   <circle cx="262" cy="305" r="4.5" fill="#5fe3b5"/><text class="rowt" x="276" y="310">Ticket rooms + My tickets</text>
   <rect class="row" x="246" y="330" width="244" height="34" rx="10"/>
-  <circle cx="262" cy="347" r="4.5" fill="#ffad5c"/><text class="rowt" x="276" y="352">Command Center (6 tabs)</text>
+  <circle cx="262" cy="347" r="4.5" fill="#5fe3b5"/><text class="rowt" x="276" y="352">Onboarding check-ins</text>
   <rect class="row" x="246" y="372" width="244" height="34" rx="10"/>
-  <circle cx="262" cy="389" r="4.5" fill="#7d928c"/><text class="rowt" x="276" y="394">Shared app state</text>
+  <circle cx="262" cy="389" r="4.5" fill="#ffad5c"/><text class="rowt" x="276" y="394">Command Center (7 tabs)</text>
   <rect class="row" x="246" y="414" width="244" height="46" rx="10"/>
-  <circle cx="262" cy="431" r="4.5" fill="#7d928c"/><text class="rowt" x="276" y="436">Offline fallback</text>
-  <text class="eps" x="276" y="452">keyword match if AI is down</text>
+  <circle cx="262" cy="431" r="4.5" fill="#7d928c"/><text class="rowt" x="276" y="436">Shared app state</text>
+  <text class="eps" x="276" y="452">session only, resets on refresh</text>
+  <rect class="row" x="246" y="468" width="244" height="46" rx="10"/>
+  <circle cx="262" cy="485" r="4.5" fill="#7d928c"/><text class="rowt" x="276" y="490">Offline fallback</text>
+  <text class="eps" x="276" y="506">keyword match if AI is down</text>
 
   <!-- ===== Vercel ===== -->
-  <rect x="568" y="128" width="280" height="370" rx="18" fill="#ffffff" fill-opacity=".015" stroke="#3a4d52" stroke-dasharray="6 6"/>
+  <rect x="568" y="128" width="280" height="558" rx="18" fill="#ffffff" fill-opacity=".015" stroke="#3a4d52" stroke-dasharray="6 6"/>
   <path d="M584 147 l7 -12 l7 12 z" fill="#eef5f2"/>
   <text x="606" y="146" fill="#eef5f2" font-size="12" font-weight="700" letter-spacing=".12em">VERCEL</text>
 
@@ -111,19 +115,30 @@
   <text class="h" x="602" y="191" font-size="15">Static site</text>
   <text class="s" x="602" y="211">dist/ · HTML, JS, CSS</text>
 
-  <g filter="url(#shadow)"><rect class="card" x="584" y="244" width="248" height="236" rx="14"/></g>
+  <g filter="url(#shadow)"><rect class="card" x="584" y="244" width="248" height="424" rx="14"/></g>
   <rect x="584" y="244" width="248" height="4" rx="2" fill="#a3b8ff"/>
   <text class="h" x="602" y="274" font-size="15">Serverless API</text>
   <text class="s mono" x="602" y="293" font-size="12">api/[route].ts → server/</text>
 
   <text class="ep mono" x="602" y="322">POST /api/answer</text>
   <text class="eps" x="602" y="338">find the knowledge-base card</text>
-  <text class="ep mono" x="602" y="362">POST /api/theme-summary</text>
-  <text class="eps" x="602" y="378">why people are stuck on a topic</text>
+  <text class="ep mono" x="602" y="362">POST /api/translate-card</text>
+  <text class="eps" x="602" y="378">approved card → employee’s language</text>
   <text class="ep mono" x="602" y="402">POST /api/room-reply</text>
   <text class="eps" x="602" y="418">expert reply in the demo chat</text>
   <text class="ep mono" x="602" y="442">POST /api/summarize-room</text>
   <text class="eps" x="602" y="458">solved chat → knowledge card</text>
+  <text class="ep mono" x="602" y="482">POST /api/home-summary</text>
+  <text class="eps" x="602" y="498">manager briefing on Home</text>
+  <text class="ep mono" x="602" y="522">POST /api/material-extract</text>
+  <text class="eps" x="602" y="538">uploaded PDF → card draft</text>
+  <text class="ep mono" x="602" y="562">POST /api/warmup</text>
+  <text class="eps" x="602" y="578">embeds the library on page load</text>
+
+  <line x1="602" y1="596" x2="814" y2="596" stroke="#2a3b3f"/>
+  <text class="eps" x="602" y="616">Built, not called by the app yet</text>
+  <text class="dim mono" x="602" y="636">/api/theme-summary</text>
+  <text class="dim mono" x="602" y="654">/api/checkin-insights</text>
 
   <!-- Browser ↔ Vercel -->
   <path class="flow" d="M574 195 H514" stroke-dasharray="5 5" marker-end="url(#a)"/>
@@ -139,7 +154,7 @@
   <path d="M983 268 C985 282 990 287 1004 289 C990 291 985 296 983 310 C981 296 976 291 962 289 C976 287 981 282 983 268 Z" fill="url(#gem)"/>
   <text class="h" x="983" y="334" text-anchor="middle" font-size="15">Google Gemini</text>
   <text x="983" y="356" text-anchor="middle" fill="#cfe0ff" font-size="12" font-weight="600">3.5 Flash-Lite</text>
-  <text class="eps" x="983" y="370" text-anchor="middle">answers + chat</text>
+  <text class="eps" x="983" y="370" text-anchor="middle">answers, chat, translation</text>
   <text x="983" y="390" text-anchor="middle" fill="#cfe0ff" font-size="12" font-weight="600">3.6 Flash</text>
   <text class="eps" x="983" y="404" text-anchor="middle">knowledge cards</text>
   <text x="983" y="424" text-anchor="middle" fill="#cfe0ff" font-size="12" font-weight="600">Embedding 001</text>
@@ -154,23 +169,23 @@
   <text class="lbl" x="875" y="394" text-anchor="middle">JSON</text>
 
   <!-- Key badge -->
-  <rect x="584" y="508" width="248" height="34" rx="17" fill="#5fe3b5" fill-opacity=".1" stroke="#5fe3b5" stroke-opacity=".55"/>
-  <rect x="600" y="523" width="12" height="10" rx="2" fill="none" stroke="#5fe3b5" stroke-width="1.8"/>
-  <path d="M602.5 523v-3a3.5 3.5 0 0 1 7 0v3" fill="none" stroke="#5fe3b5" stroke-width="1.8"/>
-  <text x="620" y="530" fill="#5fe3b5" font-size="12.5" font-weight="600">GEMINI_API_KEY lives only here</text>
-  <path d="M708 508 V500" stroke="#5fe3b5" stroke-opacity=".55" stroke-width="1.5"/>
+  <rect x="584" y="698" width="248" height="34" rx="17" fill="#5fe3b5" fill-opacity=".1" stroke="#5fe3b5" stroke-opacity=".55"/>
+  <rect x="600" y="713" width="12" height="10" rx="2" fill="none" stroke="#5fe3b5" stroke-width="1.8"/>
+  <path d="M602.5 713v-3a3.5 3.5 0 0 1 7 0v3" fill="none" stroke="#5fe3b5" stroke-width="1.8"/>
+  <text x="620" y="720" fill="#5fe3b5" font-size="12.5" font-weight="600">GEMINI_API_KEY lives only here</text>
+  <path d="M708 698 V686" stroke="#5fe3b5" stroke-opacity=".55" stroke-width="1.5"/>
 
   <!-- Tech stack strip -->
-  <line x1="48" y1="566" x2="1052" y2="566" stroke="#1f2e32"/>
-  <text class="cap" x="48" y="602">TECH STACK</text>
+  <line x1="48" y1="754" x2="1052" y2="754" stroke="#1f2e32"/>
+  <text class="cap" x="48" y="790">TECH STACK</text>
   <g>
-    <rect class="chip" x="146" y="584" width="84" height="28" rx="14"/><text class="chipt" x="188" y="603" text-anchor="middle">React 18</text>
-    <rect class="chip" x="238" y="584" width="94" height="28" rx="14"/><text class="chipt" x="285" y="603" text-anchor="middle">TypeScript</text>
-    <rect class="chip" x="340" y="584" width="58" height="28" rx="14"/><text class="chipt" x="369" y="603" text-anchor="middle">Vite</text>
-    <rect class="chip" x="406" y="584" width="134" height="28" rx="14"/><text class="chipt" x="473" y="603" text-anchor="middle">CSS design tokens</text>
-    <rect class="chip" x="548" y="584" width="132" height="28" rx="14"/><text class="chipt" x="614" y="603" text-anchor="middle">Vercel Functions</text>
-    <rect class="chip" x="688" y="584" width="122" height="28" rx="14"/><text class="chipt" x="749" y="603" text-anchor="middle">Google Gemini</text>
-    <rect class="chip" x="818" y="584" width="110" height="28" rx="14"/><text class="chipt mono" x="873" y="603" text-anchor="middle" font-size="12">@google/genai</text>
-    <rect class="chip" x="936" y="584" width="116" height="28" rx="14"/><text class="chipt" x="994" y="603" text-anchor="middle">Claude Design</text>
+    <rect class="chip" x="146" y="772" width="84" height="28" rx="14"/><text class="chipt" x="188" y="791" text-anchor="middle">React 18</text>
+    <rect class="chip" x="238" y="772" width="94" height="28" rx="14"/><text class="chipt" x="285" y="791" text-anchor="middle">TypeScript</text>
+    <rect class="chip" x="340" y="772" width="58" height="28" rx="14"/><text class="chipt" x="369" y="791" text-anchor="middle">Vite</text>
+    <rect class="chip" x="406" y="772" width="134" height="28" rx="14"/><text class="chipt" x="473" y="791" text-anchor="middle">CSS design tokens</text>
+    <rect class="chip" x="548" y="772" width="132" height="28" rx="14"/><text class="chipt" x="614" y="791" text-anchor="middle">Vercel Functions</text>
+    <rect class="chip" x="688" y="772" width="122" height="28" rx="14"/><text class="chipt" x="749" y="791" text-anchor="middle">Google Gemini</text>
+    <rect class="chip" x="818" y="772" width="110" height="28" rx="14"/><text class="chipt mono" x="873" y="791" text-anchor="middle" font-size="12">@google/genai</text>
+    <rect class="chip" x="936" y="772" width="116" height="28" rx="14"/><text class="chipt" x="994" y="791" text-anchor="middle">Claude Design</text>
   </g>
 </svg>

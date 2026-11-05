@@ -5,6 +5,8 @@
   .rc-side-emp { position: sticky; top: 16px; left: auto; bottom: auto; width: auto; height: calc(100vh - 32px); min-height: 520px; }
   .rc-emp-main { display: flex; flex-direction: column; min-width: 0; }
   .rc-canvas .rc-toast { left: 276px; }
+  .rc-canvas.has-side .rc-toast.rc-ci-toast { left: calc(50% + 138px); right: auto; width: max-content; max-width: min(720px, calc(100vw - 308px)); transform: translateX(-50%); animation-name: rc-toast-up-center; }
+  @keyframes rc-toast-up-center { from { opacity: 0; transform: translate(-50%, 16px); } }
   .rc-topbar { position: relative; left: auto; right: auto; top: auto; width: auto; height: auto; flex-wrap: wrap; gap: 12px; }
   .rc-topbar-right { flex-wrap: wrap; gap: 12px; width: 100%; justify-content: flex-end; }
   .rc-hello { position: relative; left: auto; top: auto; width: auto; margin: 56px 0 32px; }
@@ -25,6 +27,7 @@
   .rc-side-emp { position: relative; top: auto; height: auto; min-height: 0; }
   .rc-emp-main { width: 100%; }
   .rc-canvas .rc-toast { left: max(16px, env(safe-area-inset-left, 0px)); }
+  .rc-canvas.has-side .rc-toast.rc-ci-toast { left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); width: auto; max-width: none; transform: none; }
 }
 @media (max-width: 640px) {
   .rc-canvas { padding: 12px 0 120px; }

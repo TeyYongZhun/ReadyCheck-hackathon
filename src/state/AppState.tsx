@@ -2,8 +2,10 @@
 // Everything is in-memory and starts fresh on every page load, so a demo can always be run again from the seed data.
 // TODO: move to a backend if it should survive a refresh.
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { Attachment, CardKind, CardSpec, HistoryEntry, KbItem, LibraryEntry, Message, Mode, Pic, QueueTicket, Room, ThemeKey } from '../types';
+import type { Attachment, CardKind, CardSpec, CheckIn, HistoryEntry, KbItem, LibraryEntry, Message, MilestoneKey, Mode, Pic, PulseAnswer, PulseKey, QueueTicket, Room, SupportAction, ThemeKey } from '../types';
 import { PICS, QUEUE, ROOMS, SEED_KB, THEMES_BY_KEY } from '../data/command';
+import { CHECKIN_EDIT_WINDOW_MS, CHECKIN_MILESTONES, COHORT, SEED_ACTIONS, SEED_CHECKINS } from '../data/checkins';
+import { latestByPerson, reachOutList } from '../lib/checkins';
 import { SCENARIOS, SCEN_THEME } from '../data/scenarios';
 import { askRoomReply, askSummary } from '../lib/api';
 import { SAMPLE_SUMMARIES, dialogueFor, fillLine } from '../data/dialogues';
@@ -28,14 +30,22 @@ export interface RoomRecord {
 
 export interface EscalationInput {
   id: string; title: string; query: string; kind: CardKind; theme: ThemeKey; entryId: string | null;
+  /** No approved card matched, so the employee saw "I don't know" rather than a card. */
+  noAnswer?: boolean;
+  /** The card the employee saw, even when it only said no answer was found. */
+  shown: string;
   files: Pick<Attachment, 'name' | 'kind'>[];
 }
 
-const ME = { person: 'Mira Tan', first: 'Mira', initials: 'MT', role: 'Product Designer · Day 3' };
+/** The demo employee, the same everywhere she appears. `id` is her place in the check-in cohort. */
+export const ME = { id: 'mt', person: 'Mira Tan', first: 'Mira', initials: 'MT', role: 'Product Designer · Day 3', team: 'Product Design', milestone: 'week1' as const };
+
+export interface CheckInInput { answers: Record<PulseKey, PulseAnswer>; followUps?: Partial<Record<PulseKey, string>>; actionFollowUps?: CheckIn['actionFollowUps']; note?: string; named: boolean }
 const NOT_YET = 'Not yet, it’s still not working.';
 
 function useAppStateValue() {
   const [mode, setMode] = useState<Mode>(location.hash === '#manager' ? 'manager' : 'employee');
+  const [demoMilestone, setDemoMilestone] = useState<MilestoneKey>(ME.milestone);
   const [queue, setQueue] = useState<QueueTicket[]>(() => QUEUE.map((q) => ({ ...q })));
   const [mine, setMine] = useState<string[]>([]); // ticket ids raised from this employee canvas
   const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
@@ -46,6 +56,8 @@ function useAppStateValue() {
   const [library, setLibrary] = useState<LibraryEntry[]>(() => SCENARIOS.flatMap((s) => s.cards.map((card) => (
     { card, scenario: s.key, topic: SCEN_THEME[s.key as keyof typeof SCEN_THEME], status: 'live' as const }
   ))));
+  const [checkins, setCheckins] = useState<CheckIn[]>(() => SEED_CHECKINS.map((c) => ({ ...c })));
+  const [actions, setActions] = useState<SupportAction[]>(() => SEED_ACTIONS.map((x) => ({ ...x })));
   const [openRoom, setOpenRoom] = useState<{ id: string; viewer: Mode } | null>(null);
   const roomsRef = useRef(rooms); roomsRef.current = rooms;
   const ticketSeq = useRef(0);
@@ -94,7 +106,12 @@ function useAppStateValue() {
     const rec = roomsRef.current[roomId]; if (!rec) return;
     setTyping(roomId, 'pic');
     const res = await askRoomReply({ pic: persona(rec.pic), employee: employeeName(rec), ticket: ticketContext(rec.ticket), messages: chatLines(messages) });
-    if (!res) { setTyping(roomId, false); return; } // No notice: the sample conversation still plays.
+    if (!res) {
+      setTyping(roomId, false);
+      // Say so once the employee is waiting on a reply; the opening line can fail quietly, the sample conversation still plays.
+      if (messages.length) push(roomId, { from: 'system', text: `${rec.pic.first}’s reply is delayed. Send your message again, or play the sample conversation.` });
+      return;
+    }
     push(roomId, { from: 'pic', text: res.reply, ai: true });
     if (res.solved) setFeedback(roomId, 'ask');
   }
@@ -116,9 +133,10 @@ function useAppStateValue() {
     const theme = e.theme;
     setAssignments((a) => (a[e.id] ? Object.fromEntries(Object.entries(a).filter(([id]) => id !== e.id)) : a));
     const t: QueueTicket = {
-      id: e.id, title: e.title, ...ME, theme, wait: 0, createdAt: Date.now(), isNew: true, from: e.kind + ' card',
+      id: e.id, title: e.title, person: ME.person, first: ME.first, initials: ME.initials, role: ME.role,
+      theme, wait: 0, createdAt: Date.now(), isNew: true, from: e.noAnswer ? 'no approved answer found' : e.kind + ' card',
       slug: theme + '-' + slugify(ME.first) + '-' + e.id.replace(/\D/g, '').slice(-2),
-      q: (e.query ? `“${e.query}” ` : '') + 'Card shown: ' + e.title + '.', files: e.files,
+      q: (e.query ? `“${e.query}” ` : '') + 'Card shown: ' + e.shown + '.', files: e.files,
     };
     setQueue((l) => [t, ...l]);
     setMine((l) => [...l, e.id]);
@@ -254,6 +272,8 @@ function useAppStateValue() {
 
   function reopen(roomId: string, by: string) {
     setRooms((s) => ({ ...s, [roomId]: { ...s[roomId], room: { ...s[roomId].room, status: 'live' } } }));
+    // The employee's dock and history read the assignment, so it goes back to live too.
+    setAssignments((a) => Object.fromEntries(Object.entries(a).map(([k, v]) => [k, v.roomId === roomId ? { ...v, status: 'live' as const } : v])));
     push(roomId, { from: 'system', text: 'Reopened by ' + by });
   }
 
@@ -278,6 +298,66 @@ function useAppStateValue() {
     clear: () => setHistory([]),
   };
 
+  /** Mira sent her milestone check-in. It replaces any earlier one for the same milestone. */
+  function submitCheckIn(input: CheckInInput): boolean {
+    const now = Date.now();
+    const note = input.note?.trim();
+    const followUps = Object.fromEntries(Object.entries(input.followUps ?? {}).map(([key, value]) => [key, value.trim()]).filter(([, value]) => !!value)) as CheckIn['followUps'];
+    const existing = checkins.find((c) => c.person === ME.id && c.milestone === demoMilestone);
+    if (existing) {
+      if (!existing.submittedAt || now - existing.submittedAt >= CHECKIN_EDIT_WINDOW_MS) return false;
+      const updated: CheckIn = { ...existing, at: 'Today ' + clock(), answers: input.answers, followUps, actionFollowUps: input.actionFollowUps, note: note || undefined, named: input.named, isNew: true };
+      setCheckins((l) => l.map((c) => (c.id === updated.id ? updated : c)));
+      later(() => setCheckins((l) => l.map((c) => (c.id === updated.id ? { ...c, isNew: false } : c))), 8000);
+      return true;
+    }
+
+    const ci: CheckIn = { id: uid('ci'), person: ME.id, milestone: demoMilestone, at: 'Today ' + clock(), submittedAt: now, answers: input.answers, followUps, actionFollowUps: input.actionFollowUps, note: note || undefined, named: input.named, isNew: true };
+    setCheckins((l) => [ci, ...l]);
+    later(() => setCheckins((l) => l.map((c) => (c.id === ci.id ? { ...c, isNew: false } : c))), 8000);
+    return true;
+  }
+
+  /** A manager chose a follow-up for one person, or for a cohort theme. */
+  function planAction({ id, owner, ...input }: { id?: string; person?: string; theme?: string; pulse?: PulseKey; label: string; publicNote?: string; milestone: CheckIn['milestone']; owner?: string }) {
+    if (id) {
+      setActions((actions) => actions.map((action) => action.id === id && action.status === 'planned'
+        ? { ...action, ...input }
+        : action));
+      return;
+    }
+    const x: SupportAction = { ...input, id: uid('act'), owner: owner ?? 'Rachel Goh', when: 'Today ' + nextSlot().split('–')[0], status: 'planned' };
+    setActions((l) => [...l.filter((a) => !(a.status === 'planned' && ((x.person && a.person === x.person && a.milestone === x.milestone) || (x.theme && a.theme === x.theme)))), x]);
+  }
+  function completeAction(id: string) {
+    setActions((l) => l.map((a) => (a.id === id ? { ...a, status: 'done' } : a)));
+  }
+  function publishAction(id: string, publicNote: string, publishedAt: string, resourceId?: string) {
+    setActions((l) => l.map((action) => (action.id === id ? { ...action, publicNote, publishedAt, resourceId } : action)));
+  }
+
+  /** Mira's own ticket signals, from questions she chose to ask. Stable wording (no minute counts) so the AI isn't re-asked every tick. */
+  const mySignals = useMemo(() => {
+    const out: string[] = [];
+    queue.filter((q) => q.person === ME.person).forEach((q) => out.push(`Waiting for an expert: “${q.title ?? q.q}”`));
+    Object.entries(assignments).forEach(([id, a]) => {
+      if (a.status !== 'live') return;
+      const rec = rooms[a.roomId];
+      out.push(rec?.feedback === 'ask1v1' ? `Told ${a.pic.first} ticket ${id} is not fixed yet`
+        : rec?.feedback === 'booked' ? `1:1 booked with ${a.pic.first} for ticket ${id}`
+        : `Ticket ${id} still open with ${a.pic.first} (${a.pic.team})`);
+    });
+    const unanswered = history.filter((h) => h.answer.card.id.startsWith('unknown-')).length;
+    if (unanswered) out.push(`${unanswered} question${unanswered === 1 ? '' : 's'} this week had no approved answer`);
+    return out.slice(0, 4);
+  }, [queue, assignments, rooms, history]);
+
+  const latestCheckins = useMemo(() => latestByPerson(checkins), [checkins]);
+  const reachOut = useMemo(
+    () => reachOutList(COHORT, latestCheckins, (id) => (id === ME.id ? mySignals : COHORT.find((h) => h.id === id)?.signals ?? []), actions),
+    [latestCheckins, mySignals, actions],
+  );
+
   const roomList = useMemo(() => Object.values(rooms).map((r) => withLatest(r)), [rooms]);
   const load = useMemo(() => {
     const m: Record<string, number> = {};
@@ -288,6 +368,7 @@ function useAppStateValue() {
   return {
     mode, go, queue, mine, assignments, rooms, roomList, load, history: history_, historyItems: history, knowledge, kb, library, lib,
     experts, setExperts, openRoom, setOpenRoom, newTicketId, escalate, assignTheme, send, answerFeedback, answer1v1, back1v1, playDemo, stopDemo, resolve, reopen,
+    checkins, latestCheckins, actions, reachOut, demoMilestone, setDemoMilestone, demoMilestones: CHECKIN_MILESTONES, submitCheckIn, planAction, completeAction, publishAction,
   };
 }
 
@@ -312,7 +393,9 @@ function seedRecord(r: Room): RoomRecord {
   const i = r.last.indexOf(': ');
   return {
     room: { ...r }, pic, ticket: null, typing: false,
-    employee: { name: r.people[0] ?? 'Employee', first: 'there', initials: r.people[0] ?? '?' },
+    employee: r.who
+      ? { name: r.who, first: r.who.split(' ')[0], initials: r.people[0] ?? '?' }
+      : { name: r.people[0] ?? 'Employee', first: 'there', initials: r.people[0] ?? '?' },
     messages: [
       { id: uid('m'), t: clock(), from: 'system', text: pic.name + ' opened this room' },
       { id: uid('m'), t: clock(), from: 'pic', text: i > 0 && i < 20 ? r.last.slice(i + 2) : r.last },

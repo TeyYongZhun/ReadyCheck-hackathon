@@ -73,7 +73,7 @@ export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve,
 
         {ticket ? (
           <div className="rc-troom-ctx">
-            <div className="rc-troom-ctx-k"><Icon name="route" size={13} />Escalated {ticket.id} · skipped the {ticket.from}</div>
+            <div className="rc-troom-ctx-k"><Icon name="route" size={13} />Escalated {ticket.id} · {ticket.from.endsWith(' card') ? 'skipped the ' + ticket.from : ticket.from}</div>
             <p className="rc-troom-ctx-q">{ticket.q}</p>
             {ticket.files?.length ? <AttachChips items={ticket.files} className="rc-att-ctx" /> : null}
           </div>
@@ -91,7 +91,7 @@ export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve,
                 <div className="rc-msg-b">
                   <div className="rc-msg-meta">
                     <b>{m.from === me ? 'You' : w.name.split(' ')[0]}</b>{m.from === 'manager' ? ' (Manager)' : ''} · {m.t}
-                    {m.ai ? <> · <span className="rc-ai-label" title="Written by Gemini standing in for the expert">AI expert (demo)</span></> : null}
+                    {m.ai ? <> · <span className="rc-ai-label" title="Written by Gemini standing in for the expert">Sample</span></> : null}
                     {m.scripted ? <> · <span className="rc-ai-label" title="Part of the scripted sample conversation">Sample</span></> : null}
                   </div>
                   <div className="rc-msg-text">{m.text}</div>

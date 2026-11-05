@@ -1,7 +1,10 @@
 // ReadyCheckApp: both views in one site, switched by Employee | Manager. #manager opens the manager view.
+import { useEffect } from 'react';
 import { AppStateProvider, useApp } from './state/AppState';
 import { ModeSwitch } from './components/shell/ModeSwitch';
 import { TicketRoom } from './components/shell/TicketRoom';
+import { PresenterStatus } from './components/shell/PresenterStatus';
+import { warmUp } from './lib/api';
 import { KnowledgeCanvas } from './views/employee/KnowledgeCanvas';
 import { CommandCenter } from './views/manager/CommandCenter';
 
@@ -10,8 +13,10 @@ function Shell() {
   const sw = <ModeSwitch mode={app.mode} onChange={app.go} />;
   const open = app.openRoom, rec = open ? app.rooms[open.id] : null;
   const kbById = Object.fromEntries(app.knowledge.map((k) => [k.id, k]));
+  useEffect(() => { void warmUp(); }, []);
   return (
     <>
+      <PresenterStatus />
       {/* Both views stay mounted so canvas state survives a switch. */}
       <div className="rc-mode-view" hidden={app.mode !== 'employee'}><KnowledgeCanvas modeSwitch={sw} /></div>
       <div className="rc-mode-view" hidden={app.mode !== 'manager'}><CommandCenter modeSwitch={sw} /></div>

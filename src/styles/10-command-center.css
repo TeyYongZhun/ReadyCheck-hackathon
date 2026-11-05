@@ -154,7 +154,7 @@
   .rc-side-cap { grid-area: mode; }
   .rc-side-mode { grid-area: mode; }
   .rc-tabs { grid-area: nav; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 0; }
-  .rc-cc2 .rc-tabs { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .rc-cc2 .rc-tabs { grid-template-columns: repeat(7, minmax(0, 1fr)); }
   .rc-tab { flex-direction: column; justify-content: center; gap: 4px; padding: 10px 6px; text-align: center; font-size: 13px !important; line-height: 18px !important; position: relative; }
   .rc-tab-n { position: absolute; top: 6px; right: 6px; margin: 0; min-width: 20px; height: 20px; padding: 0 6px; font-size: 11.5px; }
   .rc-side .rc-side-user { grid-area: user; display: flex; margin: 0; padding: 0; border: 0; }
@@ -173,7 +173,7 @@
   .rc-need { padding: var(--space-4); }
   .rc-need-title { font-size: 18px; line-height: 24px; }
   .rc-btn-primary, .rc-btn-ghost { flex: 1 1 auto; justify-content: center; }
-  .rc-cc2 .rc-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .rc-cc2 .rc-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .rc-tabs { gap: 4px; }
   .rc-tab { padding: 10px 4px 9px; font-size: 12.5px !important; line-height: 16px !important; }
   .rc-tab-t { text-align: center; }

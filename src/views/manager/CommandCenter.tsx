@@ -1,6 +1,5 @@
 // Design View 2 — the manager's Theme Command Center. Answers "what needs me right now?".
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { askThemeSummary } from '../../lib/api';
+import { useState, type ReactNode } from 'react';
 import type { ManagerTab, Pic, Theme } from '../../types';
 import { useApp } from '../../state/AppState';
 import { SLA_MINUTES, SUGGEST, THEMES } from '../../data/command';
@@ -12,6 +11,8 @@ import { TicketRooms } from './TicketRooms';
 import { ThemeTrends } from './ThemeTrends';
 import { KnowledgeBase } from './KnowledgeBase';
 import { ExpertTeam, type TeamDraft } from './ExpertTeam';
+import { CheckIns } from './CheckIns';
+import { impactOf } from '../../lib/impact';
 
 export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
   const app = useApp();
@@ -22,8 +23,9 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
   const waiting = queue.filter((q) => !q.leaving);
   const liveRooms = app.roomList.filter((r) => r.status !== 'resolved').length;
   const reviewN = app.knowledge.filter((k) => k.status === 'review').length;
-  const asked = THEMES.reduce((s, t) => s + t.count, 0), byCards = THEMES.reduce((s, t) => s + t.cards, 0);
-  const solvedByCardsPct = Math.round((byCards / asked) * 100);
+  // This week's sample plus every question asked in this session, so the number moves during a demo.
+  const impact = impactOf(app.historyItems);
+  const solvedByCardsPct = Math.round(impact.deflection * 100);
 
   const groups: NeedsGroup[] = THEMES.flatMap((t) => {
     const tk = queue.filter((q) => q.theme === t.key);
@@ -33,23 +35,6 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
     return [{ theme: t, tickets: tk.slice().sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0) || b.wait - a.wait), active: act.length, oldest, overdue: oldest >= SLA_MINUTES, leaving: !act.length }];
   }).sort((a, b) => (b.overdue ? 1 : 0) - (a.overdue ? 1 : 0) || b.oldest - a.oldest);
   const openGroups = groups.filter((g) => !g.leaving).length;
-
-  // Gemini summarises each stuck theme from its waiting questions; refreshed when that set changes.
-  const [aiSummary, setAiSummary] = useState<Record<string, { sig: string; text: string | null }>>({});
-  const asking = useRef<Record<string, string>>({});
-  const wanted = groups.filter((g) => !g.leaving).map((g) => ({ g, sig: g.tickets.filter((q) => !q.leaving).map((q) => q.id).sort().join(',') }));
-  useEffect(() => {
-    if (app.mode !== 'manager') return;
-    wanted.forEach(({ g, sig }) => {
-      const key = g.theme.key;
-      if (aiSummary[key]?.sig === sig || asking.current[key] === sig) return;
-      asking.current[key] = sig;
-      void askThemeSummary({ theme: g.theme.name, questions: g.tickets.map((q) => q.q) }).then((r) => {
-        setAiSummary((s) => ({ ...s, [key]: { sig, text: r?.summary ?? null } }));
-      });
-    });
-  }, [app.mode, wanted.map((w) => w.g.theme.key + ':' + w.sig).join('|')]);
-  groups.forEach((g) => { const s = aiSummary[g.theme.key]?.text; if (s) g.summary = s; });
 
   /** Least-busy expert who covers the topic; falls back to the default owner. */
   function suggestFor(t: Theme): Pic {
@@ -63,9 +48,22 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
     window.setTimeout(() => setToast(null), 5200);
   }
 
+  const checkinAlerts = app.checkins.filter((checkin) => checkin.isNew).length;
+
+  // Check-ins sent in this session that the manager hasn't opened yet. Seed check-ins have no submittedAt.
+  const [seenCheckins, setSeenCheckins] = useState<string[]>([]);
+  const sentCheckins = app.checkins.filter((checkin) => checkin.submittedAt).map((checkin) => checkin.id);
+  const unseenCheckins = sentCheckins.filter((id) => !seenCheckins.includes(id)).length;
+  /** Opening or leaving Check-ins counts as seen, so a manager already on the tab still gets the badge. */
+  function openTab(next: ManagerTab) {
+    if (next === 'checkins' || tab === 'checkins') setSeenCheckins(sentCheckins);
+    setTab(next);
+  }
+
   const TABS: [ManagerTab, string, string, number | null, boolean?][] = [
     ['home', 'Home', 'home', null],
     ['needs', 'Needs you', 'inbox', openGroups || null],
+    ['checkins', 'Check-ins', 'pulse', unseenCheckins || null],
     ['rooms', 'Ticket room', 'chat', liveRooms || null, true],
     ['trends', 'Trends', 'trends', null],
     ['knowledge', 'Knowledge base', 'book', reviewN || null],
@@ -81,7 +79,7 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
         <div className="rc-tabs" role="tablist" aria-orientation="vertical" aria-label="Manager view">
           {TABS.map(([key, label, icon, n, neutral]) => (
             <button key={key} type="button" role="tab" id={'rc-tab-' + key} aria-selected={tab === key} aria-controls={'rc-pane-' + key}
-              className={cx('rc-tab', tab === key && 'is-on')} onClick={() => setTab(key)}>
+              className={cx('rc-tab', tab === key && 'is-on')} onClick={() => openTab(key)}>
               <Icon name={icon} size={20} /><span className="rc-tab-t">{label}</span>
               {n ? <span className={cx('rc-tab-n', neutral && 'is-neutral')} aria-hidden>{n}</span> : null}
             </button>
@@ -100,7 +98,9 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
           <div className="rc-kpi is-prog"><dt>In progress</dt><dd>{liveRooms}</dd></div>
         </dl>
 
-        {tab === 'home' ? <HomeOverview pics={app.experts} waiting={waiting.length} tickets={waiting} rooms={app.roomList} solvedByCardsPct={solvedByCardsPct} onOpenNeeds={() => setTab('needs')} />
+        {tab === 'home' ? <HomeOverview visible={app.mode === 'manager'} pics={app.experts} waiting={waiting.length} tickets={waiting} rooms={app.roomList} impact={impact}
+            checkinAlerts={checkinAlerts} onOpenNeeds={() => openTab('needs')} onOpenCheckins={() => openTab('checkins')} />
+          : tab === 'checkins' ? <CheckIns />
           : tab === 'needs' ? (
             <div className="rc-home">
               <PageHead id="rc-needs-h" title="Needs you" sub="Where new hires are stuck. Overdue first, then longest wait. One click puts an expert in a room with them." />

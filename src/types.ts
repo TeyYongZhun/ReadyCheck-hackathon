@@ -89,6 +89,8 @@ export interface Room {
   /** Minutes since opened. */
   elapsed: number;
   last: string; isNew?: boolean;
+  /** Full name of the first employee, for seeded rooms that have no ticket to take it from. */
+  who?: string;
 }
 
 /** pic = the assigned expert, manager = Rachel replying from the Command Center. */
@@ -112,6 +114,9 @@ export interface KbItem {
   allowEmployeeAccess?: boolean;
 }
 
+/** The languages an employee can ask in: English, Bahasa Melayu, Chinese, Tamil. */
+export type Lang = 'en' | 'ms' | 'zh' | 'ta';
+
 /** What the canvas shows for one question: one card, plus who handles it if escalated. */
 export interface CanvasAnswer {
   heading: string;
@@ -121,6 +126,8 @@ export interface CanvasAnswer {
   card: CardSpec;
   /** "ai": Gemini chose or wrote it. "offline": keyword fallback because the AI call failed. */
   source: 'ai' | 'offline';
+  /** The employee asked in another language: `card` is the AI translation, `original` the approved English card. */
+  translated?: { lang: Lang; original: CardSpec };
 }
 
 /** A short conversational reply when the message isn't a work issue (e.g. "hi"). No card, nothing to escalate. */
@@ -133,6 +140,68 @@ export interface ChatReply {
 export interface HistoryEntry {
   id: string; query: string; answer: CanvasAnswer; cardType: CardKind; title: string; heading: string; at: string;
   state: 'viewed' | 'solved' | 'escalated'; ticketId?: string; files?: Pick<Attachment, 'name' | 'kind'>[];
+  /** Milliseconds from asking to the card, for Home's "Time to an answer". */
+  ms?: number;
 }
 
-export type ManagerTab = 'home' | 'needs' | 'rooms' | 'trends' | 'knowledge' | 'team';
+export type ManagerTab = 'home' | 'needs' | 'checkins' | 'rooms' | 'trends' | 'knowledge' | 'team';
+
+export type MilestoneKey = 'week1' | 'week2' | 'day30' | 'day60' | 'day90';
+export type PulseKey = 'clarity' | 'tools' | 'support' | 'workload';
+export type CorePulseKey = PulseKey;
+export type PulseAnswer = 'yes' | 'partly' | 'notyet' | 'na';
+
+/** One person in the onboarding cohort, as the manager's Check-ins tab knows them. */
+export interface NewHire {
+  id: string; name: string; first: string; initials: string; role: string; team: string;
+  /** Illustrative onboarding start date; a hire's milestone is derived from it. */
+  joinedAt: string;
+  /** Current onboarding milestone. */
+  milestone: MilestoneKey;
+  /** Ticket signals from before this session (seed only). Live ones come from shared state. */
+  signals?: string[];
+}
+
+/** A reply to "is this better now?", tied to what it follows up rather than to a milestone question. */
+export interface ActionFollowUp {
+  /** An action id, or `difficulty:<milestone>:<pulse>` when no action was published for that difficulty. */
+  actionId: string;
+  answer: 'better' | 'notyet';
+  /** Optional words the manager can read, without a name unless the check-in was named. */
+  comment?: string;
+  /** The employee asked to talk. Only then does the manager see their name, and only with the topic. */
+  talk?: boolean;
+}
+
+/** A milestone check-in the employee chose to send. */
+export interface CheckIn {
+  id: string; person: string;
+  milestone: MilestoneKey;
+  at: string;
+  /** Timestamp of the original submission; editing does not extend the five-minute window. */
+  submittedAt?: number;
+  answers: Record<PulseKey, PulseAnswer>;
+  /** Optional, question-specific context shown only after Partly or Not yet. */
+  followUps?: Partial<Record<PulseKey, string>>;
+  actionFollowUps?: ActionFollowUp[];
+  note?: string;
+  /** The employee chose to share their name. If not, it only counts in cohort totals. */
+  named: boolean;
+  isNew?: boolean;
+}
+
+/** A support step a manager chose, for one person or for a cohort theme, tracked until done. */
+export interface SupportAction {
+  id: string;
+  person?: string;
+  theme?: string;
+  pulse?: PulseKey;
+  label: string; owner: string; when: string;
+  status: 'planned' | 'done';
+  publicNote?: string;
+  publishedAt?: string;
+  /** A knowledge item employees can open from the update, when there is something to read. */
+  resourceId?: string;
+  /** The milestone it was planned in, so the next check-in can show whether it helped. */
+  milestone: MilestoneKey;
+}

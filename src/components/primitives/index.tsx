@@ -48,9 +48,9 @@ export function Footnote({ children }: { children: ReactNode }) {
   return <p className="rc-footnote"><Icon name="ready" size={14} />{children}</p>;
 }
 
-export function Toast({ children, tone = 'escalate', onClose }: { children: ReactNode; tone?: 'escalate' | 'ready'; onClose: () => void }) {
+export function Toast({ children, tone = 'escalate', onClose, className }: { children: ReactNode; tone?: 'escalate' | 'ready'; onClose: () => void; className?: string }) {
   return (
-    <div className="rc-toast rc-glass rc-glass-3" role="status">
+    <div className={cx('rc-toast rc-glass rc-glass-3', className)} role="status">
       <span className={cx('rc-toast-dot', tone === 'ready' && 'is-ready')} />
       <span>{children}</span>
       <button type="button" className="rc-toast-x" aria-label="Dismiss" onClick={onClose}><Icon name="close" size={14} /></button>
