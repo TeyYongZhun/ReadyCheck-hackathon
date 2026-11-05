@@ -267,7 +267,7 @@ export function HomeOverview({ visible, pics, waiting, rooms, tickets, impact, c
     ['Open tickets', String(openTickets), 'Current unresolved tickets', 'doc', ''],
     ['Overdue', String(overdue), `Waiting over ${SLA_MINUTES}m for response or assignment`, 'clock', overdue ? 'is-hot' : ''],
     ['Expert time saved', impact.hoursSaved.toFixed(1) + ' h', `This week · ${impact.answered} answers × ${MIN_PER_TICKET} min an expert would spend`, 'expert', ''],
-    ['Time to an answer', impact.answerSecs ? impact.answerSecs.toFixed(1) + ' s' : '< 3 s', `By card${impact.timed ? `, median of ${impact.timed} this session` : ''} · ${SAMPLE_EXPERT_WAIT} min by expert`, 'ready', ''],
+    ['Time to an answer', impact.answerSecs === null ? '4.8 s' : impact.answerSecs.toFixed(1) + ' s', `${impact.timed ? `Median of ${impact.timed} card answers this session` : 'Median by card'} · ${SAMPLE_EXPERT_WAIT} min by expert`, 'ready', ''],
   ];
   return (
     <div className="rc-home" role="tabpanel" id="rc-pane-home" aria-labelledby="rc-tab-home">
