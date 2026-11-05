@@ -66,6 +66,9 @@ export const SEED_KB: KbItem[] = [
   { id: 'kb-seed-leave', roomId: 'r-old', roomName: '#leave-carry-over', theme: 'leave', title: 'Carry annual leave into next year', problem: 'New joiners asked whether unused leave from a partial first year can be carried over.',
     steps: ['Up to 5 unused days carry over automatically', 'Anything above 5 days needs your manager’s approval in the HR portal', 'Carried days expire on 31 March 2027'],
     pic: { id: 'sh', name: 'Sofia Hart', first: 'Sofia', initials: 'SH', team: 'People Team' }, employee: 'Nadia', status: 'live', at: 'Thu' },
+  { id: 'kb-seed-access', roomId: null, roomName: 'Onboarding update', theme: 'mfa', title: 'Access guide: get your user testing platform login', problem: 'New hires had not received login credentials for the user testing platform.',
+    steps: ['Check your work email for an invitation to the user testing platform', 'No invitation after one working day? Open the IT service portal and request “User testing platform access”', 'Choose your team and add your manager as the approver', 'Sign in with your work account once the request is approved, usually within one working day'],
+    pic: { id: 'pr', name: 'Priya Raman', first: 'Priya', initials: 'PR', team: 'Identity & Access' }, employee: 'Onboarding cohort', status: 'live', at: 'Yesterday', manual: true },
 ];
 
 /** Home tab, sample data. */

@@ -57,6 +57,11 @@ function learnedCard(k: KbItem): CardSpec {
   };
 }
 
+/** A live knowledge item as a canvas answer, for search matches and for guides opened from a team update. */
+export function answerFromKnowledge(k: KbItem): CanvasAnswer {
+  return { heading: 'Here’s what should help', theme: k.theme, queue: queueFor(k.theme), expert: expertFor(k.theme), card: learnedCard(k), source: 'offline' };
+}
+
 /** Offline stand-in for search: the live card sharing the most longer words with the question, and at least two. */
 function bestApproved(query: string, live: KbItem[]): KbItem | undefined {
   const words = (text: string) => new Set(text.toLowerCase().match(/[a-z0-9]{4,}/g) ?? []);
@@ -122,9 +127,7 @@ export async function resolveAnswer(query: string, files: string[], knowledge: K
   // Anything else is "I don't know", so it goes to a human expert.
   const hint = OFFLINE_HINTS.find(([re]) => re.test(query))?.[1];
   const approved = bestApproved(query, live) ?? (hint ? live.find((k) => k.theme === hint) : undefined);
-  if (approved) {
-    return { heading: 'Here’s what should help', theme: approved.theme, queue: queueFor(approved.theme), expert: expertFor(approved.theme), card: learnedCard(approved), source: 'offline' };
-  }
+  if (approved) return answerFromKnowledge(approved);
   const s = SCENARIOS.find((scenario) => scenario.match.test(query));
   const sTheme = s ? SCEN_THEME[s.key as keyof typeof SCEN_THEME] : null;
   // The scenario's first library card the manager still has live; none left means nothing to offer.

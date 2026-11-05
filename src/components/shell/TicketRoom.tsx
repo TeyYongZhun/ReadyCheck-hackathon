@@ -91,7 +91,7 @@ export function TicketRoom({ rec, viewer, knowledge, onClose, onSend, onResolve,
                 <div className="rc-msg-b">
                   <div className="rc-msg-meta">
                     <b>{m.from === me ? 'You' : w.name.split(' ')[0]}</b>{m.from === 'manager' ? ' (Manager)' : ''} · {m.t}
-                    {m.ai ? <> · <span className="rc-ai-label" title="Written by Gemini standing in for the expert">AI expert (demo)</span></> : null}
+                    {m.ai ? <> · <span className="rc-ai-label" title="Written by Gemini standing in for the expert">Sample</span></> : null}
                     {m.scripted ? <> · <span className="rc-ai-label" title="Part of the scripted sample conversation">Sample</span></> : null}
                   </div>
                   <div className="rc-msg-text">{m.text}</div>

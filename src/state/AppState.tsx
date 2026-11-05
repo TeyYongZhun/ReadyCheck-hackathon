@@ -32,13 +32,15 @@ export interface EscalationInput {
   id: string; title: string; query: string; kind: CardKind; theme: ThemeKey; entryId: string | null;
   /** No approved card matched, so the employee saw "I don't know" rather than a card. */
   noAnswer?: boolean;
+  /** The card the employee saw, even when it only said no answer was found. */
+  shown: string;
   files: Pick<Attachment, 'name' | 'kind'>[];
 }
 
 /** The demo employee, the same everywhere she appears. `id` is her place in the check-in cohort. */
 export const ME = { id: 'mt', person: 'Mira Tan', first: 'Mira', initials: 'MT', role: 'Product Designer · Day 3', team: 'Product Design', milestone: 'week1' as const };
 
-export interface CheckInInput { answers: Record<PulseKey, PulseAnswer>; followUps?: Partial<Record<PulseKey, string>>; note?: string; named: boolean }
+export interface CheckInInput { answers: Record<PulseKey, PulseAnswer>; followUps?: Partial<Record<PulseKey, string>>; actionFollowUps?: CheckIn['actionFollowUps']; note?: string; named: boolean }
 const NOT_YET = 'Not yet, it’s still not working.';
 
 function useAppStateValue() {
@@ -134,7 +136,7 @@ function useAppStateValue() {
       id: e.id, title: e.title, person: ME.person, first: ME.first, initials: ME.initials, role: ME.role,
       theme, wait: 0, createdAt: Date.now(), isNew: true, from: e.noAnswer ? 'no approved answer found' : e.kind + ' card',
       slug: theme + '-' + slugify(ME.first) + '-' + e.id.replace(/\D/g, '').slice(-2),
-      q: (e.query ? `“${e.query}” ` : '') + (e.noAnswer ? 'No approved card matched.' : 'Card shown: ' + e.title + '.'), files: e.files,
+      q: (e.query ? `“${e.query}” ` : '') + 'Card shown: ' + e.shown + '.', files: e.files,
     };
     setQueue((l) => [t, ...l]);
     setMine((l) => [...l, e.id]);
@@ -304,25 +306,34 @@ function useAppStateValue() {
     const existing = checkins.find((c) => c.person === ME.id && c.milestone === demoMilestone);
     if (existing) {
       if (!existing.submittedAt || now - existing.submittedAt >= CHECKIN_EDIT_WINDOW_MS) return false;
-      const updated: CheckIn = { ...existing, at: 'Today ' + clock(), answers: input.answers, followUps, note: note || undefined, named: input.named, isNew: true };
+      const updated: CheckIn = { ...existing, at: 'Today ' + clock(), answers: input.answers, followUps, actionFollowUps: input.actionFollowUps, note: note || undefined, named: input.named, isNew: true };
       setCheckins((l) => l.map((c) => (c.id === updated.id ? updated : c)));
       later(() => setCheckins((l) => l.map((c) => (c.id === updated.id ? { ...c, isNew: false } : c))), 8000);
       return true;
     }
 
-    const ci: CheckIn = { id: uid('ci'), person: ME.id, milestone: demoMilestone, at: 'Today ' + clock(), submittedAt: now, answers: input.answers, followUps, note: note || undefined, named: input.named, isNew: true };
+    const ci: CheckIn = { id: uid('ci'), person: ME.id, milestone: demoMilestone, at: 'Today ' + clock(), submittedAt: now, answers: input.answers, followUps, actionFollowUps: input.actionFollowUps, note: note || undefined, named: input.named, isNew: true };
     setCheckins((l) => [ci, ...l]);
     later(() => setCheckins((l) => l.map((c) => (c.id === ci.id ? { ...c, isNew: false } : c))), 8000);
     return true;
   }
 
   /** A manager chose a follow-up for one person, or for a cohort theme. */
-  function planAction({ owner, ...input }: { person?: string; theme?: string; pulse?: PulseKey; label: string; publicNote?: string; milestone: CheckIn['milestone']; owner?: string }) {
+  function planAction({ id, owner, ...input }: { id?: string; person?: string; theme?: string; pulse?: PulseKey; label: string; publicNote?: string; milestone: CheckIn['milestone']; owner?: string }) {
+    if (id) {
+      setActions((actions) => actions.map((action) => action.id === id && action.status === 'planned'
+        ? { ...action, ...input }
+        : action));
+      return;
+    }
     const x: SupportAction = { ...input, id: uid('act'), owner: owner ?? 'Rachel Goh', when: 'Today ' + nextSlot().split('–')[0], status: 'planned' };
     setActions((l) => [...l.filter((a) => !(a.status === 'planned' && ((x.person && a.person === x.person && a.milestone === x.milestone) || (x.theme && a.theme === x.theme)))), x]);
   }
-  function completeAction(id: string, publication?: { publicNote?: string; publishedAt?: string }) {
-    setActions((l) => l.map((a) => (a.id === id ? { ...a, ...publication, status: 'done' } : a)));
+  function completeAction(id: string) {
+    setActions((l) => l.map((a) => (a.id === id ? { ...a, status: 'done' } : a)));
+  }
+  function publishAction(id: string, publicNote: string, publishedAt: string, resourceId?: string) {
+    setActions((l) => l.map((action) => (action.id === id ? { ...action, publicNote, publishedAt, resourceId } : action)));
   }
 
   /** Mira's own ticket signals, from questions she chose to ask. Stable wording (no minute counts) so the AI isn't re-asked every tick. */
@@ -357,7 +368,7 @@ function useAppStateValue() {
   return {
     mode, go, queue, mine, assignments, rooms, roomList, load, history: history_, historyItems: history, knowledge, kb, library, lib,
     experts, setExperts, openRoom, setOpenRoom, newTicketId, escalate, assignTheme, send, answerFeedback, answer1v1, back1v1, playDemo, stopDemo, resolve, reopen,
-    checkins, latestCheckins, actions, reachOut, demoMilestone, setDemoMilestone, demoMilestones: CHECKIN_MILESTONES, submitCheckIn, planAction, completeAction,
+    checkins, latestCheckins, actions, reachOut, demoMilestone, setDemoMilestone, demoMilestones: CHECKIN_MILESTONES, submitCheckIn, planAction, completeAction, publishAction,
   };
 }
 

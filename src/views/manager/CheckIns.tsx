@@ -1,14 +1,11 @@
 import { useState } from 'react';
 import type { CheckinInsightsResponse } from '../../api-types';
-import type { MilestoneKey, PulseAnswer, PulseKey } from '../../types';
+import type { MilestoneKey, PulseKey } from '../../types';
 import { useApp } from '../../state/AppState';
 import { CHECKIN_MILESTONES, COHORT, MIN_GROUP, PULSE_ANSWERS, questionsForMilestone } from '../../data/checkins';
-import { followUpResults, groupFollowUp, milestoneParticipation, namedShareOf, pulseCheckinsForView, totalsOf } from '../../lib/checkins';
-import { askCheckinInsights } from '../../lib/api';
-import { cx, plural } from '../../lib/util';
+import { followUpFeed, groupFollowUp, milestoneParticipation, namedShareOf, pulseCheckinsForView, supportNeedsAt, talkRequests, totalsOf } from '../../lib/checkins';
+import { cx } from '../../lib/util';
 import { Footnote, Icon, PageHead, Person } from '../../components/primitives';
-
-const LABEL = Object.fromEntries(PULSE_ANSWERS.map((answer) => [answer.key, answer.label])) as Record<PulseAnswer, string>;
 
 /**
  * `action` is what the manager does (internal). `note` is a draft of the one sentence employees will see.
@@ -60,85 +57,380 @@ const GENERIC_GUIDANCE: Guidance = {
 const guidanceFor = (question: { dimension: string }): Guidance =>
   GUIDANCE.find((item) => item.test.test(question.dimension))?.value ?? GENERIC_GUIDANCE;
 
-const progressLabel = (status: 'improved' | 'persisted' | 'worsened') => ({
-  improved: 'Improved',
-  persisted: 'Unchanged',
-  worsened: 'Worsened',
-}[status]);
+const PRESET_INSIGHTS: Record<string, string[]> = {
+  'Role Clarity': [
+    'Responses suggest that clearer role expectations could help new hires settle into their responsibilities.',
+    'Some responses indicate that new hires may benefit from a clearer picture of what success looks like in their role.',
+    'The response pattern suggests revisiting role expectations and making space for questions about responsibilities.',
+  ],
+  'Tools & Resources': [
+    'Responses point to an opportunity to make first-week tools and resources easier to access.',
+    'The pattern suggests checking whether new hires can find the systems, guides, and materials they need.',
+    'Some responses indicate that a simple access walkthrough could make it easier to get started.',
+  ],
+  'Knowing Where to Get Help': [
+    'Responses suggest reinforcing where new hires can turn when they need support.',
+    'The pattern points to an opportunity to make support contacts and help channels easier to identify.',
+    'Some responses suggest that new hires may benefit from a clear introduction to who can help with common questions.',
+  ],
+  'Social Acceptance': [
+    'Responses point to an opportunity to strengthen early connections and inclusion within the team.',
+    'The pattern suggests creating more chances for new hires to feel welcomed and included by teammates.',
+    'Some responses indicate that intentional introductions could help new hires feel more connected.',
+  ],
+  'Responsibilities & Priorities': [
+    'Responses suggest reinforcing role priorities as responsibilities begin to take shape.',
+    'The pattern points to an opportunity to clarify which responsibilities matter most right now.',
+    'Some responses suggest a priorities check-in could help align expectations and near-term work.',
+  ],
+  'Task Confidence': [
+    'Responses point to an opportunity for guided practice as new hires build confidence in their tasks.',
+    'The pattern suggests identifying tasks where examples or a short walkthrough would be useful.',
+    'Some responses indicate that supported practice could help new hires feel more confident doing their work.',
+  ],
+  'Social Integration': [
+    'Responses suggest creating more comfortable opportunities for new hires to connect with teammates.',
+    'The pattern points to an opportunity to encourage regular, low-pressure team communication.',
+    'Some responses suggest that buddy conversations or team introductions could support connection.',
+  ],
+  Workload: [
+    'Responses suggest checking that current tasks and responsibilities feel manageable.',
+    'The pattern points to an opportunity to review workload balance and agree on immediate priorities.',
+    'Some responses indicate it may help to discuss capacity and clarify what can wait.',
+  ],
+  'Team Goals': [
+    'Responses point to an opportunity to make the connection between individual work and team goals clearer.',
+    'The pattern suggests explaining how current responsibilities contribute to the team’s priorities.',
+    'Some responses indicate that linking tasks to team outcomes could make priorities easier to understand.',
+  ],
+  'Task Mastery': [
+    'Responses suggest offering targeted practice to support confidence with regular tasks.',
+    'The pattern points to an opportunity to identify routine tasks where more coaching would help.',
+    'Some responses suggest pairing clear examples with time to practise common responsibilities.',
+  ],
+  'Processes & Workflows': [
+    'Responses point to an opportunity to clarify the processes and workflows used in this role.',
+    'The pattern suggests walking through key workflows and where to find process documentation.',
+    'Some responses indicate that a practical process overview could help reduce uncertainty.',
+  ],
+  'Useful Feedback': [
+    'Responses suggest checking that feedback is timely, clear, and useful for continued improvement.',
+    'The pattern points to an opportunity to make feedback conversations more specific and actionable.',
+    'Some responses suggest agreeing on a regular way to share progress and constructive feedback.',
+  ],
+  Prioritisation: [
+    'Responses suggest supporting new hires as they decide how to prioritise their responsibilities.',
+    'The pattern points to an opportunity to discuss trade-offs and how urgent work is identified.',
+    'Some responses indicate a shared prioritisation check could help build independent decision-making.',
+  ],
+  'Handling Challenges': [
+    'Responses point to an opportunity to build confidence in resolving common work challenges.',
+    'The pattern suggests reviewing where to find guidance when unexpected issues come up.',
+    'Some responses indicate that discussing examples of common challenges could support independence.',
+  ],
+  'Team Contribution': [
+    'Responses suggest creating space for new hires to share ideas and contribute to discussions.',
+    'The pattern points to an opportunity to invite new perspectives during team conversations.',
+    'Some responses suggest checking that new hires have comfortable ways to voice questions and ideas.',
+  ],
+  Autonomy: [
+    'Responses suggest checking whether new hires have the autonomy needed to carry out their responsibilities.',
+    'The pattern points to an opportunity to clarify which decisions new hires can make independently.',
+    'Some responses indicate a conversation about decision-making boundaries could support ownership.',
+  ],
+  'Role Confidence': [
+    'Responses point to an opportunity to reinforce confidence with regular role responsibilities.',
+    'The pattern suggests checking which responsibilities feel settled and where additional support would help.',
+    'Some responses indicate that recognising progress and discussing open questions could build confidence.',
+  ],
+  Belonging: [
+    'Responses suggest continuing to support a sense of belonging and connection within the team.',
+    'The pattern points to an opportunity to check whether new hires feel included in team routines.',
+    'Some responses suggest making time for connection and recognising each person’s contributions.',
+  ],
+  'Organizational Goals': [
+    'Responses point to an opportunity to clarify how individual work connects to organisational goals.',
+    'The pattern suggests sharing more context about the organisation’s direction and current priorities.',
+    'Some responses indicate that connecting role outcomes to broader goals could provide useful context.',
+  ],
+  'Future Growth': [
+    'Responses suggest discussing development interests and possible future growth opportunities.',
+    'The pattern points to an opportunity to make time for conversations about learning and career goals.',
+    'Some responses suggest exploring which skills or experiences new hires would like to develop next.',
+  ],
+};
 
-const shortDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '');
+const PRESET_ACTIONS: Record<string, string[]> = {
+  'Role Clarity': [
+    'Share role priorities and invite a short priorities review.',
+    'Walk through key responsibilities and agree on what success looks like in the first month.',
+    'Schedule a brief role-clarity check-in and document open questions.',
+  ],
+  'Tools & Resources': [
+    'Share the access checklist and offer a group troubleshooting slot.',
+    'Host a short setup session to help the cohort locate essential tools and resources.',
+    'Create a single onboarding resource list and confirm everyone knows where to find it.',
+  ],
+  'Knowing Where to Get Help': [
+    'Offer an optional team Q&A or buddy check-in.',
+    'Share a simple contact guide showing who can help with common questions.',
+    'Pair new hires with a buddy for a short weekly support check-in.',
+  ],
+  'Social Acceptance': [
+    'Pair each new hire with a buddy and plan a short cohort coffee or lunch.',
+    'Arrange informal introductions with teammates and key collaborators.',
+    'Invite the cohort to a low-pressure team activity and make space for introductions.',
+  ],
+  'Responsibilities & Priorities': [
+    'Review current responsibilities and agree on the top priorities for this week.',
+    'Hold a short alignment meeting to clarify ownership, deadlines, and what can wait.',
+    'Share a written priority list and revisit it together at the next check-in.',
+  ],
+  'Task Confidence': [
+    'Offer guided practice on the tasks the cohort finds most challenging.',
+    'Share examples of completed work and schedule time for supervised practice.',
+    'Set up a peer walkthrough for common tasks, followed by time for questions.',
+  ],
+  'Social Integration': [
+    'Create regular, low-pressure opportunities for new hires to connect with teammates.',
+    'Invite the cohort to join a team discussion or collaborative session.',
+    'Pair new hires with teammates for informal introductions across the team.',
+  ],
+  Workload: [
+    'Review the training load and agree on the next priority.',
+    'Check current capacity with the cohort and adjust near-term deadlines if needed.',
+    'Work with each new hire to identify what should be prioritised, deferred, or delegated.',
+  ],
+  'Team Goals': [
+    'Walk through team priorities and show how current tasks contribute to them.',
+    'Share a concise team goals overview with examples tied to common role responsibilities.',
+    'Use the next team check-in to connect individual work to shared outcomes.',
+  ],
+  'Task Mastery': [
+    'Offer targeted practice on regular tasks where the cohort wants more guidance.',
+    'Provide step-by-step examples for common workflows and time to practise them.',
+    'Arrange a peer demonstration of core tasks, followed by supported hands-on practice.',
+  ],
+  'Processes & Workflows': [
+    'Walk through the key workflows and point out where the process guides live.',
+    'Create a short process map for recurring tasks and review it with the cohort.',
+    'Hold a workflow Q&A focused on the processes new hires find least clear.',
+  ],
+  'Useful Feedback': [
+    'Agree on regular feedback check-ins with specific, actionable takeaways.',
+    'Ask managers to share timely examples of what is going well and what to improve.',
+    'Set a short feedback conversation to align on progress and next development steps.',
+  ],
+  Prioritisation: [
+    'Review how to prioritise competing responsibilities and discuss common trade-offs.',
+    'Share a simple prioritisation framework and practise applying it to typical tasks.',
+    'Agree on a regular priority-setting check-in while new hires build independence.',
+  ],
+  'Handling Challenges': [
+    'Discuss common work challenges and where to find guidance before escalating.',
+    'Walk through a few typical scenarios and practise deciding on next steps.',
+    'Share a troubleshooting guide with clear options for when to ask for support.',
+  ],
+  'Team Contribution': [
+    'Invite new hires to share an idea or question at the next team discussion.',
+    'Build a short round of input into team meetings so everyone has space to contribute.',
+    'Ask each new hire which format helps them feel comfortable sharing suggestions.',
+  ],
+  Autonomy: [
+    'Clarify which decisions new hires can make independently and where to check in.',
+    'Agree on decision-making boundaries, then gradually expand ownership of routine work.',
+    'Review any approval bottlenecks and identify responsibilities that can be handled autonomously.',
+  ],
+  'Role Confidence': [
+    'Recognise progress and discuss any regular responsibilities that still feel uncertain.',
+    'Review recent work together and identify one area for continued practice or support.',
+    'Set a short confidence check-in to surface questions and reinforce what is going well.',
+  ],
+  Belonging: [
+    'Create space for new hires to connect and recognise their contributions to the team.',
+    'Invite new hires into team routines and ask what would help them feel more included.',
+    'Arrange a buddy conversation focused on team connections and ways to get involved.',
+  ],
+  'Organizational Goals': [
+    'Share context on organisational priorities and how this role contributes to them.',
+    'Discuss current organisational goals and connect them to examples of day-to-day work.',
+    'Provide a concise goals overview and invite questions about the organisation’s direction.',
+  ],
+  'Future Growth': [
+    'Discuss development interests and identify a practical next learning opportunity.',
+    'Schedule a growth conversation to explore skills the new hire would like to build.',
+    'Map a few relevant learning opportunities to the employee’s stated development goals.',
+  ],
+};
+
+/** Sample "AI" drafts of the message employees see. Past tense, because it is published after the action is complete. */
+const PRESET_UPDATES: Record<string, string[]> = {
+  'Role Clarity': [
+    'You told us role expectations weren’t always clear, so we shared a summary of role priorities and opened a short review for your cohort.',
+    'Thanks for your feedback on role clarity. We walked through key responsibilities and what success looks like in your first month.',
+  ],
+  'Tools & Resources': [
+    'You told us some tools were hard to reach, so we updated the first-week access checklist and added a group troubleshooting slot.',
+    'Thanks for flagging access issues. We gathered the key onboarding tools and resources into one list for your cohort.',
+  ],
+  'Knowing Where to Get Help': [
+    'You told us it wasn’t always clear who to ask, so we shared a contact guide for common questions.',
+    'Thanks for your feedback. We added an optional team Q&A and named who to ask for help.',
+  ],
+  'Social Acceptance': [
+    'You told us it could be easier to connect with the team, so we matched everyone with a buddy and set up a cohort coffee.',
+    'Thanks for your feedback. We arranged informal introductions with teammates and key collaborators.',
+  ],
+  'Responsibilities & Priorities': [
+    'You told us priorities could be clearer, so we reviewed current responsibilities and shared a written priority list.',
+    'Thanks for your feedback. We held a short alignment session on ownership, deadlines and what can wait.',
+  ],
+  'Task Confidence': [
+    'You told us some tasks still feel challenging, so we added guided practice on the tasks your cohort finds hardest.',
+    'Thanks for your feedback. We shared examples of completed work and set aside time for supported practice.',
+  ],
+  'Social Integration': [
+    'You told us team communication could be easier, so we created more low-pressure ways to connect with teammates.',
+    'Thanks for your feedback. We invited your cohort into a team session and arranged informal introductions.',
+  ],
+  Workload: [
+    'You told us the workload felt heavy, so we reviewed the training schedule and agreed on the next priorities.',
+    'Thanks for your feedback. We checked capacity with your cohort and adjusted near-term deadlines where needed.',
+  ],
+  'Team Goals': [
+    'You told us the link to team goals could be clearer, so we walked through team priorities and how current tasks contribute.',
+    'Thanks for your feedback. We shared a short team goals overview with examples from common responsibilities.',
+  ],
+  'Task Mastery': [
+    'You told us some regular tasks need more guidance, so we added targeted practice for your cohort.',
+    'Thanks for your feedback. We shared step-by-step examples and time to practise common workflows.',
+  ],
+  'Processes & Workflows': [
+    'You told us some processes were unclear, so we walked through key workflows and where to find the guides.',
+    'Thanks for your feedback. We shared a short process map for recurring tasks and held a workflow Q&A.',
+  ],
+  'Useful Feedback': [
+    'You told us feedback could be more useful, so we agreed on regular check-ins with specific takeaways.',
+    'Thanks for your feedback. We asked managers to share more timely examples of what is going well and what to improve.',
+  ],
+  Prioritisation: [
+    'You told us prioritising could be easier, so we shared a simple framework and practised it on typical tasks.',
+    'Thanks for your feedback. We reviewed how to handle competing responsibilities and common trade-offs.',
+  ],
+  'Handling Challenges': [
+    'You told us some challenges still need support, so we shared a troubleshooting guide with clear options for when to ask.',
+    'Thanks for your feedback. We walked through common scenarios and how to decide on next steps.',
+  ],
+  'Team Contribution': [
+    'You told us sharing ideas could be easier, so we added a short round of input to team meetings.',
+    'Thanks for your feedback. We made more space for new perspectives in team discussions.',
+  ],
+  Autonomy: [
+    'You told us you’d like more clarity on decisions, so we confirmed what you can decide independently and when to check in.',
+    'Thanks for your feedback. We reviewed approval bottlenecks and which routine work you can own.',
+  ],
+  'Role Confidence': [
+    'You told us some responsibilities still feel uncertain, so we set up short check-ins to work through open questions.',
+    'Thanks for your feedback. We reviewed recent progress and agreed on areas for continued support.',
+  ],
+  Belonging: [
+    'You told us feeling part of the team could be easier, so we opened more team routines to your cohort.',
+    'Thanks for your feedback. We set up buddy conversations about team connections and ways to get involved.',
+  ],
+  'Organizational Goals': [
+    'You told us the bigger picture could be clearer, so we shared context on organisational priorities and how your role contributes.',
+    'Thanks for your feedback. We shared a short goals overview and opened time for questions.',
+  ],
+  'Future Growth': [
+    'You told us you’d like to talk about growth, so we opened time to discuss development interests and next steps.',
+    'Thanks for your feedback. We mapped learning opportunities to the development goals you shared.',
+  ],
+};
 
 export function CheckIns() {
   const app = useApp();
   const [pulseMilestone, setPulseMilestone] = useState<MilestoneKey>('week1');
   const [aiInsightsByKey, setAiInsightsByKey] = useState<Record<string, CheckinInsightsResponse['themes'][number]>>({});
-  const [aiLoadingKey, setAiLoadingKey] = useState<PulseKey | null>(null);
-  const [planningDraft, setPlanningDraft] = useState<{ theme: string; pulse?: PulseKey; label: string; publicNote?: string; milestone: MilestoneKey } | null>(null);
+  const [aiPresetIndexByKey, setAiPresetIndexByKey] = useState<Record<string, number>>({});
+  const [actionPresetIndexByKey, setActionPresetIndexByKey] = useState<Record<string, number>>({});
+  const [aiLoadingKey, setAiLoadingKey] = useState<string | null>(null);
+  const [planningDraft, setPlanningDraft] = useState<{ id?: string; theme: string; pulse?: PulseKey; label: string; milestone: MilestoneKey } | null>(null);
   const [publishingActionId, setPublishingActionId] = useState<string | null>(null);
   const [publicNote, setPublicNote] = useState('');
+  const [publicGuideId, setPublicGuideId] = useState('');
+  const [updatePresetIndexByKey, setUpdatePresetIndexByKey] = useState<Record<string, number>>({});
+  const [draftingUpdate, setDraftingUpdate] = useState(false);
   const latest = [...app.latestCheckins.values()];
   const pulseCheckins = pulseCheckinsForView(app.checkins, latest, pulseMilestone);
   const pulseTotals = totalsOf(pulseCheckins);
   const nameShare = namedShareOf(pulseCheckins);
-  const namedCheckins = app.checkins.filter((checkin) => checkin.named).length;
-  const anonymousCheckins = app.checkins.filter((checkin) => !checkin.named).length;
-  const newNamedCheckins = app.checkins.filter((checkin) => checkin.isNew && checkin.named).length;
-  const newAnonymousCheckins = app.checkins.filter((checkin) => checkin.isNew && !checkin.named).length;
+  // One count per person, from their latest check-in, so the total matches the people in Completed check-ins.
+  const sharing = namedShareOf(latest);
+  const newNamedCheckins = latest.filter((checkin) => checkin.isNew && checkin.named).length;
+  const newAnonymousCheckins = latest.filter((checkin) => checkin.isNew && !checkin.named).length;
   const selectedMilestone = CHECKIN_MILESTONES.find((milestone) => milestone.key === pulseMilestone)!;
+  const planningQuestion = planningDraft
+    ? questionsForMilestone(planningDraft.milestone).find((question) => question.key === planningDraft.pulse)
+    : undefined;
+  const planningInsightKey = planningDraft?.pulse ? `${planningDraft.milestone}:${planningDraft.pulse}` : '';
+  const planningActionSuggestions = planningQuestion
+    ? PRESET_ACTIONS[planningQuestion.dimension] ?? [guidanceFor(planningQuestion).action]
+    : [];
+  const planningActionSuggestion = planningActionSuggestions[actionPresetIndexByKey[planningInsightKey] ?? 0];
 
   // Headcounts only: how many employees have checked in at the milestone they are currently in.
   const completedCurrent = COHORT.filter((hire) => app.checkins.some((checkin) => checkin.person === hire.id && checkin.milestone === hire.milestone)).length;
   const pending = Math.max(0, COHORT.length - completedCurrent);
 
-  // Calendar months, matching the card titles.
-  const now = new Date();
-  const monthKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-  const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const newHiresThisMonth = COHORT.filter((hire) => hire.joinedAt.slice(0, 7) === monthKey(now)).length;
-  const newHiresLastMonth = COHORT.filter((hire) => hire.joinedAt.slice(0, 7) === monthKey(previousMonth)).length;
-
-  const results = followUpResults(app.checkins, app.actions, COHORT);
+  const feed = followUpFeed(app.checkins, app.actions, COHORT);
   const groupResults = groupFollowUp(app.checkins, app.actions);
+  const talks = talkRequests(app.checkins, app.actions, COHORT);
   const milestones = milestoneParticipation(app.checkins, COHORT);
   const selectedMilestoneState = milestones.find(({ milestone }) => milestone.key === selectedMilestone.key)!.state;
 
-  // Only group-level actions (no person) belong here, and only difficulties reported by at least MIN_GROUP
-  // employees are listed, so a single answer can never be singled out.
-  const supportNeeds = pulseCheckins.length >= MIN_GROUP
-    ? questionsForMilestone(selectedMilestone.key)
-      .map((question) => ({
-        question,
-        partly: pulseTotals[question.key].partly,
-        notyet: pulseTotals[question.key].notyet,
-        action: app.actions.find((action) => !action.person && action.milestone === selectedMilestone.key && (action.pulse === question.key || (!action.pulse && action.theme
-          && (action.theme === question.key || action.theme === question.dimension || action.theme.toLowerCase().includes(question.dimension.toLowerCase()))))),
-      }))
-      .filter(({ partly, notyet }) => partly + notyet >= MIN_GROUP)
-    : [];
+  const supportNeeds = supportNeedsAt(app.checkins, app.actions, selectedMilestone.key);
+  // The two cards follow the loop across every milestone: what was detected, and whether the response helped.
+  const needsResponse = CHECKIN_MILESTONES.flatMap((milestone) => supportNeedsAt(app.checkins, app.actions, milestone.key)).filter(({ action }) => !action).length;
+  const improvedReplies = groupResults.reduce((sum, result) => sum + result.improved, 0);
+  const followUpReplies = groupResults.reduce((sum, result) => sum + result.responded, 0);
 
   async function generateSupportPlan(question: { key: PulseKey; dimension: string }) {
     if (pulseCheckins.length < MIN_GROUP || aiLoadingKey) return;
-    setAiLoadingKey(question.key);
-    const totals = Object.fromEntries(CHECKIN_MILESTONES.map((milestone) => [
-      milestone.key,
-      totalsOf(app.checkins.filter((checkin) => checkin.milestone === milestone.key)),
-    ])) as Record<MilestoneKey, ReturnType<typeof totalsOf>>;
-    const anonymousNotes = app.checkins
-      .filter((checkin) => !checkin.named)
-      .flatMap((checkin) => [checkin.note, ...Object.values(checkin.followUps ?? {})])
-      .filter((note): note is string => !!note?.trim());
-    const response = await askCheckinInsights({
-      cohort: COHORT.length,
-      responses: app.checkins.length,
-      focusDimension: question.dimension,
-      focusMilestone: selectedMilestone.key,
-      totals,
-      anonymousNotes,
-      people: [],
-    });
-    const theme = response?.themes[0];
-    if (theme) setAiInsightsByKey((current) => ({ ...current, [question.key]: theme }));
+    const insightKey = `${selectedMilestone.key}:${question.key}`;
+    setAiLoadingKey(insightKey);
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 600));
+    const guidance = guidanceFor(question);
+    const presets = PRESET_INSIGHTS[question.dimension] ?? [
+      'Responses suggest discussing this area with the cohort and agreeing on a practical next step.',
+      'The pattern points to an opportunity to check what support would be most useful in this area.',
+      'Some responses suggest a short cohort discussion could help clarify priorities and next steps.',
+    ];
+    const presetIndex = ((aiPresetIndexByKey[insightKey] ?? -1) + 1) % presets.length;
+    setAiPresetIndexByKey((current) => ({ ...current, [insightKey]: presetIndex }));
+    setAiInsightsByKey((current) => ({
+      ...current,
+      [insightKey]: {
+        name: question.dimension,
+        count: pulseTotals[question.key].partly + pulseTotals[question.key].notyet,
+        summary: presets[presetIndex],
+        action: guidance.action,
+        note: guidance.note,
+      },
+    }));
     setAiLoadingKey(null);
+  }
+
+  /** Fills the message with the next sample draft for this question. */
+  async function draftUpdate(question: { key: PulseKey; dimension: string }) {
+    if (draftingUpdate) return;
+    const insightKey = `${selectedMilestone.key}:${question.key}`;
+    const presets = PRESET_UPDATES[question.dimension] ?? [guidanceFor(question).note];
+    const presetIndex = ((updatePresetIndexByKey[insightKey] ?? -1) + 1) % presets.length;
+    setDraftingUpdate(true);
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 600));
+    setUpdatePresetIndexByKey((current) => ({ ...current, [insightKey]: presetIndex }));
+    setPublicNote(presets[presetIndex]);
+    setDraftingUpdate(false);
   }
 
   function confirmPlanning() {
@@ -165,14 +457,14 @@ export function CheckIns() {
           <p>Employees yet to check in</p>
         </div>
         <div className="rc-home-stat">
-          <dt>New hires this month<span className="rc-home-ic"><Icon name="users" size={18} /></span></dt>
-          <dd>{newHiresThisMonth}</dd>
-          <p>New employees who joined this month</p>
+          <dt>Needs a response<span className="rc-home-ic"><Icon name="bell" size={18} /></span></dt>
+          <dd>{needsResponse}</dd>
+          <p>Group difficulties with no action planned</p>
         </div>
         <div className="rc-home-stat">
-          <dt>New hires last month<span className="rc-home-ic"><Icon name="users" size={18} /></span></dt>
-          <dd>{newHiresLastMonth}</dd>
-          <p>New employees who joined last month</p>
+          <dt>Reported improvement<span className="rc-home-ic"><Icon name="ready" size={18} /></span></dt>
+          <dd>{followUpReplies ? `${improvedReplies} of ${followUpReplies}` : '—'}</dd>
+          <p>Follow-up replies saying things are better</p>
         </div>
       </dl>
 
@@ -275,19 +567,21 @@ export function CheckIns() {
         <header className="rc-panel-head">
           <div>
             <h2 className="rc-panel-h" id="rc-ci-sharing-h">Sharing overview</h2>
-            <p className="rc-panel-s">How are employees choosing to share?</p>
+            <p className="rc-panel-s">How employees chose to share in their latest check-in.</p>
           </div>
         </header>
-        <div className="rc-ci-sharing-grid">
-          <div className="rc-ci-sharing-card">
-            <span className="rc-ci-sharing-icon is-named"><Icon name="users" size={18} /></span>
-            <div><span className="rc-ci-sharing-title"><b>Named</b>{newNamedCheckins ? <em>+{newNamedCheckins}</em> : null}</span><strong>{namedCheckins}</strong><span>Can support individual follow-up.</span></div>
+        {sharing.total >= MIN_GROUP ? (
+          <div className="rc-ci-sharing-grid">
+            <div className="rc-ci-sharing-card">
+              <span className="rc-ci-sharing-icon is-named"><Icon name="users" size={18} /></span>
+              <div><span className="rc-ci-sharing-title"><b>Named</b>{newNamedCheckins ? <em>+{newNamedCheckins}</em> : null}</span><strong>{sharing.named}</strong><span>Can support individual follow-up.</span></div>
+            </div>
+            <div className="rc-ci-sharing-card">
+              <span className="rc-ci-sharing-icon is-anonymous"><Icon name="shield" size={18} /></span>
+              <div><span className="rc-ci-sharing-title"><b>Anonymous</b>{newAnonymousCheckins ? <em>+{newAnonymousCheckins}</em> : null}</span><strong>{sharing.total - sharing.named}</strong><span>Used for aggregated insights.</span></div>
+            </div>
           </div>
-          <div className="rc-ci-sharing-card">
-            <span className="rc-ci-sharing-icon is-anonymous"><Icon name="shield" size={18} /></span>
-            <div><span className="rc-ci-sharing-title"><b>Anonymous</b>{newAnonymousCheckins ? <em>+{newAnonymousCheckins}</em> : null}</span><strong>{anonymousCheckins}</strong><span>Used for aggregated insights.</span></div>
-          </div>
-        </div>
+        ) : <p className="rc-sec-empty">Appears once at least {MIN_GROUP} employees have checked in.</p>}
       </section>
       </div>
       </div>
@@ -316,98 +610,150 @@ export function CheckIns() {
           <ul className="rc-ci-support-list">
             {supportNeeds.map(({ question, partly, notyet, action }) => {
               const guidance = guidanceFor(question);
-              const isDone = action?.status === 'done';
-              const groupResult = isDone ? groupResults.find((item) => item.action.id === action!.id) : undefined;
-              const aiTheme = aiInsightsByKey[question.key];
+              const insightKey = `${selectedMilestone.key}:${question.key}`;
+              const aiTheme = aiInsightsByKey[insightKey];
+              const groupResult = action ? groupResults.find((item) => item.action.id === action.id) : undefined;
+              const responseCounts = pulseTotals[question.key];
+              const actionStatus = action?.status === 'done' ? 'Completed' : action ? 'Planned' : 'Not planned';
+              const updateStatus = action?.publishedAt ? 'Published' : 'Not published';
+              const updateHint = action?.publishedAt ? 'Your cohort can see this message'
+                : action?.status === 'done' ? 'Ready to review and publish'
+                : action ? 'Complete the action first' : 'Plan an action first';
+              const hasAiDraft = updatePresetIndexByKey[insightKey] !== undefined;
+              const outcomeStatus = groupResult ? 'Evaluated' : 'Awaiting follow-up';
               return (
                 <li className="rc-ci-support-item" key={question.key}>
-                  <div className="rc-ci-support-copy">
-                    <b>{question.dimension}</b>
-                    <strong>{plural(partly + notyet, 'employee', 'employees')} reporting difficulty</strong>
+                  <div className="rc-ci-support-heading">
+                    <div className="rc-ci-support-title">
+                      <b>{question.dimension}</b>
+                      <span className={cx('rc-ci-priority-status', notyet > 0 && 'is-high')}>{partly + notyet} reporting difficulty</span>
+                    </div>
                     <span>{partly} Partly · {notyet} Not yet</span>
-                    {isDone ? (
-                      <>
-                        <small className="rc-ci-support-label">Published to the cohort</small>
-                        <small className="rc-ci-support-guidance">{action!.publicNote ?? action!.label}</small>
-                      </>
-                    ) : (
-                      <>
-                        <small className="rc-ci-support-label">{action ? 'Planned response' : 'Suggested response'}</small>
-                        <small className="rc-ci-support-guidance">{action?.label ?? guidance.action}</small>
-                      </>
-                    )}
-                    <button type="button" className="rc-ci-suggest-comments" disabled={pulseCheckins.length < MIN_GROUP || (aiLoadingKey !== null && aiLoadingKey !== question.key)} onClick={() => generateSupportPlan(question)}>
-                      <Icon name="sparkles" size={13} />{aiLoadingKey === question.key ? 'AI Drafting…' : 'Suggest more comments'}
-                    </button>
-                    {aiTheme ? (
-                      <div className="rc-ci-ai-item">
-                        <small className="rc-ci-support-label">AI suggested response</small>
-                        <small className="rc-ci-support-guidance">{aiTheme.action}</small>
-                        <small className="rc-ci-ai-note">Cohort note: {aiTheme.note}</small>
-                        {planningDraft?.theme === question.dimension ? (
-                          <div className="rc-ci-publish">
-                            <textarea className="rc-kb-area" rows={2} value={planningDraft.label} onChange={(event) => setPlanningDraft({ ...planningDraft, label: event.target.value })} aria-label="AI response draft" />
-                            <div className="rc-ci-publish-actions">
-                              <button type="button" className="rc-btn-primary is-sm" disabled={!planningDraft.label.trim()} onClick={confirmPlanning}>Save plan</button>
-                              <button type="button" className="rc-btn-ghost is-sm" onClick={() => setPlanningDraft(null)}>Cancel</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <button type="button" className="rc-btn-primary is-sm" onClick={() => setPlanningDraft({ theme: question.dimension, pulse: question.key, label: aiTheme.action, publicNote: aiTheme.note, milestone: selectedMilestone.key })}>Plan response</button>
-                        )}
-                      </div>
-                    ) : null}
-                    {groupResult ? (
-                      <p className="rc-ci-group-followup">
-                        {groupResult.before.difficult} of {groupResult.before.total} <span>→</span> {groupResult.after.difficult} of {groupResult.after.total} reported difficulty
-                        <br /><small>Same employees, same question. This doesn't prove the update caused the change.</small>
-                      </p>
-                    ) : null}
                   </div>
-                  {action ? (
-                    isDone ? (
-                      <div className="rc-ci-published">
-                        <span className="rc-kb-st is-released rc-ci-done"><i />Published{action.publishedAt ? ` · ${shortDate(action.publishedAt)}` : ''}</span>
-                      </div>
-                    ) : publishingActionId === action.id ? (
-                      <div className="rc-ci-publish">
-                        <textarea className="rc-kb-area" rows={3} value={publicNote} onChange={(event) => setPublicNote(event.target.value)} aria-label="Message employees will see" />
-                        <small>This is what employees will see. It goes to everyone in the cohort. Don't mention individuals.</small>
-                        <div className="rc-ci-publish-actions">
-                          <button type="button" className="rc-btn-primary is-sm" disabled={!publicNote.trim()} onClick={() => {
-                            app.completeAction(action.id, { publicNote: publicNote.trim(), publishedAt: new Date().toISOString() });
-                            setPublishingActionId(null);
-                            setPublicNote('');
-                          }}>Confirm publish</button>
-                          <button type="button" className="rc-btn-ghost is-sm" onClick={() => { setPublishingActionId(null); setPublicNote(''); }}>Cancel</button>
+                  <ol className="rc-ci-workflow">
+                    <li>
+                      <details className="rc-ci-workflow-stage">
+                        <summary>
+                          <span className="rc-ci-stage-number">1</span>
+                          <span className="rc-ci-stage-heading"><b>AI insight</b><small>{aiTheme ? 'Insight ready' : `${partly + notyet} of ${pulseCheckins.length} report difficulty`}</small></span>
+                          <span className={cx('rc-ci-stage-status', aiTheme && 'is-ready')}>{aiTheme ? 'Ready' : 'Needs insight'}</span>
+                          <Icon name="chevron" size={15} />
+                        </summary>
+                        <div className="rc-ci-stage-content">
+                          <div className="rc-ci-response-breakdown" aria-label="Response breakdown">
+                            {PULSE_ANSWERS.map((answer) => (
+                              <span key={answer.key}><i className={'is-' + answer.key} />{answer.label}<b>{responseCounts[answer.key]}</b></span>
+                            ))}
+                          </div>
+                          {aiTheme ? <><p className="rc-ci-insight-summary">{aiTheme.summary}</p><p className="rc-ci-stage-muted">Demo preset · response counts are live</p></> : <p className="rc-ci-stage-muted">Generate a demo insight for this cohort-level difficulty.</p>}
+                          <button type="button" className="rc-btn-ghost is-sm" disabled={pulseCheckins.length < MIN_GROUP || aiLoadingKey !== null} onClick={() => void generateSupportPlan(question)}>
+                            <Icon name="bot" size={13} />{aiLoadingKey === insightKey ? (aiTheme ? 'Regenerating...' : 'Generating AI insight...') : aiTheme ? 'Regenerate AI insight' : 'Generate AI insight'}
+                          </button>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="rc-ci-published">
-                        <span className="rc-kb-st is-upcoming"><i />Planned</span>
-                        <button type="button" className="rc-btn-primary is-sm" onClick={() => { setPublishingActionId(action.id); setPublicNote(action.publicNote ?? guidance.note); }}>Review and publish</button>
-                      </div>
-                    )
-                  ) : (
-                    planningDraft?.theme === question.dimension ? (
-                      <div className="rc-ci-publish">
-                        <textarea className="rc-kb-area" rows={2} value={planningDraft.label} onChange={(event) => setPlanningDraft({ ...planningDraft, label: event.target.value })} aria-label="Support response draft" />
-                        <small>Edit the response before planning it.</small>
-                        <div className="rc-ci-publish-actions">
-                          <button type="button" className="rc-btn-primary is-sm" disabled={!planningDraft.label.trim()} onClick={confirmPlanning}>Save plan</button>
-                          <button type="button" className="rc-btn-ghost is-sm" onClick={() => setPlanningDraft(null)}>Cancel</button>
+                      </details>
+                    </li>
+                    <li>
+                      <details className="rc-ci-workflow-stage">
+                        <summary>
+                          <span className="rc-ci-stage-number">2</span>
+                          <span className="rc-ci-stage-heading"><b>Manager action</b><small>{action?.label ?? aiTheme?.action ?? guidance.action}</small></span>
+                          <span className={cx('rc-ci-stage-status', action?.status === 'done' && 'is-ready', action && action.status !== 'done' && 'is-planned')}>{actionStatus}</span>
+                          <Icon name="chevron" size={15} />
+                        </summary>
+                        <div className="rc-ci-stage-content">
+                          <p className="rc-ci-stage-muted">Internal plan · not shared with employees</p>
+                          <p className="rc-ci-stage-action">{action?.label ?? aiTheme?.action ?? guidance.action}</p>
+                          <div className="rc-ci-stage-actions">
+                            {action && action.status !== 'done' ? (
+                              <button type="button" className="rc-btn-ghost is-sm" onClick={() => app.completeAction(action.id)}>Mark action complete</button>
+                            ) : null}
+                            {action?.status !== 'done' ? <button type="button" className="rc-btn-primary is-sm" onClick={() => setPlanningDraft({
+                              id: action?.id,
+                              theme: question.dimension,
+                              pulse: question.key,
+                              label: action?.label ?? aiTheme?.action ?? guidance.action,
+                              milestone: selectedMilestone.key,
+                            })}>{action ? 'Edit action plan' : 'Plan action'}</button> : null}
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <button type="button" className="rc-btn-ghost is-sm" onClick={() => setPlanningDraft({
-                        theme: question.dimension,
-                        pulse: question.key,
-                        label: guidance.action,
-                      publicNote: guidance.note,
-                        milestone: selectedMilestone.key,
-                      })}>Plan response</button>
-                    )
-                  )}
+                      </details>
+                    </li>
+                    <li>
+                      <details className="rc-ci-workflow-stage">
+                        <summary>
+                          <span className="rc-ci-stage-number">3</span>
+                          <span className="rc-ci-stage-heading"><b>Tell your cohort</b><small>{updateHint}</small></span>
+                          <span className={cx('rc-ci-stage-status', action?.publishedAt && 'is-ready')}>{updateStatus}</span>
+                          <Icon name="chevron" size={15} />
+                        </summary>
+                        <div className="rc-ci-stage-content">
+                          <p className="rc-ci-stage-muted">Tell everyone in the cohort what changed. Internal notes and individual responses are never included.</p>
+                          {action ? (
+                            publishingActionId === action.id ? (
+                              <div className="rc-ci-publish">
+                                <textarea className="rc-kb-area" rows={3} value={publicNote} onChange={(event) => setPublicNote(event.target.value)} aria-label="Message to your cohort" />
+                                <div className="rc-ci-stage-actions">
+                                  <button type="button" className="rc-btn-ghost is-sm" disabled={draftingUpdate} onClick={() => void draftUpdate(question)}>
+                                    <Icon name="bot" size={13} />{draftingUpdate ? 'Drafting...' : hasAiDraft ? 'Another AI draft' : 'Draft with AI'}
+                                  </button>
+                                </div>
+                                {hasAiDraft ? <p className="rc-ci-stage-muted">AI draft · demo preset. Review it before publishing.</p> : null}
+                                <label className="rc-kb-lab">Guide for employees <span>Optional · they can open it from the message</span>
+                                  <select className="rc-kb-input is-select" value={publicGuideId} onChange={(event) => setPublicGuideId(event.target.value)}>
+                                    <option value="">No guide</option>
+                                    {app.knowledge.filter((item) => item.status === 'live').map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+                                  </select>
+                                </label>
+                                <div className="rc-ci-stage-actions">
+                                  <button type="button" className="rc-btn-primary is-sm" disabled={!publicNote.trim() || draftingUpdate} onClick={() => {
+                                    app.publishAction(action.id, publicNote.trim(), new Date().toISOString(), publicGuideId || undefined);
+                                    setPublishingActionId(null);
+                                    setPublicNote('');
+                                  }}>{action.publishedAt ? 'Publish updated message' : 'Publish to cohort'}</button>
+                                  <button type="button" className="rc-btn-ghost is-sm" onClick={() => { setPublishingActionId(null); setPublicNote(''); }}>Cancel</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                {action.publicNote ? <p className="rc-ci-employee-message">{action.publicNote}</p> : (
+                                  <>
+                                    <p className="rc-ci-stage-muted">Draft · employees can’t see this yet</p>
+                                    <p className="rc-ci-employee-message">{aiTheme?.note ?? guidance.note}</p>
+                                  </>
+                                )}
+                                {action.resourceId ? <p className="rc-ci-stage-muted">Guide: {app.knowledge.find((item) => item.id === action.resourceId)?.title ?? 'No longer available'}</p> : null}
+                                {action.status === 'done' ? (
+                                  <button type="button" className="rc-btn-ghost is-sm" onClick={() => {
+                                    setPublishingActionId(action.id);
+                                    setPublicNote(action.publicNote ?? aiTheme?.note ?? guidance.note);
+                                    setPublicGuideId(action.resourceId ?? '');
+                                  }}>{action.publishedAt ? 'Edit message' : 'Review and publish'}</button>
+                                ) : <p className="rc-ci-stage-muted">Complete the action in step 2 before telling your cohort.</p>}
+                              </>
+                            )
+                          ) : <p className="rc-ci-stage-muted">Save a manager action plan before drafting a cohort update.</p>}
+                        </div>
+                      </details>
+                    </li>
+                    <li>
+                      <details className="rc-ci-workflow-stage">
+                        <summary>
+                          <span className="rc-ci-stage-number">4</span>
+                          <span className="rc-ci-stage-heading"><b>Follow-up outcome</b><small>{groupResult ? `${groupResult.improved} of ${groupResult.responded} report improvement` : 'Waiting for follow-up replies'}</small></span>
+                          <span className={cx('rc-ci-stage-status', groupResult && 'is-ready')}>{outcomeStatus}</span>
+                          <Icon name="chevron" size={15} />
+                        </summary>
+                        <div className="rc-ci-stage-content">
+                          {groupResult ? (
+                            <>
+                              <p className="rc-ci-outcome-counts"><b>{groupResult.improved}</b> of <b>{groupResult.responded}</b> people who replied say this is better</p>
+                              <p className="rc-ci-stage-muted">Only people who reported this difficulty were asked, and who was asked stays private. Read the replies under Follow-up responses. This result alone does not show that the action caused the change.</p>
+                            </>
+                          ) : <p className="rc-ci-stage-muted">After an action is completed and published, people who reported this difficulty are asked at their next check-in. Results appear once enough replies arrive to protect anonymity, with at least {MIN_GROUP} replies.</p>}
+                        </div>
+                      </details>
+                    </li>
+                  </ol>
                 </li>
               );
             })}
@@ -415,50 +761,110 @@ export function CheckIns() {
         ) : (
           <p className="rc-sec-empty">Support priorities will appear once at least {MIN_GROUP} employees report the same difficulty.</p>
         )}
-        <p className="rc-home-note">Insights are based on aggregated check-in responses. Individual employee identities are not shown. AI suggests; the manager decides what is published.</p>
+        <p className="rc-home-note">Insights are based on aggregated check-in responses. Individual employee identities are not shown. AI suggests; the manager decides what happens next.</p>
       </section>
+
+      {talks.length ? (
+        <section className="rc-home-card rc-glass rc-glass-2 rc-ci-section" aria-labelledby="rc-ci-talk-h">
+          <header className="rc-panel-head">
+            <div>
+              <h2 className="rc-panel-h" id="rc-ci-talk-h">Requests to talk</h2>
+              <p className="rc-panel-s">These employees chose to share their name for this topic. Their check-in answers are not included.</p>
+            </div>
+          </header>
+          <ul className="rc-ci-outcome-list">
+            {talks.map(({ id, hire, topic }) => (
+              <li key={id} className="rc-ci-outcome">
+                <div className="rc-ci-outcome-heading">
+                  <Person initials={hire.initials} />
+                  <div className="rc-ci-outcome-person"><b>{hire.name}</b><span>{hire.role} · {hire.team}</span></div>
+                  <span className="rc-ci-outcome-transition">{topic}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {planningDraft ? (
+        <div className="rc-roomlayer rc-ci-plan-layer" role="dialog" aria-modal="true" aria-labelledby="rc-ci-plan-title">
+          <div className="rc-roomlayer-scrim" onClick={() => setPlanningDraft(null)} />
+          <section className="rc-troom rc-ci-plan-modal rc-glass rc-glass-3">
+            <header className="rc-troom-head">
+              <div className="rc-troom-row">
+                <div>
+                  <h2 className="rc-ci-h" id="rc-ci-plan-title">Plan cohort response</h2>
+                  <p className="rc-ci-s">This internal action plan is not shared with employees.</p>
+                </div>
+                <button type="button" className="rc-toast-x rc-troom-x" aria-label="Close plan response" onClick={() => setPlanningDraft(null)}><Icon name="close" size={16} /></button>
+              </div>
+            </header>
+            <div className="rc-ci-plan-body">
+              <label className="rc-kb-lab">Manager action
+                <textarea className="rc-kb-area" rows={3} value={planningDraft.label} onChange={(event) => setPlanningDraft({ ...planningDraft, label: event.target.value })} />
+              </label>
+              {planningQuestion ? (
+                <div className="rc-ci-action-suggestion">
+                  <small className="rc-ci-support-label">Suggested manager action · demo preset</small>
+                  <p>{planningActionSuggestion}</p>
+                  <div className="rc-ci-action-suggestion-actions">
+                    <button type="button" className="rc-btn-ghost is-sm" onClick={() => setPlanningDraft({
+                      ...planningDraft,
+                      label: planningActionSuggestion,
+                    })}>Use this suggestion</button>
+                    <button type="button" className="rc-btn-ghost is-sm" onClick={() => setActionPresetIndexByKey((current) => ({
+                      ...current,
+                      [planningInsightKey]: ((current[planningInsightKey] ?? 0) + 1) % planningActionSuggestions.length,
+                    }))}>Another AI Suggestion</button>
+                  </div>
+                </div>
+              ) : null}
+              <div className="rc-ci-publish-actions">
+                <button type="button" className="rc-btn-primary is-sm" disabled={!planningDraft.label.trim()} onClick={confirmPlanning}>Save plan</button>
+                <button type="button" className="rc-btn-ghost is-sm" onClick={() => setPlanningDraft(null)}>Cancel</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       <details className="rc-home-card rc-glass rc-glass-2 rc-ci-section rc-ci-outcomes">
         <summary className="rc-ci-disclosure">
           <span>
-            <b>Follow-up outcomes</b>
-            <span>Changes in reported difficulties at a later comparable check-in.</span>
+            <b>Follow-up responses</b>
+            <span>What employees said when asked if things improved. Names appear only if they chose to share them.</span>
           </span>
           <Icon name="chevron" size={16} />
         </summary>
         <div className="rc-ci-outcomes-body">
-          {results.length ? (
+          {feed.length ? (
             <ul className="rc-ci-outcome-list">
-              {results.map((result) => {
-                const from = CHECKIN_MILESTONES.find((milestone) => milestone.key === result.action.milestone)!;
-                const to = CHECKIN_MILESTONES.find((milestone) => milestone.key === result.afterMilestone)!;
-                return (
-                  <li key={result.action.id} className="rc-ci-outcome">
-                    <div className="rc-ci-outcome-heading">
-                      <Person initials={result.hire.initials} />
-                      <div className="rc-ci-outcome-person"><b>{result.hire.name}</b><span>{result.hire.role} · {result.hire.team}</span></div>
-                      <span className="rc-ci-outcome-transition">{from.label}<Icon name="chevron" size={13} />{to.label}</span>
-                    </div>
-                    <p className="rc-ci-outcome-action"><Icon name="check" size={14} />{result.action.label}</p>
-                    <ul className="rc-ci-outcome-dimensions">
-                      {result.dimensions.map((dimension) => (
-                        <li key={dimension.p.key} className="rc-ci-outcome-dimension">
-                          <span className="rc-ci-outcome-dimension-name">{dimension.p.dimension}</span>
-                          <span className={cx('rc-ci-outcome-status', dimension.status === 'improved' && 'is-better', dimension.status === 'worsened' && 'is-not')}>
-                            {progressLabel(dimension.status)}
-                          </span>
-                          <span className="rc-ci-outcome-values"><b>{LABEL[dimension.from]}</b><span>→</span><b>{LABEL[dimension.to]}</b></span>
-                        </li>
-                      ))}
-                    </ul>
-                  </li>
-                );
-              })}
+              {feed.map(({ id, topic, label, milestone: stage, replies }) => (
+                <li key={id} className="rc-ci-outcome">
+                  <div className="rc-ci-outcome-heading">
+                    <div className="rc-ci-outcome-person"><b>{topic}</b><span>{CHECKIN_MILESTONES.find((milestone) => milestone.key === stage)!.label}</span></div>
+                  </div>
+                  {label && topic !== label ? <p className="rc-ci-outcome-action"><Icon name="check" size={14} />{label}</p> : null}
+                  <ul className="rc-ci-replies">
+                    {replies.map((reply, index) => (
+                      <li key={index} className="rc-ci-outcome-dimension">
+                        <span className="rc-ci-outcome-dimension-name">
+                          <b>{reply.hire?.name ?? 'Anonymous'}</b>
+                          {reply.comment ? <small>{reply.comment}</small> : null}
+                        </span>
+                        <span className={cx('rc-ci-outcome-status', reply.answer === 'better' ? 'is-better' : 'is-not')}>
+                          {reply.answer === 'better' ? 'Better' : 'Not Yet'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
             </ul>
           ) : (
-            <p className="rc-sec-empty">Outcomes appear when a named employee has a later comparable check-in after a completed support action.</p>
+            <p className="rc-sec-empty">Replies appear once enough people have responded to protect anonymity.</p>
           )}
-          <p className="rc-home-note">Only named check-ins are compared, and only the same employee and pulse dimension with applicable answers. Changes do not prove the support action caused an improvement.</p>
+          <p className="rc-home-note">Replies on a shared topic appear once at least {MIN_GROUP} people respond. A reply does not prove a support action caused an improvement.</p>
         </div>
       </details>
 

@@ -154,12 +154,23 @@ export type PulseAnswer = 'yes' | 'partly' | 'notyet' | 'na';
 /** One person in the onboarding cohort, as the manager's Check-ins tab knows them. */
 export interface NewHire {
   id: string; name: string; first: string; initials: string; role: string; team: string;
-  /** Illustrative onboarding start date used for monthly cohort counts. */
+  /** Illustrative onboarding start date; a hire's milestone is derived from it. */
   joinedAt: string;
   /** Current onboarding milestone. */
   milestone: MilestoneKey;
   /** Ticket signals from before this session (seed only). Live ones come from shared state. */
   signals?: string[];
+}
+
+/** A reply to "is this better now?", tied to what it follows up rather than to a milestone question. */
+export interface ActionFollowUp {
+  /** An action id, or `difficulty:<milestone>:<pulse>` when no action was published for that difficulty. */
+  actionId: string;
+  answer: 'better' | 'notyet';
+  /** Optional words the manager can read, without a name unless the check-in was named. */
+  comment?: string;
+  /** The employee asked to talk. Only then does the manager see their name, and only with the topic. */
+  talk?: boolean;
 }
 
 /** A milestone check-in the employee chose to send. */
@@ -172,6 +183,7 @@ export interface CheckIn {
   answers: Record<PulseKey, PulseAnswer>;
   /** Optional, question-specific context shown only after Partly or Not yet. */
   followUps?: Partial<Record<PulseKey, string>>;
+  actionFollowUps?: ActionFollowUp[];
   note?: string;
   /** The employee chose to share their name. If not, it only counts in cohort totals. */
   named: boolean;
@@ -188,6 +200,8 @@ export interface SupportAction {
   status: 'planned' | 'done';
   publicNote?: string;
   publishedAt?: string;
+  /** A knowledge item employees can open from the update, when there is something to read. */
+  resourceId?: string;
   /** The milestone it was planned in, so the next check-in can show whether it helped. */
   milestone: MilestoneKey;
 }

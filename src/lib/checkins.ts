@@ -1,6 +1,6 @@
 // Check-in maths shared by the employee card, the manager's Check-ins tab and Home.
 // Only voluntary inputs: check-ins people chose to send and the questions they chose to ask.
-import type { CheckIn, CorePulseKey, MilestoneKey, NewHire, PulseAnswer, SupportAction } from '../types';
+import type { CheckIn, CorePulseKey, MilestoneKey, NewHire, PulseAnswer, PulseKey, SupportAction } from '../types';
 import { CHECKIN_MILESTONES, CORE_PULSE, MIN_GROUP, daysSince, milestoneOrder, questionsForMilestone, windowOf } from '../data/checkins';
 
 export type Totals = Record<CorePulseKey, Record<PulseAnswer, number>>;
@@ -13,10 +13,6 @@ export interface ReachOut {
   /** The follow-up planned for this person's latest milestone, if any. */
   action?: SupportAction;
 }
-
-const SCORE: Record<PulseAnswer, number | null> = { yes: 2, partly: 1, notyet: 0, na: null };
-type ProgressStatus = 'improved' | 'persisted' | 'worsened';
-type DimensionProgress = { p: (typeof CORE_PULSE)[number]; from: PulseAnswer; to: PulseAnswer; status: ProgressStatus };
 
 /** Each person's most recent check-in: the highest milestone wins, and within one milestone the later submission wins. */
 export function latestByPerson(checkins: CheckIn[]): Map<string, CheckIn> {
@@ -87,6 +83,23 @@ export function totalsOf(list: CheckIn[]): Totals {
   return t;
 }
 
+/**
+ * Difficulties at one milestone that at least MIN_GROUP employees reported, so a single answer can never
+ * be singled out, each with its group-level action if there is one.
+ */
+export function supportNeedsAt(checkins: CheckIn[], actions: SupportAction[], milestone: MilestoneKey) {
+  const totals = totalsOf(latestByPersonAtMilestone(checkins, milestone));
+  return questionsForMilestone(milestone)
+    .map((question) => ({
+      question,
+      partly: totals[question.key].partly,
+      notyet: totals[question.key].notyet,
+      action: actions.find((action) => !action.person && action.milestone === milestone && (action.pulse === question.key || (!action.pulse && action.theme
+        && (action.theme === question.key || action.theme === question.dimension || action.theme.toLowerCase().includes(question.dimension.toLowerCase()))))),
+    }))
+    .filter(({ partly, notyet }) => partly + notyet >= MIN_GROUP);
+}
+
 /** People who shared their name and may need someone to reach out: a "not yet", two "partly", or an open ticket signal. */
 export function reachOutList(cohort: NewHire[], latest: Map<string, CheckIn>, signalsFor: (id: string) => string[], actions: SupportAction[]): ReachOut[] {
   return cohort.flatMap((hire) => {
@@ -104,54 +117,110 @@ export function reachOutList(cohort: NewHire[], latest: Map<string, CheckIn>, si
     .map(({ rank: _rank, ...r }) => r);
 }
 
-/** Completed follow-ups compare named answers for the same pulse dimension at a later milestone. */
-export function followUpResults(checkins: CheckIn[], actions: SupportAction[], cohort: NewHire[]) {
-  const done = actions.filter((x) => x.person && x.status === 'done');
-  return done.flatMap((x) => {
-    const before = checkins.find((c) => c.person === x.person && c.milestone === x.milestone && c.named);
-    const after = checkins
-      .filter((c) => c.person === x.person && c.named && milestoneOrder(c.milestone) > milestoneOrder(x.milestone))
-      .sort((a, b) => milestoneOrder(a.milestone) - milestoneOrder(b.milestone))[0];
-    const hire = cohort.find((h) => h.id === x.person);
-    if (!before?.named || !after?.named || !hire) return [];
-    const dimensions = questionsForMilestone(before.milestone).flatMap<DimensionProgress>((p) => {
-      const laterQuestion = questionsForMilestone(after.milestone).find((question) => question.key === p.key);
-      if (!laterQuestion) return [];
-      const beforeScore = SCORE[before.answers[p.key]];
-      const afterScore = SCORE[after.answers[p.key]];
-      if (beforeScore === null || beforeScore === 2 || afterScore === null) return [];
-      const status = afterScore > beforeScore ? 'improved' as const : afterScore < beforeScore ? 'worsened' as const : 'persisted' as const;
-      return [{ p, from: before.answers[p.key], to: after.answers[p.key], status }];
+/** What an action was about, in the words of the milestone it was planned in. */
+export function actionTopic(action: SupportAction): string {
+  return questionsForMilestone(action.milestone).find((question) => question.key === action.pulse)?.dimension ?? action.label;
+}
+
+/** A difficulty with no published action is followed up under this id instead of an action id. */
+const DIFFICULTY = 'difficulty:';
+const difficultyId = (milestone: MilestoneKey, pulse: PulseKey) => `${DIFFICULTY}${milestone}:${pulse}`;
+function difficultyOf(id: string) {
+  const [, milestone, pulse] = id.split(':') as [string, MilestoneKey, PulseKey];
+  return { milestone, topic: questionsForMilestone(milestone).find((question) => question.key === pulse)?.dimension ?? 'Follow-up' };
+}
+
+export interface PendingFollowUp { id: string; topic: string; prompt: string; personal: boolean; hasAction: boolean }
+
+/**
+ * Milestone questions change on purpose, so a difficulty is followed up by asking about it directly.
+ * Every Partly or Not yet from a person's previous check-in is asked about once at their next one, with
+ * the published cohort action if there is one, plus their own completed actions. This works for anonymous
+ * check-ins too, because only the system uses the link between a person and their answers. The manager
+ * never sees who was asked.
+ */
+export function followUpsDue(checkins: CheckIn[], actions: SupportAction[], person: string, milestone: MilestoneKey): PendingFollowUp[] {
+  const order = milestoneOrder(milestone);
+  const earlier = checkins
+    .filter((checkin) => checkin.person === person && milestoneOrder(checkin.milestone) < order)
+    .sort((a, b) => milestoneOrder(a.milestone) - milestoneOrder(b.milestone));
+  const replied = new Set(earlier.flatMap((checkin) => (checkin.actionFollowUps ?? []).map((reply) => reply.actionId)));
+  const own = actions
+    .filter((action) => action.person === person && action.status === 'done' && milestoneOrder(action.milestone) < order && !replied.has(action.id))
+    .map((action) => ({ id: action.id, topic: actionTopic(action), prompt: `Last time: ${action.label}`, personal: true, hasAction: true }));
+  const previous = earlier[earlier.length - 1];
+  if (!previous) return own;
+  const difficulties = questionsForMilestone(previous.milestone)
+    .filter((question) => previous.answers[question.key] === 'partly' || previous.answers[question.key] === 'notyet')
+    .flatMap((question) => {
+      const action = actions.find((item) => !item.person && item.milestone === previous.milestone && item.pulse === question.key && item.status === 'done' && item.publishedAt);
+      const id = action?.id ?? difficultyId(previous.milestone, question.key);
+      if (replied.has(id)) return [];
+      const prompt = action ? `Last time you said this was difficult. ${action.publicNote}` : 'Last time you said this was difficult.';
+      return [{ id, topic: question.dimension, prompt, personal: false, hasAction: !!action }];
     });
-    return dimensions.length ? [{ action: x, hire, afterMilestone: after.milestone, dimensions }] : [];
+  return [...difficulties, ...own];
+}
+
+function repliesTo(checkins: CheckIn[], actionId: string) {
+  return checkins.flatMap((checkin) => (checkin.actionFollowUps ?? [])
+    .filter((reply) => reply.actionId === actionId)
+    .map((reply) => ({ checkin, reply })));
+}
+
+/**
+ * Replies to a cohort action stay hidden below MIN_GROUP, and also when exactly one is unidentified:
+ * the rest could otherwise be subtracted to reveal that one answer.
+ */
+function canShowReplies(replies: ReturnType<typeof repliesTo>): boolean {
+  const unidentified = replies.filter(({ checkin, reply }) => !checkin.named && !reply.talk).length;
+  return replies.length >= MIN_GROUP && unidentified !== 1;
+}
+
+/**
+ * Replies grouped by action or difficulty. Names appear only on named check-ins, and anonymous replies are
+ * sorted by content so their order can't hint at who sent them. A reply about a person's own action is shown
+ * only if named, because the action already identifies them. Someone who gave their name to talk was told
+ * their answers stay out of it, so an anonymous reply of theirs loses its comment.
+ */
+export function followUpFeed(checkins: CheckIn[], actions: SupportAction[], cohort: NewHire[]) {
+  const rowsOf = (list: ReturnType<typeof repliesTo>) => list
+    .map(({ checkin, reply }) => ({
+      hire: checkin.named ? cohort.find((item) => item.id === checkin.person) : undefined,
+      answer: reply.answer,
+      comment: checkin.named || !reply.talk ? reply.comment : undefined,
+    }))
+    .sort((a, b) => Number(!a.hire) - Number(!b.hire) || a.answer.localeCompare(b.answer) || (a.comment ?? '').localeCompare(b.comment ?? ''));
+  const forActions = actions.filter((action) => action.status === 'done').flatMap((action) => {
+    const all = repliesTo(checkins, action.id);
+    const shown = action.person ? all.filter(({ checkin }) => checkin.person === action.person && checkin.named) : all;
+    if (action.person ? !shown.length : !action.publishedAt || !canShowReplies(all)) return [];
+    return [{ id: action.id, topic: actionTopic(action), label: action.label as string | undefined, milestone: action.milestone, replies: rowsOf(shown) }];
+  });
+  const ids = new Set(checkins.flatMap((checkin) => (checkin.actionFollowUps ?? []).map((reply) => reply.actionId)));
+  const forDifficulties = [...ids].filter((id) => id.startsWith(DIFFICULTY)).flatMap((id) => {
+    const all = repliesTo(checkins, id);
+    if (!canShowReplies(all)) return [];
+    return [{ id, ...difficultyOf(id), label: undefined, replies: rowsOf(all) }];
+  });
+  return [...forActions, ...forDifficulties];
+}
+
+/** Totals of the replies to a published cohort action, under the same rule as the replies themselves. */
+export function groupFollowUp(checkins: CheckIn[], actions: SupportAction[]) {
+  return actions.filter((action) => !action.person && action.status === 'done' && action.pulse && action.publishedAt).flatMap((action) => {
+    const replies = repliesTo(checkins, action.id);
+    if (!canShowReplies(replies)) return [];
+    return [{ action, improved: replies.filter(({ reply }) => reply.answer === 'better').length, responded: replies.length }];
   });
 }
 
-/** Group-level comparison for a published response and the next milestone's same pulse dimension. */
-export function groupFollowUp(checkins: CheckIn[], actions: SupportAction[]) {
-  return actions.filter((action) => action.status === 'done' && action.pulse).flatMap((action) => {
-    const nextMilestone = CHECKIN_MILESTONES.find((milestone) => milestone.order === milestoneOrder(action.milestone) + 1);
-    if (!nextMilestone) return [];
-    const at = (milestone: MilestoneKey) => {
-      const byPerson = new Map<string, CheckIn>();
-      checkins.filter((checkin) => checkin.milestone === milestone).forEach((checkin) => byPerson.set(checkin.person, checkin));
-      return byPerson;
-    };
-    const before = at(action.milestone);
-    const after = at(nextMilestone.key);
-    const matched = [...before.entries()].flatMap(([person, beforeCheckin]) => {
-      const afterCheckin = after.get(person);
-      return afterCheckin ? [{ before: beforeCheckin, after: afterCheckin }] : [];
-    });
-    const anonymous = matched.filter(({ before: a, after: b }) => !a.named || !b.named).length;
-    if (matched.length < MIN_GROUP || anonymous === 1) return [];
-    const measure = (list: { answers: CheckIn['answers'] }[]) => {
-      const applicable = list.filter((checkin) => checkin.answers[action.pulse!] !== 'na');
-      return { difficult: applicable.filter((checkin) => checkin.answers[action.pulse!] === 'partly' || checkin.answers[action.pulse!] === 'notyet').length, total: applicable.length };
-    };
-    const beforeMeasure = measure(matched.map(({ before: checkin }) => checkin));
-    const afterMeasure = measure(matched.map(({ after: checkin }) => checkin));
-    if (!beforeMeasure.total || !afterMeasure.total) return [];
-    return [{ action, pulse: action.pulse!, fromMilestone: action.milestone, toMilestone: nextMilestone.key, before: beforeMeasure, after: afterMeasure }];
-  });
+/** People who chose to give their name to talk about one topic. Their answers are not part of this. */
+export function talkRequests(checkins: CheckIn[], actions: SupportAction[], cohort: NewHire[]) {
+  return checkins.flatMap((checkin) => (checkin.actionFollowUps ?? []).filter((reply) => reply.talk).flatMap((reply) => {
+    const action = actions.find((item) => item.id === reply.actionId);
+    const hire = cohort.find((item) => item.id === checkin.person);
+    const topic = action ? actionTopic(action) : reply.actionId.startsWith(DIFFICULTY) ? difficultyOf(reply.actionId).topic : undefined;
+    return topic && hire ? [{ id: `${checkin.id}:${reply.actionId}`, hire, topic }] : [];
+  }));
 }

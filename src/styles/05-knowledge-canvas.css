@@ -16,7 +16,19 @@
 .rc-user { display: flex; align-items: center; gap: 10px; height: 60px; }
 .rc-user-n { font: 600 13px/18px var(--font-sans); }
 .rc-user-s { font: 400 12px/16px var(--font-sans); color: var(--ink-muted); }
-.rc-dock-slot { width: 300px; }
+.rc-dock-slot { position: relative; width: 300px; }
+.rc-team-notification { position: absolute; z-index: 1; top: 0; right: calc(100% + 8px); width: 190px; }
+.rc-team-notification .rc-dock-text { display: grid; }
+.rc-team-notification .rc-dock-sub { font-size: 11px; }
+.rc-team-notification-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--escalate); box-shadow: 0 0 0 3px var(--escalate-soft); }
+.rc-team-notification-content { overflow: hidden; min-height: 0; font: 400 12px/17px var(--font-sans); color: var(--ink-muted); }
+.rc-team-notification.is-open .rc-team-notification-content { margin-top: 10px; border-top: 1px solid var(--hairline); padding-top: 8px; }
+.rc-team-notification-content p { margin: 0 0 5px; }
+.rc-team-notification-content b { color: var(--ink); font-weight: 600; }
+.rc-team-notification-content em { font-size: 11px; }
+@media (max-width: 640px) {
+  .rc-team-notification { position: relative; top: auto; right: auto; width: 100%; margin-bottom: 8px; }
+}
 
 .rc-hello { position: absolute; left: 50%; top: 196px; width: 760px; margin-left: -380px; text-align: center; transition: opacity 360ms var(--rc-ease), transform 560ms var(--rc-ease-out); }
 .rc-hello-h { margin: 0; font: 400 56px/60px var(--font-display); letter-spacing: -0.01em; color: var(--ink); }
@@ -75,4 +87,3 @@
 @media (prefers-reduced-motion: reduce) {
   .rc-canvas *, .rc-stage *, .rc-cc *, .rc-cc2 * { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
 }
-

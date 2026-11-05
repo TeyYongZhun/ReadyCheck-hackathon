@@ -6,8 +6,6 @@ import { AiLabel, Footnote, Icon, PicAvatar, Person } from '../../components/pri
 
 export interface NeedsGroup {
   theme: Theme; tickets: QueueTicket[]; active: number; oldest: number; overdue: boolean; leaving: boolean;
-  /** Gemini's summary of the waiting questions; falls back to the theme's sample summary. */
-  summary?: string;
 }
 
 function ExpertMenu({ pics, load, suggested, onPick }: { pics: Pic[]; load: Record<string, number>; suggested: string; onPick: (p: Pic) => void }) {
@@ -73,8 +71,8 @@ export function NeedsCard({ group: g, suggested, pics, load, onAssign }: { group
         {g.overdue ? <span className="rc-need-badge">Overdue</span> : null}
       </header>
       <div className="rc-need-ai">
-        <AiLabel>{g.summary ? 'AI summary' : 'Sample summary'}</AiLabel>
-        <p className="rc-need-sum" title={g.summary ?? t.summary}>{g.summary ?? t.summary}</p>
+        <AiLabel>Sample summary</AiLabel>
+        <p className="rc-need-sum" title={t.summary}>{t.summary}</p>
       </div>
       <ul className="rc-need-people" aria-label="People waiting">
         {g.tickets.map((q) => (
