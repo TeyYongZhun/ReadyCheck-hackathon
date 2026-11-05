@@ -66,7 +66,7 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
     window.setTimeout(() => setToast(null), 5200);
   }
 
-  const needSupport = app.reachOut.filter((r) => !r.action).length;
+  const checkinAlerts = app.checkins.filter((checkin) => checkin.isNew).length;
 
   const TABS: [ManagerTab, string, string, number | null, boolean?][] = [
     ['home', 'Home', 'home', null],
@@ -100,16 +100,14 @@ export function CommandCenter({ modeSwitch }: { modeSwitch: ReactNode }) {
       </aside>
 
       <div className="rc-cc2-main">
-        {tab === 'home' ? (
-          <dl className="rc-kpi3">
-            <div className={cx('rc-kpi', waiting.length && 'is-need')}><dt>Need you</dt><dd>{waiting.length}</dd></div>
-            <div className="rc-kpi"><dt>Solved by cards</dt><dd>{solvedByCardsPct}%</dd></div>
-            <div className="rc-kpi is-prog"><dt>In progress</dt><dd>{liveRooms}</dd></div>
-          </dl>
-        ) : null}
+        <dl className="rc-kpi3">
+          <div className={cx('rc-kpi', waiting.length && 'is-need')}><dt>Need you</dt><dd>{waiting.length}</dd></div>
+          <div className="rc-kpi"><dt>Solved by cards</dt><dd>{solvedByCardsPct}%</dd></div>
+          <div className="rc-kpi is-prog"><dt>In progress</dt><dd>{liveRooms}</dd></div>
+        </dl>
 
         {tab === 'home' ? <HomeOverview visible={app.mode === 'manager'} pics={app.experts} waiting={waiting.length} tickets={waiting} rooms={app.roomList} impact={impact}
-            needSupport={needSupport} onOpenNeeds={() => setTab('needs')} onOpenCheckins={() => setTab('checkins')} />
+            checkinAlerts={checkinAlerts} onOpenNeeds={() => setTab('needs')} onOpenCheckins={() => setTab('checkins')} />
           : tab === 'checkins' ? <CheckIns onOpenTrends={() => setTab('trends')} />
           : tab === 'needs' ? (
             <div className="rc-home">

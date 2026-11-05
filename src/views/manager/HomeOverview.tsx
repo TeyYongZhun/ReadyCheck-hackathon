@@ -98,7 +98,7 @@ function WeekPicker({ start, onChange }: { start: Date; onChange: (d: Date) => v
 }
 
 /** Manager Home: the weekly overview. Trend history remains sample data; live counts come from shared state. */
-export function HomeOverview({ visible, pics, waiting, rooms, tickets, impact, needSupport, onOpenNeeds, onOpenCheckins }: {
+export function HomeOverview({ visible, pics, waiting, rooms, tickets, impact, checkinAlerts, onOpenNeeds, onOpenCheckins }: {
   /** False while the employee view is showing: Home stays mounted, but shouldn't call Gemini for nobody. */
   visible: boolean;
   pics: Pic[];
@@ -106,8 +106,8 @@ export function HomeOverview({ visible, pics, waiting, rooms, tickets, impact, n
   rooms: Room[];
   tickets: QueueTicket[];
   impact: Impact;
-  /** New hires who shared a check-in that needs a follow-up nobody has planned yet. */
-  needSupport: number;
+  /** Check-ins submitted recently and still marked as new. */
+  checkinAlerts: number;
   onOpenNeeds: () => void;
   onOpenCheckins: () => void;
 }) {
@@ -286,11 +286,11 @@ export function HomeOverview({ visible, pics, waiting, rooms, tickets, impact, n
           <span className="rc-home-wait-go">Open Needs you<Icon name="chevron" size={14} /></span>
         </button>
       ) : null}
-      {needSupport ? (
+      {checkinAlerts ? (
         <button type="button" className="rc-home-wait" onClick={onOpenCheckins}>
-          <i className="rc-state-dot is-waiting" />
-          <span><b>{needSupport}</b>{needSupport === 1 ? ' new hire may need a follow-up' : ' new hires may need a follow-up'} · {followUps.planned} planned, {followUps.done} done</span>
-          <span className="rc-home-wait-go">Open Check-ins<Icon name="chevron" size={14} /></span>
+          <i className="rc-state-dot is-waiting" aria-hidden />
+          <span><b>{checkinAlerts}</b>{checkinAlerts === 1 ? ' new check-in submitted — please review' : ' new check-ins submitted — please review'}</span>
+          <span className="rc-home-wait-go">Review Check-ins<Icon name="chevron" size={14} /></span>
         </button>
       ) : null}
       <section className="rc-home-card rc-glass rc-glass-2 rc-home-readout" aria-labelledby="rc-home-readout-h">

@@ -5,12 +5,12 @@
 import type { CheckIn, MilestoneKey, NewHire, PulseAnswer, PulseKey, SupportAction } from '../types';
 
 /** `day` is the last day (counted from the join date) on which the milestone check-in is still open. */
-export const CHECKIN_MILESTONES: { key: MilestoneKey; label: string; title: string; order: number; day: number }[] = [
-  { key: 'week1', label: 'Week 1', title: 'Getting Started', order: 1, day: 7 },
-  { key: 'week2', label: 'Week 2', title: 'Early Adjustment', order: 2, day: 14 },
-  { key: 'day30', label: 'Day 30', title: 'Building Competence', order: 3, day: 30 },
-  { key: 'day60', label: 'Day 60', title: 'Growing Independence', order: 4, day: 60 },
-  { key: 'day90', label: 'Day 90', title: 'Successful Integration', order: 5, day: 90 },
+export const CHECKIN_MILESTONES: { key: MilestoneKey; label: string; title: string; focus: string; order: number; day: number }[] = [
+  { key: 'week1', label: 'Week 1', title: 'Getting Started', focus: 'Initial Orientation · Role Clarity · Social Acceptance', order: 1, day: 7 },
+  { key: 'week2', label: 'Week 2', title: 'Early Adjustment', focus: 'Early Adaptation · Task Confidence · Social Integration', order: 2, day: 14 },
+  { key: 'day30', label: 'Day 30', title: 'Building Competence', focus: 'Task Mastery · Organizational Understanding', order: 3, day: 30 },
+  { key: 'day60', label: 'Day 60', title: 'Growing Independence', focus: 'Autonomy · Role Development · Team Contribution', order: 4, day: 60 },
+  { key: 'day90', label: 'Day 90', title: 'Successful Integration', focus: 'Organizational Integration · Belonging · Future Growth', order: 5, day: 90 },
 ];
 
 const DAY = 86_400_000;
@@ -35,15 +35,44 @@ export const currentMilestone = (joinedAt: string, now = Date.now()): MilestoneK
 
 export const milestoneOrder = (milestone: MilestoneKey) => CHECKIN_MILESTONES.find((m) => m.key === milestone)!.order;
 
-export const CORE_PULSE: { key: PulseKey; dimension: string; text: string; short: string; followUp: string }[] = [
-  { key: 'clarity', dimension: 'Role clarity', text: 'I understand what is expected of me at this stage.', short: 'Role clarity', followUp: 'What would help make expectations clearer?' },
-  { key: 'tools', dimension: 'Tools and resources', text: 'I have the tools and resources I need to do my work.', short: 'Tools and resources', followUp: 'What tool or resource would help you do your work?' },
-  { key: 'support', dimension: 'Support', text: "I know where to get help when I'm stuck.", short: 'Support', followUp: 'What makes it difficult to get help?' },
-  { key: 'workload', dimension: 'Workload', text: 'My workload feels manageable.', short: 'Workload', followUp: 'What would make your workload more manageable?' },
-];
+type PulseQuestion = { key: PulseKey; dimension: string; text: string; short: string; followUp: string };
+const PULSE_QUESTIONS: Record<MilestoneKey, PulseQuestion[]> = {
+  week1: [
+    { key: 'clarity', dimension: 'Role Clarity', text: 'I understand what is expected of me in my role.', short: 'Role Clarity', followUp: 'Which part of your role or responsibilities is still unclear?' },
+    { key: 'tools', dimension: 'Tools & Resources', text: 'I have access to the tools and resources I need to get started.', short: 'Tools & Resources', followUp: "Is there anything you haven't been able to access or find yet?" },
+    { key: 'support', dimension: 'Knowing Where to Get Help', text: 'I know who to approach when I need help.', short: 'Getting Help', followUp: 'Have you experienced any difficulty getting help so far?' },
+    { key: 'workload', dimension: 'Social Acceptance', text: 'I feel welcomed and included by my team.', short: 'Social Acceptance', followUp: 'How has your experience been interacting with your team so far?' },
+  ],
+  week2: [
+    { key: 'clarity', dimension: 'Responsibilities & Priorities', text: 'I have a clear understanding of my responsibilities and priorities.', short: 'Responsibilities & Priorities', followUp: 'Are there any responsibilities or priorities you’re still unsure about?' },
+    { key: 'tools', dimension: 'Task Confidence', text: 'I feel increasingly confident handling my assigned tasks.', short: 'Task Confidence', followUp: 'Which tasks do you currently find most challenging?' },
+    { key: 'support', dimension: 'Social Integration', text: 'I feel comfortable communicating with my teammates.', short: 'Social Integration', followUp: 'Is there anything that makes team communication difficult?' },
+    { key: 'workload', dimension: 'Workload', text: 'My workload feels manageable at this stage.', short: 'Workload', followUp: 'Are there any tasks or responsibilities that feel overwhelming?' },
+  ],
+  day30: [
+    { key: 'clarity', dimension: 'Team Goals', text: "I understand how my work contributes to my team's goals.", short: 'Team Goals', followUp: 'Is it clear how your current tasks connect to the team’s priorities?' },
+    { key: 'tools', dimension: 'Task Mastery', text: 'I can complete most of my regular tasks with confidence.', short: 'Task Mastery', followUp: 'Which tasks do you still need more practice or guidance with?' },
+    { key: 'support', dimension: 'Processes & Workflows', text: 'I understand the key processes and workflows relevant to my role.', short: 'Processes & Workflows', followUp: 'Are there any processes you still find confusing?' },
+    { key: 'workload', dimension: 'Useful Feedback', text: 'I receive useful feedback that helps me improve.', short: 'Useful Feedback', followUp: 'What has your feedback experience been like so far?' },
+  ],
+  day60: [
+    { key: 'clarity', dimension: 'Prioritisation', text: 'I can prioritise my responsibilities independently.', short: 'Prioritisation', followUp: 'What makes it difficult to decide which tasks to prioritise?' },
+    { key: 'tools', dimension: 'Handling Challenges', text: 'I can handle most work challenges without constant guidance.', short: 'Handling Challenges', followUp: 'What types of challenges do you still need help with?' },
+    { key: 'support', dimension: 'Team Contribution', text: 'I feel comfortable sharing ideas and contributing to team discussions.', short: 'Team Contribution', followUp: 'Do you feel your ideas and opinions are being heard?' },
+    { key: 'workload', dimension: 'Autonomy', text: 'I have enough autonomy to carry out my responsibilities.', short: 'Autonomy', followUp: 'Are there any decisions you still need more freedom to make?' },
+  ],
+  day90: [
+    { key: 'clarity', dimension: 'Role Confidence', text: 'I feel confident managing my regular responsibilities.', short: 'Role Confidence', followUp: 'Which aspects of your role do you feel least confident about?' },
+    { key: 'tools', dimension: 'Belonging', text: 'I feel like a valued and integrated member of my team.', short: 'Belonging', followUp: 'What has helped you feel part of the team, or made it difficult?' },
+    { key: 'support', dimension: 'Organizational Goals', text: "I understand how my work contributes to the organisation's goals.", short: 'Organizational Goals', followUp: 'Is there anything about the organisation’s direction or goals you’d like to understand better?' },
+    { key: 'workload', dimension: 'Future Growth', text: 'I feel positive about my future growth within the organisation.', short: 'Future Growth', followUp: 'What opportunities or areas of development are you interested in?' },
+  ],
+};
 
-export function questionsForMilestone(_milestone: MilestoneKey) {
-  return CORE_PULSE;
+export const CORE_PULSE = PULSE_QUESTIONS.week1;
+
+export function questionsForMilestone(milestone: MilestoneKey) {
+  return PULSE_QUESTIONS[milestone];
 }
 
 export const PULSE_ANSWERS: { key: PulseAnswer; label: string }[] = [

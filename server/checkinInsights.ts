@@ -1,6 +1,7 @@
 // Milestone check-ins → cohort themes and supportive next steps based only on employee-provided evidence.
 import type { CheckinInsightsRequest, CheckinInsightsResponse } from '../src/api-types.js';
 import type { MilestoneKey, PulseAnswer, PulseKey } from '../src/types.js';
+import { CHECKIN_MILESTONES, questionsForMilestone } from '../src/data/checkins.js';
 import { HttpError, generateJson } from './gemini.js';
 
 const QUESTION_KEYS: PulseKey[] = ['clarity', 'tools', 'support', 'workload'];
@@ -9,7 +10,7 @@ const ANSWERS: PulseAnswer[] = ['yes', 'partly', 'notyet', 'na'];
 const MIN_GROUP = 3;
 const SYSTEM = `You help an HR team offer practical support to new employees at a Malaysian company.
 You receive voluntary onboarding check-ins at five milestones: Week 1 (Getting Started), Week 2 (Early Adjustment), Day 30 (Building Competence), Day 60 (Growing Independence), and Day 90 (Successful Integration).
-Every check-in repeats the same four questions: "I understand what is expected of me at this stage.", "I have the tools and resources I need to do my work.", "I know where to get help when I’m stuck.", and "My workload feels manageable."
+Question wording changes at each milestone. Interpret each answer using that person's milestone and the supplied question guide; do not combine the same answer slot across milestones as if it were the same question.
 Answers are yes, partly, notyet or na (not applicable). Treat not applicable as excluded, not as a negative answer. Adaptive follow-up text appears only for partly/notyet answers. Notes and follow-ups may be in any language. Signals come from questions the employee chose to ask.
 Do not label or classify people as disengaged, likely to resign, at risk, or as having a psychological condition. Do not treat this as performance evaluation or diagnosis. Summarize only evidence and suggest supportive human actions.
 
@@ -61,6 +62,9 @@ function protectAnonymousText(value: unknown, max: number, terms: string[]) {
 const answers = (v: Partial<Record<PulseKey, PulseAnswer>>) => Object.fromEntries(
   QUESTION_KEYS.map((key) => [key, ANSWERS.includes(v?.[key] ?? 'na') ? v?.[key] ?? 'na' : 'na']),
 ) as Record<PulseKey, PulseAnswer>;
+const questionGuide = CHECKIN_MILESTONES.map((milestone) =>
+  `${milestone.label} (${milestone.title}; focus: ${milestone.focus}): ${questionsForMilestone(milestone.key).map((question) => `${question.key}: ${question.text}`).join('; ')}`,
+).join('\n');
 
 export async function checkinInsights(body: Partial<CheckinInsightsRequest>): Promise<CheckinInsightsResponse> {
   const responses = Math.max(0, Math.min(500, Number(body.responses) || 0));
@@ -87,14 +91,18 @@ export async function checkinInsights(body: Partial<CheckinInsightsRequest>): Pr
       signals: (person.signals ?? []).map((signal) => text(signal, 160)).filter(Boolean).slice(0, 5),
     };
   }).filter((person) => person.id && person.named);
-  const totals = Object.fromEntries(QUESTION_KEYS.map((key) => [
-    key,
-    Object.fromEntries(ANSWERS.map((answer) => [answer, Math.max(0, Number(body.totals?.[key]?.[answer]) || 0)])),
+  const totals = Object.fromEntries(MILESTONES.map((milestone) => [
+    milestone,
+    Object.fromEntries(QUESTION_KEYS.map((key) => [
+      key,
+      Object.fromEntries(ANSWERS.map((answer) => [answer, Math.max(0, Number(body.totals?.[milestone]?.[key]?.[answer]) || 0)])),
+    ])),
   ]));
 
   const prompt = [
     `Cohort: ${Math.max(responses, Number(body.cohort) || 0)} new hires, ${responses} checked in.`,
-    `Stable core-question totals: ${JSON.stringify(totals)}`,
+    `Question guide by milestone:\n${questionGuide}`,
+    `Milestone-specific question totals: ${JSON.stringify(totals)}`,
     '<checkins>',
     'Anonymous comments for aggregate themes only; do not identify or quote individuals:', ...anonymousNotes.map((note) => '- ' + note),
     '', 'People who shared their name:', JSON.stringify(people),

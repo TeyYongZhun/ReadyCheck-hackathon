@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { MilestoneKey, PulseAnswer, PulseKey } from '../../types';
 import { useApp } from '../../state/AppState';
-import { CHECKIN_MILESTONES, COHORT, CORE_PULSE, MIN_GROUP, PULSE_ANSWERS, daysSince } from '../../data/checkins';
-import { followUpResults, milestoneParticipation, namedShareOf, pulseCheckinsForView, pulseQuestionsWithDifficulty, totalsOf } from '../../lib/checkins';
+import { CHECKIN_MILESTONES, COHORT, MIN_GROUP, PULSE_ANSWERS, daysSince, questionsForMilestone } from '../../data/checkins';
+import { followUpResults, milestoneParticipation, namedShareOf, pulseCheckinsForView, totalsOf } from '../../lib/checkins';
 import { cx } from '../../lib/util';
 import { Footnote, Icon, PageHead, Person } from '../../components/primitives';
 
@@ -22,15 +22,12 @@ const progressLabel = (status: 'improved' | 'persisted' | 'worsened') => ({
 
 export function CheckIns({ onOpenTrends }: { onOpenTrends: () => void }) {
   const app = useApp();
-  const [pulseMilestone, setPulseMilestone] = useState<MilestoneKey | null>(null);
+  const [pulseMilestone, setPulseMilestone] = useState<MilestoneKey>('week1');
   const latest = [...app.latestCheckins.values()];
   const pulseCheckins = pulseCheckinsForView(app.checkins, latest, pulseMilestone);
   const pulseTotals = totalsOf(pulseCheckins);
   const nameShare = namedShareOf(pulseCheckins);
-  const difficultyQuestions = new Set(pulseQuestionsWithDifficulty(pulseTotals, pulseCheckins.length));
-  const availableMilestones = CHECKIN_MILESTONES.filter((milestone) =>
-    app.checkins.some((checkin) => checkin.milestone === milestone.key),
-  );
+  const selectedMilestone = CHECKIN_MILESTONES.find((milestone) => milestone.key === pulseMilestone)!;
 
   // Headcounts only: how many employees have checked in at the milestone they are currently in.
   const completedCurrent = COHORT.filter((hire) => app.checkins.some((checkin) => checkin.person === hire.id && checkin.milestone === hire.milestone)).length;
@@ -45,6 +42,7 @@ export function CheckIns({ onOpenTrends }: { onOpenTrends: () => void }) {
 
   const results = followUpResults(app.checkins, app.actions, COHORT);
   const milestones = milestoneParticipation(app.checkins, COHORT);
+  const selectedMilestoneState = milestones.find(({ milestone }) => milestone.key === selectedMilestone.key)!.state;
 
   return (
     <div className="rc-home rc-ci rc-ci-dashboard" role="tabpanel" id="rc-pane-checkins" aria-labelledby="rc-tab-checkins">
@@ -80,14 +78,13 @@ export function CheckIns({ onOpenTrends }: { onOpenTrends: () => void }) {
         <header className="rc-panel-head">
           <div>
             <h2 className="rc-panel-h" id="rc-ci-pulse-h">Onboarding pulse</h2>
-            <p className="rc-panel-s">Latest response from each employee across the same four questions.</p>
+            <p className="rc-panel-s">Questions are tailored to each onboarding milestone.</p>
           </div>
           {pulseCheckins.length >= MIN_GROUP ? <span className="rc-ci-response-count"> Total: {pulseCheckins.length} responses</span> : null}
         </header>
         <div className="rc-ci-pulse-controls">
           <div className="rc-seg rc-ci-pulse-seg" role="group" aria-label="Onboarding pulse milestone">
-            <button type="button" aria-pressed={pulseMilestone === null} className={cx(pulseMilestone === null && 'is-on')} onClick={() => setPulseMilestone(null)}>All</button>
-            {availableMilestones.map((milestone) => (
+            {CHECKIN_MILESTONES.map((milestone) => (
               <button key={milestone.key} type="button" aria-pressed={pulseMilestone === milestone.key} className={cx(pulseMilestone === milestone.key && 'is-on')} onClick={() => setPulseMilestone(milestone.key)}>
                 {milestone.label}
               </button>
@@ -97,17 +94,24 @@ export function CheckIns({ onOpenTrends }: { onOpenTrends: () => void }) {
             <p className="rc-ci-name-share">{nameShare.named} of {nameShare.total} shared their name</p>
           ) : null}
         </div>
-        {pulseCheckins.length >= MIN_GROUP ? (
-          <>
-            <ul className="rc-ci-bars">
-              {CORE_PULSE.map((question) => {
-                const counts = pulseTotals[question.key];
-                return (
-                  <li className="rc-ci-pulse-row" key={question.key}>
-                    <div className="rc-ci-pulse-question">
-                      <b>{question.dimension}</b>
-                      <span>{question.text}</span>
-                    </div>
+        <div className="rc-ci-pulse-group">
+          <div className="rc-ci-pulse-title">
+            <b>{selectedMilestone.label} · {selectedMilestone.title}</b>
+            <span className={cx('rc-kb-st', selectedMilestoneState === 'Upcoming' ? 'is-upcoming' : 'is-released')}>
+              <i />{selectedMilestoneState === 'Upcoming' ? 'Upcoming' : 'Released'}
+            </span>
+          </div>
+          <p className="rc-ci-pulse-focus">Focus: {selectedMilestone.focus}</p>
+          <ul className="rc-ci-bars">
+            {questionsForMilestone(selectedMilestone.key).map((question) => {
+              const counts = pulseTotals[question.key];
+              return (
+                <li className="rc-ci-pulse-row" key={question.key}>
+                  <div className="rc-ci-pulse-question">
+                    <b>{question.dimension}</b>
+                    <span>{question.text}</span>
+                  </div>
+                  {pulseCheckins.length >= MIN_GROUP ? (
                     <div className="rc-ci-pulse-data">
                       <span className="rc-ci-bars-t" role="img" aria-label={`${question.dimension}: ${counts.yes} Yes, ${counts.partly} Partly, ${counts.notyet} Not yet, ${counts.na} Not applicable`}>
                         {PULSE_ANSWERS.map((answer) => counts[answer.key] ? <i key={answer.key} className={'is-' + answer.key} style={{ flexGrow: counts[answer.key] }} /> : null)}
@@ -118,22 +122,23 @@ export function CheckIns({ onOpenTrends }: { onOpenTrends: () => void }) {
                         ))}
                       </div>
                     </div>
-                  </li>
-                );
-              })}
-            </ul>
-            <p className="rc-home-note">Partly and Not yet indicate a reported difficulty, not disengagement or resignation risk.</p>
-          </>
-        ) : (
-          <p className="rc-sec-empty">Cohort responses are shown once at least {MIN_GROUP} employees have checked in.</p>
-        )}
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+          {pulseCheckins.length < MIN_GROUP ? (
+            <p className="rc-sec-empty">Response distributions appear once at least {MIN_GROUP} employees have checked in at this milestone.</p>
+          ) : null}
+        </div>
+        <p className="rc-home-note">Partly and Not yet indicate a reported difficulty, not disengagement or resignation risk.</p>
       </section>
 
       <section className="rc-home-card rc-glass rc-glass-2 rc-ci-section" aria-labelledby="rc-ci-timeline-h">
         <header className="rc-panel-head">
           <div>
             <h2 className="rc-panel-h" id="rc-ci-timeline-h">Check-in timeline</h2>
-            <p className="rc-panel-s">Participation among employees who have reached each milestone. Open means some employees are still within the window.</p>
+            <p className="rc-panel-s">Participation among employees currently within each milestone window. Open means the window is active.</p>
           </div>
         </header>
         <ol className="rc-ci-timeline">
@@ -201,7 +206,7 @@ export function CheckIns({ onOpenTrends }: { onOpenTrends: () => void }) {
           ) : (
             <p className="rc-sec-empty">Outcomes appear when a named employee has a later comparable check-in after a completed support action.</p>
           )}
-          <p className="rc-home-note">Only named check-ins are compared, and only the same employee and question with applicable answers. Changes do not prove the support action caused an improvement.</p>
+          <p className="rc-home-note">Only named check-ins are compared, and only the same employee and pulse dimension with applicable answers. Changes do not prove the support action caused an improvement.</p>
         </div>
       </details>
 

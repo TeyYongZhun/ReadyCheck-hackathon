@@ -51,7 +51,7 @@ export function pulseQuestionsWithDifficulty(totals: Totals, total: number): Cor
 
 /**
  * Upcoming: nobody has reached this milestone yet.
- * Open:     at least one person is still inside this milestone's window (or has not reached it yet).
+ * Open:     at least one person is still inside this milestone's window.
  * Closed:   every person's window for this milestone has ended.
  */
 export type MilestoneState = 'Upcoming' | 'Open' | 'Closed';
@@ -62,26 +62,28 @@ export function milestoneParticipation(checkins: CheckIn[], cohort: NewHire[], n
     const age = (hire: NewHire) => daysSince(hire.joinedAt, now);
     const doneIds = new Set(checkins.filter((c) => c.milestone === milestone.key).map((c) => c.person));
 
-    // People who have reached this milestone (their window has opened).
-    const reached = cohort.filter((hire) => age(hire) >= open);
-    const done = reached.filter((hire) => doneIds.has(hire.id)).length;
+    // Participation counts only employees currently inside this milestone's window.
+    const active = cohort.filter((hire) => age(hire) >= open && age(hire) <= close);
+    const done = active.filter((hire) => doneIds.has(hire.id)).length;
     // Only people whose window has already ended and who did not check in count as missed.
     // People still inside the window are not penalised: they can still respond.
-    const missed = reached.filter((hire) => age(hire) > close && !doneIds.has(hire.id)).length;
+    const missed = cohort.filter((hire) => age(hire) > close && !doneIds.has(hire.id)).length;
 
-    const state: MilestoneState = !reached.length
+    const state: MilestoneState = !cohort.some((hire) => age(hire) >= open)
       ? 'Upcoming'
       : cohort.every((hire) => age(hire) > close)
         ? 'Closed'
         : 'Open';
 
-    return { milestone, eligible: reached.length, done, missed, state };
+    return { milestone, eligible: active.length, done, missed, state };
   });
 }
 
 export function totalsOf(list: CheckIn[]): Totals {
   const t = Object.fromEntries(CORE_PULSE.map((p) => [p.key, { yes: 0, partly: 0, notyet: 0, na: 0 }])) as Totals;
-  list.forEach((c) => CORE_PULSE.forEach((p) => { t[p.key][c.answers[p.key]] += 1; }));
+  list.forEach((checkin) => questionsForMilestone(checkin.milestone).forEach((question) => {
+    t[question.key][checkin.answers[question.key]] += 1;
+  }));
   return t;
 }
 
@@ -102,7 +104,7 @@ export function reachOutList(cohort: NewHire[], latest: Map<string, CheckIn>, si
     .map(({ rank: _rank, ...r }) => r);
 }
 
-/** Completed follow-ups with a later, named check-in: compare only the same stable questions. */
+/** Completed follow-ups compare named answers for the same pulse dimension at a later milestone. */
 export function followUpResults(checkins: CheckIn[], actions: SupportAction[], cohort: NewHire[]) {
   const done = actions.filter((x) => x.person && x.status === 'done');
   return done.flatMap((x) => {
@@ -112,7 +114,9 @@ export function followUpResults(checkins: CheckIn[], actions: SupportAction[], c
       .sort((a, b) => milestoneOrder(a.milestone) - milestoneOrder(b.milestone))[0];
     const hire = cohort.find((h) => h.id === x.person);
     if (!before?.named || !after?.named || !hire) return [];
-    const dimensions = CORE_PULSE.flatMap<DimensionProgress>((p) => {
+    const dimensions = questionsForMilestone(before.milestone).flatMap<DimensionProgress>((p) => {
+      const laterQuestion = questionsForMilestone(after.milestone).find((question) => question.key === p.key);
+      if (!laterQuestion) return [];
       const beforeScore = SCORE[before.answers[p.key]];
       const afterScore = SCORE[after.answers[p.key]];
       if (beforeScore === null || beforeScore === 2 || afterScore === null) return [];

@@ -39,7 +39,7 @@ ReadyCheck reads three signals, all of them voluntary:
 | Signal | Where it comes from |
 |---|---|
 | **Stuck** | The questions a new hire chooses to ask, and whether a card or a person solved them |
-| **Onboarding pulse** | Five milestone check-ins with the same four questions; Yes, Partly, Not yet or Not applicable, plus optional follow-up prompts and an open note |
+| **Onboarding pulse** | Five milestone check-ins with questions tailored to each stage; Yes, Partly, Not yet or Not applicable, plus optional follow-up prompts and an open note |
 | **Acted on** | A completed support action and how the same employee's reported difficulty changed at a later milestone |
 
 **For new employees**
@@ -48,12 +48,12 @@ ReadyCheck reads three signals, all of them voluntary:
 - "You're not the only one: 9 new hires asked about this this week", so asking feels normal.
 - If it doesn't help, tap **Need human expert**. The question becomes a ticket.
 - Chat with the assigned expert in a **ticket room**. If it's still not fixed, book a **1:1 session**.
-- **Onboarding check-ins:** Five milestones: Week 1 (Getting Started), Week 2 (Early Adjustment), Day 30 (Building Competence), Day 60 (Growing Independence), and Day 90 (Successful Integration). In the demo, use the **Demo** button to switch the displayed milestone. Every milestone repeats the same four questions on role clarity, tools and resources, support, and workload. Answers are Yes, Partly, Not yet or Not applicable. Partly/Not yet reveals a relevant optional follow-up; an optional open note accepts any language. Employees choose to share their name with Rachel for direct help or share anonymously for cohort insights; cohort responses are shown only after at least 3 employees check in. A submitted check-in can be edited for 5 minutes.
+- **Onboarding check-ins:** Five milestones: Week 1 (Getting Started), Week 2 (Early Adjustment), Day 30 (Building Competence), Day 60 (Growing Independence), and Day 90 (Successful Integration), each with questions tailored to its stage. In the demo, use the **Demo** button to switch the displayed milestone. Answers are Yes, Partly, Not yet or Not applicable. Partly/Not yet reveals a relevant optional follow-up; an optional open note accepts any language. Employees choose to share their name with Rachel for direct help or share anonymously for cohort insights; cohort responses are shown only after at least 3 employees check in. A submitted check-in can be edited for 5 minutes.
 
 **For managers and HR**
-- **Check-ins:** a focused onboarding journey view with completed and pending participation, four consistent pulse questions, and a milestone timeline. Illustrative sample data is labeled.
+- **Check-ins:** a focused onboarding journey view with completed and pending participation, milestone-specific pulse questions, and a milestone timeline. Pulse responses are grouped by milestone. Illustrative sample data is labeled.
 - **Onboarding pulse:** cohort response distributions are shown only after at least 3 employees check in. Partly and Not yet describe reported difficulties, not employee risk. Check-ins are for onboarding support, not performance evaluation.
-- **Follow-up outcomes:** for completed support actions, managers can see whether a named employee's earlier difficulty improved, persisted or worsened at a later milestone. Only the same employee and question are compared; changes do not prove the action caused an improvement.
+- **Follow-up outcomes:** for completed support actions, managers can see whether a named employee's earlier difficulty improved, persisted or worsened when the exact same question appears at a later milestone. Changes do not prove the action caused an improvement.
 - **Needs you:** questions are grouped into topics (for example "VPN" or "Payroll"), with an AI summary of why people are stuck.
 - **One click** assigns an expert to everyone stuck on that topic.
 - **Knowledge base:** when a problem is solved, AI writes a new answer card. A manager approves it, so the next new hire gets the answer instantly. Each live card shows how many new hires it has answered since.
@@ -67,10 +67,10 @@ Version 1 focused on helping new employees get answers and connecting unresolved
 | Area | Version 1 | Added or improved in Version 2 |
 |---|---|---|
 | **Employee questions** | Ask a question, get one recommended knowledge card, and request a human expert if it does not help. | Adds multilingual questions and translations of approved answer cards, with an option to show the original. |
-| **Onboarding check-ins** | Not included. | Adds five milestones with the same four questions at every stage, optional adaptive follow-ups, multilingual open notes, named or anonymous sharing, and a 5-minute edit window. |
-| **Onboarding journey** | Not included. | Shows participation, response distributions for the four consistent dimensions, and progress across milestones. Anonymous cohort response details require at least 3 check-ins. |
+| **Onboarding check-ins** | Not included. | Adds five milestones with stage-specific questions, optional adaptive follow-ups, multilingual open notes, named or anonymous sharing, and a 5-minute edit window. |
+| **Onboarding journey** | Not included. | Shows participation, milestone-specific response distributions, and progress across milestones. Anonymous cohort response details require at least 3 check-ins. |
 | **Manager follow-up** | Managers review grouped question topics and assign experts to unresolved questions. | Longitudinal outcomes use named check-ins only; anonymous feedback is excluded from person-level comparisons. |
-| **Follow-up impact** | Not included. | Shows whether a previously reported difficulty improved, persisted or worsened at a later comparable milestone, without claiming the action caused the change. |
+| **Follow-up impact** | Not included. | Compares answers only when the same question wording appears at a later milestone, without claiming the action caused the change. |
 | **Business case** | Basic Home and Trends views for onboarding questions. | Adds estimated expert time saved, time to an answer, and an editable business case in RM. |
 | **Trends** | Shows which question topics come up most by day, week, or month. | Keeps question-theme analysis separate from the onboarding check-in journey. |
 

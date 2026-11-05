@@ -103,6 +103,18 @@ export function CheckInSheet({ onClose, onSubmitted }: { onClose: () => void; on
   const close = useRef(onClose); close.current = onClose;
   const done = questions.every((p) => answers[p.key]);
 
+  function fillQuickDemo() {
+    const sampleAnswers: PulseAnswer[] = ['yes', 'partly', 'yes', 'yes'];
+    const toolsQuestion = questions.find((question) => question.key === 'tools');
+    setAnswers(Object.fromEntries(questions.slice(0, sampleAnswers.length).map((question, index) => [
+      question.key,
+      sampleAnswers[index],
+    ])));
+    setFollowUps(toolsQuestion ? { [toolsQuestion.key]: "I haven't received the login credentials for our user testing platform." } : {});
+    setNote('');
+    setSubmitError('');
+  }
+
   useEffect(() => {
     setAnswers(start?.answers ?? {});
     setFollowUps(start?.followUps ?? {});
@@ -191,7 +203,10 @@ export function CheckInSheet({ onClose, onSubmitted }: { onClose: () => void; on
           {named === true ? <p className="rc-ci-preview"><Icon name="ready" size={14} /><span><b>{MANAGER} will see:</b> {preview}</span></p> : null}
           {submitError ? <p className="rc-ci-error" role="alert">{submitError}</p> : null}
           <div className="rc-ci-foot">
-            <button type="submit" className="rc-btn-primary is-sm" disabled={!done || named === null || !!submitError}><Icon name="check" size={16} strokeWidth={2.2} />{start ? 'Save changes' : 'Submit check-in'}</button>
+            <div className="rc-ci-submit-group">
+              <button type="submit" className="rc-btn-primary is-sm" disabled={!done || named === null || !!submitError}><Icon name="check" size={16} strokeWidth={2.2} />{start ? 'Save changes' : 'Submit check-in'}</button>
+              <button type="button" className="rc-ci-quick-demo" onClick={fillQuickDemo}>Quick demo · Fill sample answers</button>
+            </div>
             <span className="rc-ci-foot-s">{start ? 'Edits are available for 5 minutes after sending.' : `${questions.filter((p) => answers[p.key]).length} of ${questions.length} answered`}</span>
             <div className="rc-ci-demo-switch">
               <button type="button" className="rc-btn-ghost is-sm" aria-expanded={milestoneMenuOpen} aria-controls="rc-ci-demo-milestones" onClick={() => setMilestoneMenuOpen((open) => !open)}>

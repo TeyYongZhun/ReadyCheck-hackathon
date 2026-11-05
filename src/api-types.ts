@@ -67,7 +67,7 @@ export interface MaterialExtractResponse {
 export interface CheckinInsightsRequest {
   cohort: number;
   responses: number;
-  totals: Record<CorePulseKey, Record<PulseAnswer, number>>;
+  totals: Record<MilestoneKey, Record<CorePulseKey, Record<PulseAnswer, number>>>;
   anonymousNotes: string[];
   people: { id: string; named: true; milestone: MilestoneKey; answers: Record<PulseKey, PulseAnswer>; followUps?: Partial<Record<PulseKey, string>>; note?: string; signals: string[] }[];
 }
