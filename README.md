@@ -40,39 +40,43 @@ ReadyCheck reads three signals, all of them voluntary:
 |---|---|
 | **Stuck** | The questions a new hire chooses to ask, and whether a card or a person solved them |
 | **Onboarding pulse** | Five milestone check-ins with questions tailored to each stage; Yes, Partly, Not yet or Not applicable, plus optional follow-up prompts and an open note |
-| **Acted on** | A completed support action and how the same employee's reported difficulty changed at a later milestone |
+| **Acted on** | Whether a support action was completed and, at the next check-in, whether the people who reported the difficulty say it is better |
 
-**For new employees**
-- Ask a question in plain words, in **English, Bahasa Melayu, 中文 or தமிழ்**.
+**For new employees** - - Ask a question in plain words
 - AI gives **one answer card**: a short video, a policy summary, or a step-by-step checklist. Asked in another language, the approved card is translated and labelled, with "Show original".
-- "You're not the only one: 9 new hires asked about this this week", so asking feels normal.
 - If it doesn't help, tap **Need human expert**. The question becomes a ticket.
 - Chat with the assigned expert in a **ticket room**. If it's still not fixed, book a **1:1 session**.
-- **Onboarding check-ins:** Five milestones: Week 1 (Getting Started), Week 2 (Early Adjustment), Day 30 (Building Competence), Day 60 (Growing Independence), and Day 90 (Successful Integration), each with questions tailored to its stage. In the demo, use the **Demo** button to switch the displayed milestone. Answers are Yes, Partly, Not yet or Not applicable. Partly/Not yet reveals a relevant optional follow-up; an optional open note accepts any language. Employees choose to share their name with Rachel for direct help or share anonymously for cohort insights; cohort responses are shown only after at least 3 employees check in. A submitted check-in can be edited for 5 minutes.
+- **Onboarding check-ins:** five milestones: Week 1 (Getting Started), Week 2 (Early Adjustment), Day 30 (Building Competence), Day 60 (Growing Independence) and Day 90 (Successful Integration), each with four questions tailored to its stage. Answers are Yes, Partly, Not yet or Not applicable. Partly or Not yet reveals an optional follow-up prompt, and an optional open note accepts any language. Employees choose to share by name or anonymously, and can edit a submitted check-in for 5 minutes.
+- **"Is this better now?":** at the next check-in, employees are asked about each difficulty they reported and can answer Better or Not yet. With Not yet they can ask to talk to their manager, which shares their name and the topic but not their answers.
+- **Team updates:** a notification tells the cohort what changed because of their feedback, with a link to a guide if there is one.
 
 **For managers and HR**
-- **Check-ins:** a focused onboarding journey view with completed and pending participation, milestone-specific pulse questions, and a milestone timeline. Pulse responses are grouped by milestone. Illustrative sample data is labeled.
-- **Onboarding pulse:** cohort response distributions are shown only after at least 3 employees check in. Partly and Not yet describe reported difficulties, not employee risk. Check-ins are for onboarding support, not performance evaluation.
-- **Follow-up outcomes:** for completed support actions, managers can see whether a named employee's earlier difficulty improved, persisted or worsened when the exact same question appears at a later milestone. Changes do not prove the action caused an improvement.
 - **Needs you:** questions are grouped into topics (for example "VPN" or "Payroll"), with an AI summary of why people are stuck.
 - **One click** assigns an expert to everyone stuck on that topic.
+- **Check-ins:** completed and pending check-ins, difficulties that still need a response, reported improvement, a milestone timeline and how many people shared their name. Illustrative sample data is labelled.
+- **Onboarding pulse:** response distributions for each milestone, shown only after at least 3 employees check in. Partly and Not yet describe reported difficulties, not employee risk. Check-ins are for onboarding support, not performance evaluation.
+- **Support priorities:** a difficulty reported by at least 3 employees becomes a priority with four steps: **AI insight → Manager action → Tell your cohort → Follow-up outcome**.
+- **Follow-up responses:** what employees said when asked if things improved, shown once at least 3 people reply. Names appear only on named check-ins. A reply does not prove that the action caused the change.
+- **Requests to talk:** employees who chose to give their name to talk about a topic.
 - **Knowledge base:** when a problem is solved, AI writes a new answer card. A manager approves it, so the next new hire gets the answer instantly. Each live card shows how many new hires it has answered since.
-- **Home:** expert time saved, time to an answer, and a **business case** in RM with every assumption on screen and editable.
-- **Trends:** see which topics come up most, by day, week or month.
+- **Home:** open and overdue tickets, expert time saved, time to an answer, and an AI suggestion for what to do next.
+- **Trends:** see which topics come up most, by day, week, month or all time. Click a theme to see its bottleneck, the evidence and a recommended action.
 
 ## Version 1 vs Version 2
 
-Version 1 focused on helping new employees get answers and connecting unresolved questions to a human expert. Version 2 keeps that core workflow and adds an onboarding support and follow-up loop.
+Version 1 helped new employees get answers and connected unresolved questions to a human expert. Version 2 keeps that workflow and adds a second loop: it asks new hires how onboarding is going at each milestone, helps managers respond, and checks whether the response helped.
 
-| Area | Version 1 | Added or improved in Version 2 |
+| Area | Version 1 | Version 2 |
 |---|---|---|
-| **Employee questions** | Ask a question, get one recommended knowledge card, and request a human expert if it does not help. | Adds multilingual questions and translations of approved answer cards, with an option to show the original. |
-| **Onboarding check-ins** | Not included. | Adds five milestones with stage-specific questions, optional adaptive follow-ups, multilingual open notes, named or anonymous sharing, and a 5-minute edit window. |
-| **Onboarding journey** | Not included. | Shows participation, milestone-specific response distributions, and progress across milestones. Anonymous cohort response details require at least 3 check-ins. |
-| **Manager follow-up** | Managers review grouped question topics and assign experts to unresolved questions. | Longitudinal outcomes use named check-ins only; anonymous feedback is excluded from person-level comparisons. |
-| **Follow-up impact** | Not included. | Compares answers only when the same question wording appears at a later milestone, without claiming the action caused the change. |
-| **Business case** | Basic Home and Trends views for onboarding questions. | Adds estimated expert time saved, time to an answer, and an editable business case in RM. |
-| **Trends** | Shows which question topics come up most by day, week, or month. | Keeps question-theme analysis separate from the onboarding check-in journey. |
+| **Employee questions** | Ask a question, get one recommended card, and request a human expert if it doesn't help. | Adds questions in Bahasa Melayu, Chinese and Tamil, with approved cards translated and "Show original". |
+| **Onboarding check-ins** | Not included. | Five milestones with stage-specific questions, optional follow-up prompts and notes in any language, named or anonymous sharing, and a 5-minute edit window. |
+| **Manager view of onboarding** | Not included. Managers only saw questions and tickets. | New **Check-ins** tab with the onboarding pulse, milestone timeline and sharing overview. Cohort details need at least 3 check-ins. |
+| **Responding to difficulties** | Assign an expert to a stuck topic. | Keeps expert assignment and adds **Support priorities** for cohort-level difficulties: AI insight, manager action, and a message to the cohort. |
+| **Closing the loop** | Not included. | Employees get a team update and are asked "Is this better now?" at their next check-in. Managers see reported improvement and requests to talk, without claiming the action caused the change. |
+| **Home** | Open tickets, overdue tickets, share resolved by cards, and active rooms. | Adds expert time saved and time to an answer. Solved by cards and In progress sit in the strip above every tab. |
+| **Trends** | Which question topics come up most, by day, week, month or all time. | Clicking a theme now shows its bottleneck, evidence and a recommended action. Question themes stay separate from check-ins. |
+| **Knowledge base** | Approve AI-drafted cards. | Each live card also shows how many new hires it has answered. |
+| **Quality and demo tools** | Not included. | Adds `npm run eval`, a 53-question answer-quality test, and a `?presenter` status pill for live demos. |
 
 ## Workflow
 
@@ -90,11 +94,12 @@ Version 1 focused on helping new employees get answers and connecting unresolved
 Alongside it runs the milestone check-in loop:
 
 1. **New hire** sends a check-in, named or anonymous.
-2. **Manager / HR** reviews the cohort pulse and participation across milestones.
-3. **For named check-ins**, completed support actions can be compared with the employee's answers at a later milestone.
-4. **Follow-up outcomes** show changes in the same reported difficulty without attributing causation.
+2. **Manager / HR** sees any difficulty that at least 3 employees reported as a support priority.
+3. **Manager / HR** plans and completes an action, then publishes a short message to the cohort.
+4. **New hire** is asked "Is this better now?" at their next check-in, if they reported that difficulty.
+5. **Manager / HR** sees how many people say it is better once at least 3 have replied.
 
-This keeps check-in feedback focused on onboarding experience and longitudinal follow-up; recurring question themes remain on the Trends page.
+Question themes stay on the Trends page; check-in feedback stays on the Check-ins page.
 
 ## How we use AI
 
@@ -114,6 +119,8 @@ We use **three Google Gemini models**, each picked for its job:
 | Turns a solved chat, or an uploaded PDF, into a draft knowledge card | The manager approves, edits or discards it |
 | Plays the expert in the demo chat (labelled "AI expert (demo)") | In real use, real experts reply |
 
+**Live AI and demo presets.** Everything in the tables above calls Gemini. In this prototype, the AI insights, suggested actions and cohort message drafts on the Check-ins page, and the theme analysis on the Trends page, are written in advance to show the intended experience. They do not call Gemini yet.
+
 **How an answer is found**
 1. **Search:** Embedding 001 compares the question with every knowledge-base card and keeps the closest ones.
 2. **Rerank:** Flash-Lite puts those candidates in order of how well they answer the question.
@@ -122,12 +129,16 @@ We use **three Google Gemini models**, each picked for its job:
 
 **Responsible by design**
 - Uses only questions employees **choose** to ask and check-ins they **choose** to send. No monitoring, no emotion detection, no "flight risk" score.
-- The employee chooses whether to share a check-in with their name or anonymously. Individual follow-up comparisons use named check-ins only; cohort response details require at least 3 check-ins. Check-ins can be edited for 5 minutes after submission.
-- The AI never predicts resignation or judges performance. It cites the person's own answers and suggests a human step; a manager decides.
+- The employee chooses whether to share a check-in by name or anonymously, and can edit it for 5 minutes after sending.
+- Anonymous means anonymous to the manager. The system keeps the link so it can ask that person the follow-up question, and the manager never sees who was asked.
+- Cohort answers need at least 3 check-ins. Replies on a shared topic need at least 3 replies, and stay hidden if exactly one reply is unidentified, so it can't be worked out from the others.
+- The AI never predicts resignation or judges performance. AI suggests; a manager decides.
 - Every AI output is **labelled** in the app.
 - Nothing AI writes reaches employees until a **manager approves** it. Translations are of approved cards only.
 - Cards shown to future hires name the expert, never the employee or their room.
 - The API key stays on the server, never in the browser.
+
+For the full AI pipeline, see [technicalREADME.md](technicalREADME.md).
 
 ## Tech stack
 
@@ -229,20 +240,21 @@ docker run --rm --name readycheck -p 3000:3000 `
 
 Open http://localhost:3000. The container serves the Vite build and the `/api/*` endpoints from the same process. If `GEMINI_API_KEY` is omitted, the app still works with its local fallback behaviour, but AI-powered responses are unavailable.
 
-## Try it (2-minute demo)
+## Try it (demo walkthrough)
 
 Open the site with `?presenter` to see a small "Gemini live" status pill at the top (only you see it).
 
 1. On the employee view, ask *"Boleh saya bawa cuti tahunan ke tahun depan?"*. The approved leave card comes back in Bahasa Melayu, labelled as translated.
-2. Click **Database access** and press Enter. There is no approved answer, so ReadyCheck says so. Click **Need human expert**; the ticket flies to **My tickets**.
-3. In the side menu, click **Start check-in**. Answer *Not yet* to the first statement, add a note, choose **Share with my name**, and submit.
-4. Switch to **Manager → Check-ins**. Mira is at the top with her answers and her open ticket. Click **Plan: 15-min priorities chat**. Back on the employee side, Mira sees it.
-5. **Needs you → Assign Marcus**, open the room and click **▶ Play sample conversation**. Answer **Yes** to "Did Marcus solve your problem?"; a knowledge card is drafted.
-6. In **Knowledge base**, approve the new card. On **Home**, see expert time saved and the business case.
+2. Click **Demo 2** and press Enter. There is no approved answer, so ReadyCheck says so. Click **Need human expert**; the ticket flies to **My tickets**.
+3. In the side menu, click **Demo Week 1 check-in**, then **Start check-in**. Click **Quick demo · Fill sample answers**, choose **Share with my name**, and submit.
+4. Switch to **Manager → Check-ins**. Under **Support priorities**, open the **Role Clarity** steps: generate the AI insight, click **Plan action** and save it, click **Mark action complete**, then **Review and publish** the message to the cohort.
+5. Back on the employee side, open the check-in card and click **Another week**. The notification shows what the team changed. Start the Week 2 check-in, fill the sample answers and submit; it asks "Is this better now?" about the Tools & Resources difficulty from Week 1. On **Check-ins**, **Reported improvement** moves from 2 of 3 to 3 of 4.
+6. In **Needs you**, assign the suggested expert, open the room and click **▶ Play sample conversation**. Answer **Yes** to "Did [expert] solve your problem?"; a knowledge card is drafted.
+7. In **Knowledge base**, approve the new card. On **Home**, see expert time saved and time to an answer.
 
 ## Testing
 
-`npm run eval` sends 53 questions through the real answer pipeline and writes [docs/eval-results.md](docs/eval-results.md): English and Malay/Chinese/Tamil questions the library covers, out-of-scope questions that must get "I don't know", prompt injections, and small talk. It reports accuracy per group, invented cards (the server rejects any card id that wasn't retrieved), language detection, latency and tokens per question. On a free-tier key it paces itself to stay under the per-minute limit.
+`npm run eval` sends 53 questions through the real answer pipeline and writes [docs/eval-results.md](docs/eval-results.md): English and Malay/Chinese/Tamil questions the library covers, out-of-scope questions that must get "I don't know", prompt injections, and small talk. It reports accuracy per group, invented cards (the server rejects any card id that wasn't retrieved), language detection, latency and tokens per question. On a free-tier key it paces itself to stay under the per-minute limit. The latest run (3 November 2026) got 52 of 53 right and showed no invented cards.
 
 ## Repository structure
 
@@ -258,7 +270,7 @@ ReadyCheck-hackathon/
 │   ├── materialExtract.ts     # Knowledge card from an uploaded PDF
 │   ├── themeSummary.ts        # Why new hires are stuck on a topic
 │   ├── homeSummary.ts         # Manager briefing on the Home dashboard
-│   ├── checkinInsights.ts     # Check-in themes and one follow-up per named person
+│   ├── checkinInsights.ts     # Check-in themes and summaries (kept, not used by the app yet)
 │   ├── translate.ts           # Approved card → Malay, Chinese or Tamil
 │   ├── warmup.ts              # Embeds the library on page load
 │   └── production.ts          # Server used by the Docker container
@@ -270,9 +282,11 @@ ReadyCheck-hackathon/
 │   │   ├── employee/          # Ask a question, answer cards, My tickets, milestone check-ins
 │   │   └── manager/           # Home, Needs you, Check-ins, Ticket room, Trends, Knowledge base, Expert team
 │   ├── components/            # Answer cards, ticket room chat, shared UI
-│   ├── state/AppState.tsx     # Shared data: tickets, rooms, knowledge cards
-│   └── data/                  # Sample answers, topics, experts, demo chats
-├── docs/                      # Workflow and architecture diagrams
+│   ├── lib/                   # Answer flow, API calls, check-in and impact maths
+│   ├── state/AppState.tsx     # Shared data: tickets, rooms, knowledge cards, check-ins
+│   └── data/                  # Sample answers, topics, experts, demo chats, check-ins
+├── docs/                      # Workflow and architecture diagrams, eval results
+├── technicalREADME.md         # How the AI pipeline works, in detail
 ├── .env.example               # Template for the Gemini API key and the 3 model names
 ├── Dockerfile                 # Production container definition
 ├── vercel.json                # Vercel deployment settings
@@ -281,7 +295,9 @@ ReadyCheck-hackathon/
 
 ## Limitations
 
-- This is a prototype. Charts, counts and the check-in cohort use **sample data**; the business case is an estimate with editable assumptions.
+- This is a prototype. Charts, counts and the check-in cohort use **sample data**. Expert time saved assumes 12 minutes per question.
+- AI text on the Check-ins and Trends pages is a demo preset, not live Gemini output.
+- The Check-ins page is cohort-level. It does not yet show a named employee's individual answers or notes.
 - Data resets when the page is refreshed (no database or login yet).
 - In the demo, AI plays the expert in chats.
 - A free-tier Gemini key allows about 15 requests a minute, which a busy demo can reach. Use a paid-tier key for live use (paid-tier prompts are also not used to improve Google's models).

@@ -25,8 +25,8 @@ The server-only Gemini client is implemented in [`server/gemini.ts`](./server/ge
 | Environment variable | Default | Purpose |
 |---|---|---|
 | `GEMINI_API_KEY` | none | Required for Gemini API calls |
-| `GEMINI_CHAT_MODEL` | `gemini-3.5-flash-lite` | Employee answers, room replies, reranking and dashboard summaries |
-| `GEMINI_SUMMARY_MODEL` | `gemini-3.6-flash` | Solved-room summaries and PDF material extraction |
+| `GEMINI_CHAT_MODEL` | `gemini-3.5-flash-lite` | Employee answers, room replies, reranking, card translation and dashboard summaries |
+| `GEMINI_SUMMARY_MODEL` | `gemini-3.6-flash` | Solved-room summaries, PDF material extraction and check-in insights |
 | `GEMINI_EMBEDDING_MODEL` | `gemini-embedding-001` | Text embeddings for semantic retrieval |
 | `RAG_MIN_SIMILARITY` | `0.55` | Minimum cosine similarity for a retrieval candidate |
 
@@ -330,30 +330,129 @@ The following rules are enforced:
 
 ## 11. Onboarding milestone check-ins
 
-Check-ins are scheduled at five onboarding milestones: Week 1 (Getting Started), Week 2 (Early Adjustment), Day 30 (Building Competence), Day 60 (Growing Independence), and Day 90 (Successful Integration). Each milestone has its own four questions and focus areas, defined in [`src/data/checkins.ts`](./src/data/checkins.ts). In the demo check-in sheet, the Demo button lets a presenter switch which milestone is displayed; it does not advance the employee's real onboarding schedule. Answers are `yes`, `partly`, `notyet` or `na`; Partly/Not yet can include an optional question-specific follow-up, and there is one optional open note in any language. The employee explicitly chooses whether the check-in carries their name. State lives in [`src/state/AppState.tsx`](./src/state/AppState.tsx), and the maths is in [`src/lib/checkins.ts`](./src/lib/checkins.ts). `na` is excluded from difficulty comparisons. Manager pulse distributions are grouped by milestone; follow-up outcomes compare only exact repeated question wording.
+Check-ins run at five milestones: Week 1 (Getting Started), Week 2 (Early Adjustment), Day 30 (Building Competence), Day 60 (Growing Independence) and Day 90 (Successful Integration). Each milestone has its own four questions, defined in [`src/data/checkins.ts`](./src/data/checkins.ts). A milestone is derived from the employee's join date.
 
-- **Check-ins page:** participation metrics, pulse distributions from each employee's latest check-in, the five milestone timeline, and expandable follow-up outcomes. The illustrative cohort is labeled as sample data. Pulse and milestone response counts are withheld until at least `MIN_GROUP` (3) check-ins are available.
-- **Progress tracking:** comparisons require a completed support action and named check-ins at the action milestone and a later milestone. Only the same employee's answers to exactly repeated question wording are compared. Existing difficulties are labeled improved, unchanged or worsened; `na` is excluded. Anonymous check-ins never enter individual comparisons, and the page does not claim that an action caused a change.
+Answers are `yes`, `partly`, `notyet` or `na`. A `partly` or `notyet` answer can carry an optional question-specific follow-up, and each check-in has one optional open note in any language. The employee chooses whether the check-in carries their name, and can edit it for 5 minutes after the first submission.
 
-The server-side check-in insight endpoint ([`server/checkinInsights.ts`](./server/checkinInsights.ts)) remains available for compatibility and accepts the same four stable-question totals. It is not called by the current Check-ins page, which does not display an AI-generated organizational themes section. If invoked, its aggregate comment processing is threshold-gated, person-level context is limited to check-ins explicitly marked named, and employee display names are not sent. It returns:
+State lives in [`src/state/AppState.tsx`](./src/state/AppState.tsx).
 
-```ts
-{ themes: { name, count, summary, action }[]; people: { id, why, action }[] }
+### 11.1 Rules decided by code
+
+Every count, threshold and privacy rule is deterministic and lives in [`src/lib/checkins.ts`](./src/lib/checkins.ts). AI does not calculate or override any of them.
+
+| Rule | Behaviour |
+|---|---|
+| Pulse distributions | Use each person's latest check-in at the selected milestone, and appear only from `MIN_GROUP` (3) check-ins |
+| Participation | Counts employees inside a milestone's window. Only people whose window has ended without a check-in count as missed, and small groups show the state without counts |
+| Support priorities | A question becomes a priority when at least 3 employees answer `partly` or `notyet` at that milestone |
+| Who gets a follow-up | Each `partly` or `notyet` from a person's previous check-in is asked about once at their next check-in, plus their own completed actions |
+| Follow-up visibility | Replies on a shared topic need at least 3 replies, and stay hidden if exactly one is unidentified, because it could be worked out from the others |
+| Names on replies | Shown only for named check-ins. Anonymous replies are sorted by content so their order gives nothing away |
+| Requests to talk | Show the employee's name and topic only, never their answers |
+
+### 11.2 Follow-up instead of comparison
+
+Question wording changes at each milestone on purpose, so answers from two milestones cannot be compared directly. A difficulty is followed up by asking about it: "Is this better now?", answered `better` or `notyet`.
+
+Anonymous check-ins take part too. The system keeps the link between a person and their answers so it can ask the right people, and the manager never sees who was asked. Reported improvement is the number of `better` replies out of all replies to a published cohort action. The page does not claim that an action caused a change.
+
+## 12. What if: real AI on Check-ins and Trends
+
+This section is the design for running the Check-ins and Trends insights on Gemini. Code still owns every number and privacy rule from section 11. AI only writes words about results that code has already approved for showing, and a manager decides what happens to them.
+
+```text
+Check-ins stored on the server
+  -> code counts answers and applies the 3-person rule
+  -> server redacts anonymous text
+  -> Gemini returns structured JSON for one difficulty
+  -> server validates and trims the output
+  -> manager reviews and edits
+  -> manager publishes to the cohort
 ```
 
-The server drops unknown ids, caps counts at the number of responses and trims every string. The prompt forbids emotion inference, resignation prediction, scores and performance judgement. The current Check-ins page uses deterministic comparisons from `src/lib/checkins.ts`; it does not display the endpoint's themes or named summaries.
+### 12.1 What AI would do
 
-## 12. Multilingual answers
+| Step on the page | Source | Model | AI output |
+|---|---|---|---|
+| AI insight | `POST /api/checkin-insights` | 3.6 Flash | `summary`: one neutral sentence about the difficulty |
+| Manager action | Same response | 3.6 Flash | `action`: one concrete step for the whole cohort, 20 words at most |
+| Tell your cohort | Same response | 3.6 Flash | `note`: one past-tense sentence for employees, 25 words at most, no names |
+| Named support | Same response, named check-ins only | 3.6 Flash | `people[]`: the evidence and one small human step |
+| Trends analysis | New `POST /api/trend-insight` | 3.5 Flash-Lite | `friction`, `signal` and `action` for one theme |
+
+The first four rows use [`server/checkinInsights.ts`](./server/checkinInsights.ts), which is already built and registered, though the Check-ins page does not call it yet. It returns:
+
+```ts
+{
+  themes: { name: string; count: number; summary: string; action: string; note: string }[];
+  people: { id: string; why: string; action: string }[];
+}
+```
+
+Passing `focusDimension` and `focusMilestone` limits the response to the one difficulty the manager opened. Cohort-level calls would send an empty `people` list.
+
+### 12.2 Check-in guardrails
+
+Already in the endpoint:
+
+- Comments are ignored below 3 responses, and themes are dropped below that number.
+- Emails, links, ticket or employee IDs, phone numbers and likely names are redacted from anonymous notes before Gemini sees them, and again on the way out.
+- Only check-ins explicitly marked named can appear in `people`, and unknown ids are dropped. Employee display names are not sent.
+- The prompt forbids emotion inference, resignation prediction, labelling people as at risk, performance judgement, quoting comments and combining different milestone questions.
+- Employee text sits inside `<checkins>` and is treated as input, not instructions.
+- Output is schema-constrained at `temperature: 0.2`, then trimmed to length limits.
+
+Added by the page:
+
+- The counts on screen always come from code, never from the model's `count`.
+- Every result carries an AI label. The cohort message must be reviewed before it is published.
+- AI never plans, completes or publishes an action. Each needs a manager's click, and internal plans are never shown to employees.
+- If Gemini is unavailable, the page still shows the counts and the manager writes the action and message themselves.
+
+### 12.3 Trends analysis
+
+Gemini already assigns a theme to each question in `/api/answer`, so the bars need no new classification. Clicking a theme would send one request:
+
+```ts
+// Request
+{ theme: ThemeKey; frame: 'daily' | 'weekly' | 'monthly' | 'all'; count: number; share: number; questions: string[] }
+
+// Response
+{ friction: string; signal: string; action: string }
+```
+
+These map to the Onboarding Bottleneck, Supporting Evidence and Recommended Management Action panels.
+
+- Code supplies `count` and `share`. Gemini explains the pattern and does not produce numbers.
+- `questions` holds question text only, with the same redaction as anonymous notes and no employee identifiers.
+- A theme with fewer than 3 questions in the time frame is not analysed, so one person's question can't be singled out. A theme with none shows "No bottleneck found" without calling Gemini.
+- The prompt limits `signal` to patterns found in the supplied questions, and the output is schema-constrained like the other endpoints.
+- Results are cached by theme, time frame and count, so clicking between bars doesn't spend the rate limit.
+
+### 12.4 Changes needed first
+
+| Change | Why it matters |
+|---|---|
+| Store check-ins and questions in a database | Insights need every employee's data, but session state lives in one browser |
+| Build the request on the server | The endpoint takes totals and `anonymousNotes` from the caller. In real use that would send anonymous text through the manager's browser, so the browser should send only the milestone and dimension |
+| Enforce the rules in section 11.1 on the server | They run in the browser today, where a real user could bypass them |
+| Fix redaction for Chinese and Tamil | `anonymousTerms()` treats every run of Chinese or Tamil characters as a name, so most of a note becomes `[redacted]` and Gemini can't use it. These notes need redaction that targets names |
+| Set `theme.name` from the request | Redaction also runs on the model's theme name. If a note contains a capitalised word such as "Tools", the name no longer matches `focusDimension`, the theme is dropped and the request returns 502 |
+| Support regenerate | At `temperature: 0.2` a repeat call returns nearly the same text. Sending earlier drafts in an `avoid` field gives the manager a real alternative |
+| Add check-in cases to `npm run eval` | Test for leaked names, risk language, prompt injection in notes, and notes in all four languages |
+| Use a paid-tier Gemini key | Employee feedback should not be used to improve Google's models |
+
+## 13. Multilingual answers
 
 `/api/answer` also returns `lang` (`en`, `ms`, `zh`, `ta`). Heading and chat replies come back in that language, and the fixed "I don't know" reply has one approved wording per language. Retrieval needs no change because `gemini-embedding-001` embeds across languages.
 
 When `lang` isn't English, the client calls `POST /api/translate-card` ([`server/translate.ts`](./server/translate.ts)). The server flattens the card's own strings into an array, Gemini translates them one for one, and the server rejects a reply with a different count or an empty string where the source had text. Numbers, RM amounts, page numbers and system names stay unchanged. The card is labelled "Translated by AI from the approved English card", with "Show original". If translation fails, the English card is shown.
 
-## 13. Evaluation
+## 14. Evaluation
 
 `npm run eval` ([`scripts/eval.ts`](./scripts/eval.ts), cases in [`scripts/eval-set.json`](./scripts/eval-set.json)) calls `answer()` directly, so it tests the same embeddings, rerank, decision and validation as the app. It writes [`docs/eval-results.md`](./docs/eval-results.md). On a free-tier key, `EVAL_DELAY_MS` (default 9000) paces it, and a 429 is waited out and retried rather than counted as a wrong answer.
 
-## 14. Current limitations
+## 15. Current limitations
 
 This implementation is optimized for the hackathon demo:
 
