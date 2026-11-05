@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620" font-family="Segoe UI, Inter, Helvetica Neue, Arial, sans-serif" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="1026" viewBox="0 0 1100 1026" font-family="Segoe UI, Inter, Helvetica Neue, Arial, sans-serif" role="img" aria-labelledby="t d">
   <title id="t">ReadyCheck workflow</title>
-  <desc id="d">1. A new hire asks a question. 2. AI gives one answer card; if solved, done. 3. If not, the new hire taps Need human expert and a ticket is created. 4. AI groups tickets by topic and summarises them. 5. A manager assigns an expert in one click. 6. The new hire and expert chat in a ticket room; if not fixed, a 1:1 session is offered. 7. When solved, AI writes a knowledge card. 8. The manager approves it, and the next new hire with the same question gets that card first.</desc>
+  <desc id="d">1. A new hire asks a question. 2. AI gives one answer card; if solved, done. 3. If not, the new hire taps Need human expert and a ticket is created. 4. AI groups tickets by topic and summarises them (enhanced in Version 2). 5. A manager assigns an expert in one click. 6. The new hire and expert chat in a ticket room; if not fixed, a 1:1 session is offered. 7. When solved, AI writes a knowledge card. 8. The manager approves, edits or discards it (enhanced in Version 2). The next new hire with the same question gets that card first. Phase 3 is the 2.0 release and runs alongside, with its own steps 1 to 7. 1. The system opens a check-in at each onboarding milestone. 2. The new hire sends it, named or anonymous. 3. When at least 3 people report the same difficulty, AI suggests an insight, an action and a message. 4. The manager decides and completes the action. 5. The manager tells the cohort what changed. 6. At the next check-in, people who reported the difficulty say if it is better; with Not yet they can ask to talk to the manager. 7. The manager sees what improved once at least 3 people reply. The next milestone opens a new check-in.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#0d1719"/>
@@ -42,16 +42,18 @@
       .flow { stroke: #6f8682; stroke-width: 2; fill: none; }
       .lbl { fill: #8fa39d; font-size: 11px; }
       .phase { fill: #6f8682; font-size: 11px; font-weight: 700; letter-spacing: .14em; }
-      .hire { fill: #5fe3b5; } .ai { fill: #a3b8ff; } .mgr { fill: #ffad5c; }
+      .hire { fill: #5fe3b5; } .ai { fill: #a3b8ff; } .mgr { fill: #ffad5c; } .sys { fill: #d5e0dc; }
+      .v2box { fill: #ffd76a; fill-opacity: .14; stroke: #ffd76a; stroke-opacity: .75; }
+      .v2txt { fill: #ffd76a; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; }
     </style>
   </defs>
 
   <!-- Background -->
-  <rect width="1100" height="620" rx="24" fill="url(#bg)"/>
-  <rect width="1100" height="620" rx="24" fill="url(#dots)" opacity=".7"/>
-  <rect width="1100" height="620" rx="24" fill="url(#glowA)"/>
-  <rect width="1100" height="620" rx="24" fill="url(#glowB)"/>
-  <rect x=".75" y=".75" width="1098.5" height="618.5" rx="23.5" fill="none" stroke="#223236"/>
+  <rect width="1100" height="1026" rx="24" fill="url(#bg)"/>
+  <rect width="1100" height="1026" rx="24" fill="url(#dots)" opacity=".7"/>
+  <rect width="1100" height="1026" rx="24" fill="url(#glowA)"/>
+  <rect width="1100" height="1026" rx="24" fill="url(#glowB)"/>
+  <rect x=".75" y=".75" width="1098.5" height="1024.5" rx="23.5" fill="none" stroke="#223236"/>
 
   <!-- Header -->
   <g transform="translate(48 40)">
@@ -59,7 +61,7 @@
     <path d="M8 15.5l4.5 4.5L22 10.5" stroke="#04211a" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     <text x="44" y="21" fill="#eef5f2" font-size="22" font-weight="700">How ReadyCheck works</text>
   </g>
-  <text x="48" y="96" fill="#9fb1ab" font-size="14">From a stuck new hire to a fix that the next new hire gets instantly.</text>
+  <text x="48" y="96" fill="#9fb1ab" font-size="14">From a stuck new hire to a fix that the next new hire gets instantly, plus milestone check-ins.</text>
 
   <!-- Phase labels -->
   <text class="phase" x="48" y="140">PHASE 1 · ASK AND ESCALATE</text>
@@ -103,6 +105,8 @@
   <text class="who ai" x="864" y="194">AI · GEMINI</text>
   <text class="title" x="864" y="219">Spots the themes</text>
   <text class="sub" x="864" y="240">Groups tickets, summarises why</text>
+  <rect x="980" y="182" width="62" height="18" rx="9" class="v2box"/>
+  <text class="v2txt" x="1011" y="194.5" text-anchor="middle">ENHANCED</text>
 
   <!-- Row 1 connectors -->
   <path class="flow" d="M254 210 H306" marker-end="url(#a)"/>
@@ -155,6 +159,8 @@
   <text class="who mgr" x="66" y="424">MANAGER / HR</text>
   <text class="title" x="66" y="449">Approves the card</text>
   <text class="sub" x="66" y="470">Or edits / discards it</text>
+  <rect x="182" y="412" width="62" height="18" rx="9" class="v2box"/>
+  <text class="v2txt" x="213" y="424.5" text-anchor="middle">ENHANCED</text>
 
   <!-- Row 2 connectors -->
   <path class="flow" d="M846 440 H794" marker-end="url(#a)"/>
@@ -175,12 +181,111 @@
   <text x="178" y="331" fill="#9fb1ab" font-size="12">Next new hire with this</text>
   <text x="178" y="345" fill="#9fb1ab" font-size="12">question gets the card</text>
 
+  <!-- ===== Phase 3: milestone check-ins ===== -->
+  <text class="phase" x="48" y="612">PHASE 3 · CHECK IN AND FOLLOW UP</text>
+  <rect x="304" y="599" width="84" height="18" rx="9" class="v2box"/>
+  <text class="v2txt" x="346" y="611.5" text-anchor="middle">2.0 RELEASE</text>
+  <line x1="400" y1="608" x2="866" y2="608" stroke="#1f2e32"/>
+  <text class="lbl" x="1052" y="612" text-anchor="end">runs alongside phases 1 and 2</text>
+
+  <!-- Phase 3 step 1 -->
+  <g filter="url(#shadow)"><rect class="card" x="48" y="634" width="206" height="96" rx="16"/></g>
+  <rect x="48" y="634" width="206" height="4" rx="2" class="sys"/>
+  <circle cx="48" cy="634" r="15" class="sys" stroke="#0b1214" stroke-width="3"/>
+  <text class="num" x="48" y="639" text-anchor="middle">1</text>
+  <text class="who sys" x="66" y="666">SYSTEM</text>
+  <text class="title" x="66" y="691">Opens a check-in</text>
+  <text class="sub" x="66" y="712">At each onboarding milestone</text>
+
+  <!-- Phase 3 step 2 -->
+  <g filter="url(#shadow)"><rect class="card" x="314" y="634" width="206" height="96" rx="16"/></g>
+  <rect x="314" y="634" width="206" height="4" rx="2" class="hire"/>
+  <circle cx="314" cy="634" r="15" class="hire" stroke="#0b1214" stroke-width="3"/>
+  <text class="num" x="314" y="639" text-anchor="middle">2</text>
+  <text class="who hire" x="332" y="666">NEW HIRE</text>
+  <text class="title" x="332" y="691">Sends a check-in</text>
+  <text class="sub" x="332" y="712">Named or anonymous</text>
+
+  <!-- Phase 3 step 3 -->
+  <g filter="url(#shadow)"><rect class="card" x="580" y="634" width="206" height="96" rx="16"/></g>
+  <rect x="580" y="634" width="206" height="4" rx="2" class="ai"/>
+  <circle cx="580" cy="634" r="15" class="ai" stroke="#0b1214" stroke-width="3"/>
+  <text class="num" x="580" y="639" text-anchor="middle">3</text>
+  <text class="who ai" x="598" y="666">AI · SUGGESTS</text>
+  <text class="title" x="598" y="691">Drafts a response</text>
+  <text class="sub" x="598" y="712">Insight, action and message</text>
+
+  <!-- Phase 3 step 4 -->
+  <g filter="url(#shadow)"><rect class="card" x="846" y="634" width="206" height="96" rx="16"/></g>
+  <rect x="846" y="634" width="206" height="4" rx="2" class="mgr"/>
+  <circle cx="846" cy="634" r="15" class="mgr" stroke="#0b1214" stroke-width="3"/>
+  <text class="num" x="846" y="639" text-anchor="middle">4</text>
+  <text class="who mgr" x="864" y="666">MANAGER / HR</text>
+  <text class="title" x="864" y="691">Completes the action</text>
+  <text class="sub" x="864" y="712">AI suggests, manager decides</text>
+
+  <!-- Row 3 connectors -->
+  <path class="flow" d="M254 682 H306" marker-end="url(#a)"/>
+  <path class="flow" d="M520 682 H572" marker-end="url(#a)"/>
+  <text class="lbl" x="550" y="672" text-anchor="middle">3+ report</text>
+  <path class="flow" d="M786 682 H838" marker-end="url(#a)"/>
+
+  <!-- Row 3 → Row 4 (rounded elbow) -->
+  <path class="flow" d="M1052 682 H1066 Q1076 682 1076 692 V832 Q1076 842 1066 842 H1058" marker-end="url(#a)"/>
+
+  <!-- Phase 3 step 5 -->
+  <g filter="url(#shadow)"><rect class="card" x="846" y="794" width="206" height="96" rx="16"/></g>
+  <rect x="846" y="794" width="206" height="4" rx="2" class="mgr"/>
+  <circle cx="846" cy="794" r="15" class="mgr" stroke="#0b1214" stroke-width="3"/>
+  <text class="num" x="846" y="799" text-anchor="middle">5</text>
+  <text class="who mgr" x="864" y="826">MANAGER / HR</text>
+  <text class="title" x="864" y="851">Tells the cohort</text>
+  <text class="sub" x="864" y="872">Publishes what changed</text>
+
+  <!-- Phase 3 step 6 -->
+  <g filter="url(#shadow)"><rect class="card" x="580" y="794" width="206" height="96" rx="16"/></g>
+  <rect x="580" y="794" width="206" height="4" rx="2" class="hire"/>
+  <circle cx="580" cy="794" r="15" class="hire" stroke="#0b1214" stroke-width="3"/>
+  <text class="num" x="580" y="799" text-anchor="middle">6</text>
+  <text class="who hire" x="598" y="826">NEW HIRE</text>
+  <text class="title" x="598" y="851">Says if it’s better</text>
+  <text class="sub" x="598" y="872">Asked at the next check-in</text>
+
+  <!-- Phase 3 step 7 -->
+  <g filter="url(#shadow)"><rect class="card" x="314" y="794" width="206" height="96" rx="16"/></g>
+  <rect x="314" y="794" width="206" height="4" rx="2" class="mgr"/>
+  <circle cx="314" cy="794" r="15" class="mgr" stroke="#0b1214" stroke-width="3"/>
+  <text class="num" x="314" y="799" text-anchor="middle">7</text>
+  <text class="who mgr" x="332" y="826">MANAGER / HR</text>
+  <text class="title" x="332" y="851">Sees what improved</text>
+  <text class="sub" x="332" y="872">Shown once 3+ people reply</text>
+
+  <!-- Row 4 connectors -->
+  <path class="flow" d="M846 842 H794" marker-end="url(#a)"/>
+  <path class="flow" d="M580 842 H528" marker-end="url(#a)"/>
+
+  <!-- Not yet branch -->
+  <path d="M683 890 V922" stroke="#ffad5c" stroke-width="2" fill="none" marker-end="url(#aO)"/>
+  <text class="lbl" x="693" y="913">not yet</text>
+  <rect x="593" y="928" width="180" height="34" rx="17" fill="#ffad5c" fill-opacity=".12" stroke="#ffad5c" stroke-opacity=".7"/>
+  <text x="683" y="950" text-anchor="middle" fill="#ffad5c" font-size="13.5" font-weight="600">Asks to talk to manager</text>
+
+  <!-- Check-in loop: G → A -->
+  <path d="M314 842 H161 Q151 842 151 832 V738" stroke="#5fe3b5" stroke-width="2" stroke-dasharray="6 6" fill="none" marker-end="url(#aG)"/>
+  <rect x="160" y="758" width="130" height="58" rx="12" fill="#0b1214" fill-opacity=".85" stroke="#5fe3b5" stroke-opacity=".35"/>
+  <text x="170" y="779" fill="#5fe3b5" font-size="12.5" font-weight="700">The loop closes</text>
+  <text x="170" y="797" fill="#9fb1ab" font-size="12">Next milestone opens</text>
+  <text x="170" y="811" fill="#9fb1ab" font-size="12">a new check-in</text>
+
   <!-- Footer -->
-  <line x1="48" y1="580" x2="1052" y2="580" stroke="#1f2e32"/>
+  <line x1="48" y1="986" x2="1052" y2="986" stroke="#1f2e32"/>
   <g font-size="12.5" fill="#cfdcd7">
-    <circle cx="56" cy="600" r="5.5" class="hire"/><text x="68" y="604">New hire</text>
-    <circle cx="146" cy="600" r="5.5" class="ai"/><text x="158" y="604">AI (Gemini)</text>
-    <circle cx="256" cy="600" r="5.5" class="mgr"/><text x="268" y="604">Manager / HR</text>
+    <circle cx="56" cy="1006" r="5.5" class="hire"/><text x="68" y="1010">New hire</text>
+    <circle cx="146" cy="1006" r="5.5" class="ai"/><text x="158" y="1010">AI</text>
+    <circle cx="206" cy="1006" r="5.5" class="mgr"/><text x="218" y="1010">Manager / HR</text>
+    <circle cx="326" cy="1006" r="5.5" class="sys"/><text x="338" y="1010">System</text>
+    <rect x="404" y="997" width="62" height="18" rx="9" class="v2box"/><text class="v2txt" x="435" y="1009.5" text-anchor="middle">ENHANCED</text>
+    <text x="474" y="1010">Improved in 2.0</text>
   </g>
-  <text x="1052" y="604" text-anchor="end" fill="#8fa39d" font-size="12.5">employee feedback → AI finds themes → HR reviews → support action</text>
+  <text x="1052" y="1010" text-anchor="end" fill="#8fa39d" font-size="12.5">employee feedback → AI finds themes → HR reviews → support action → follow-up</text>
 </svg>
