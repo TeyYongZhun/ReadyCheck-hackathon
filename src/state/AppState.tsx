@@ -317,12 +317,12 @@ function useAppStateValue() {
   }
 
   /** A manager chose a follow-up for one person, or for a cohort theme. */
-  function planAction({ owner, ...input }: { person?: string; theme?: string; label: string; milestone: CheckIn['milestone']; owner?: string }) {
+  function planAction({ owner, ...input }: { person?: string; theme?: string; pulse?: PulseKey; label: string; publicNote?: string; milestone: CheckIn['milestone']; owner?: string }) {
     const x: SupportAction = { ...input, id: uid('act'), owner: owner ?? 'Rachel Goh', when: 'Today ' + nextSlot().split('–')[0], status: 'planned' };
     setActions((l) => [...l.filter((a) => !(a.status === 'planned' && ((x.person && a.person === x.person && a.milestone === x.milestone) || (x.theme && a.theme === x.theme)))), x]);
   }
-  function completeAction(id: string) {
-    setActions((l) => l.map((a) => (a.id === id ? { ...a, status: 'done' } : a)));
+  function completeAction(id: string, publication?: { publicNote?: string; publishedAt?: string }) {
+    setActions((l) => l.map((a) => (a.id === id ? { ...a, ...publication, status: 'done' } : a)));
   }
 
   /** Mira's own ticket signals, from questions she chose to ask. Stable wording (no minute counts) so the AI isn't re-asked every tick. */

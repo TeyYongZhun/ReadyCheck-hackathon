@@ -183,8 +183,11 @@ export interface SupportAction {
   id: string;
   person?: string;
   theme?: string;
+  pulse?: PulseKey;
   label: string; owner: string; when: string;
   status: 'planned' | 'done';
+  publicNote?: string;
+  publishedAt?: string;
   /** The milestone it was planned in, so the next check-in can show whether it helped. */
   milestone: MilestoneKey;
 }

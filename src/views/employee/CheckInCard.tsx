@@ -1,14 +1,22 @@
 // The employee's milestone check-in: four ratings, conditional follow-ups, an optional note, and a privacy choice.
 // Voluntary by design. The sheet says exactly what the manager will see before anything is sent.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { PulseAnswer, PulseKey } from '../../types';
+import type { PulseAnswer, PulseKey, SupportAction } from '../../types';
 import { ME, useApp } from '../../state/AppState';
-import { CHECKIN_EDIT_WINDOW_MS, CHECKIN_MILESTONES, MIN_GROUP, PULSE_ANSWERS, questionsForMilestone } from '../../data/checkins';
+import { CHECKIN_EDIT_WINDOW_MS, CHECKIN_MILESTONES, MIN_GROUP, PULSE_ANSWERS, milestoneOrder, questionsForMilestone } from '../../data/checkins';
 import { cx } from '../../lib/util';
 import { Icon } from '../../components/primitives';
 
 const MANAGER = 'Rachel';
 const LABEL = Object.fromEntries(PULSE_ANSWERS.map((a) => [a.key, a.label])) as Record<PulseAnswer, string>;
+
+function nextQuestionFor(action: SupportAction) {
+  if (!action.pulse) return undefined;
+  const next = CHECKIN_MILESTONES
+    .filter((milestone) => milestoneOrder(milestone.key) > milestoneOrder(action.milestone))
+    .sort((a, b) => a.order - b.order)[0];
+  return next ? questionsForMilestone(next.key).find((question) => question.key === action.pulse) : undefined;
+}
 
 /** Side-menu card: due, sent, and any follow-up the manager planned for Mira. */
 export function CheckInEntry({ onOpen }: { onOpen: () => void }) {
@@ -50,6 +58,11 @@ export function CheckInEntry({ onOpen }: { onOpen: () => void }) {
   const remainingSeconds = Math.ceil(remaining / 1000);
   const editTime = `${Math.floor(remainingSeconds / 60)}:${String(remainingSeconds % 60).padStart(2, '0')}`;
   const followUp = app.actions.filter((a) => a.person === ME.id && a.milestone === app.demoMilestone).slice(-1)[0];
+  const cohortFollowUp = app.actions
+    .filter((a) => !a.person && !a.pulse && a.status === 'done' && a.theme && milestoneOrder(a.milestone) < milestoneOrder(app.demoMilestone))
+    .filter((a) => questionsForMilestone(app.demoMilestone).some((question) => question.key === a.theme))
+    .slice(-1)[0];
+  const publishedResponses = app.actions.filter((action) => !action.person && action.status === 'done' && action.publicNote && milestoneOrder(action.milestone) <= milestoneOrder(app.demoMilestone));
   const milestone = CHECKIN_MILESTONES.find((m) => m.key === app.demoMilestone)!;
   return (
     <section className={cx('rc-ci-entry rc-glass rc-glass-1', !sent && 'is-due', sent?.isNew && 'is-new', sent && collapsed && 'is-collapsed')} aria-labelledby="rc-ci-entry-h">
@@ -77,6 +90,26 @@ export function CheckInEntry({ onOpen }: { onOpen: () => void }) {
               <span>{MANAGER} {followUp.status === 'done' ? 'did' : 'planned'}: <b>{followUp.label}</b>{followUp.status === 'done' ? '' : ' · ' + followUp.when}</span>
             </p>
           ) : null}
+          {cohortFollowUp ? (
+            <p className="rc-ci-entry-f rc-ci-cohort-response">
+              <Icon name="users" size={14} />
+              <span><b>Your team responded:</b> {cohortFollowUp.label} <em>· this check-in asks whether it helped</em></span>
+            </p>
+          ) : null}
+          {publishedResponses.length ? (
+            <div className="rc-ci-said-did">
+              <b>You said, we did</b>
+              {publishedResponses.map((action) => {
+                const question = nextQuestionFor(action);
+                return (
+                  <div key={action.id}>
+                    <p>Based on feedback from your cohort, we made this update: <strong>{action.publicNote}</strong></p>
+                    {question ? <span>At your next check-in we'll ask: {question.text} — did it help?</span> : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
           {sent
             ? canEdit
               ? <button type="button" className="rc-quiet rc-ci-entry-b" onClick={onOpen}><Icon name="edit" size={14} />Edit answers</button>
@@ -93,6 +126,12 @@ export function CheckInSheet({ onClose, onSubmitted }: { onClose: () => void; on
   const start = app.checkins.find((checkin) => checkin.person === ME.id && checkin.milestone === app.demoMilestone);
   const questions = questionsForMilestone(app.demoMilestone);
   const milestone = CHECKIN_MILESTONES.find((m) => m.key === app.demoMilestone)!;
+  const cohortFollowUp = app.actions
+    .filter((a) => !a.person && !a.pulse && a.status === 'done' && a.theme && milestoneOrder(a.milestone) < milestoneOrder(app.demoMilestone))
+    .filter((a) => questions.some((question) => question.key === a.theme))
+    .slice(-1)[0];
+  const publishedResponses = app.actions.filter((action) => !action.person && action.status === 'done' && action.publicNote && milestoneOrder(action.milestone) <= milestoneOrder(app.demoMilestone));
+  const publishedResponseFor = (pulse: PulseKey) => publishedResponses.find((action) => action.pulse === pulse && milestoneOrder(action.milestone) < milestoneOrder(app.demoMilestone));
   const [answers, setAnswers] = useState<Partial<Record<PulseKey, PulseAnswer>>>(start?.answers ?? {});
   const [followUps, setFollowUps] = useState<Partial<Record<PulseKey, string>>>(start?.followUps ?? {});
   const [note, setNote] = useState(start?.note ?? '');
@@ -168,9 +207,16 @@ export function CheckInSheet({ onClose, onSubmitted }: { onClose: () => void; on
           <p className="rc-ci-s">About 1–2 minutes · no right or wrong answers.</p>
         </header>
         <form className="rc-ci-form" onSubmit={send}>
+          {cohortFollowUp ? (
+            <p className="rc-ci-entry-f rc-ci-cohort-response">
+              <Icon name="users" size={14} />
+              <span><b>Your team responded:</b> {cohortFollowUp.label} <em>We’ll check whether this helped in this check-in.</em></span>
+            </p>
+          ) : null}
           {questions.map((p, i) => (
             <fieldset key={p.key} className="rc-ci-q">
               <legend className="rc-ci-qt"><span>{p.dimension}</span>{p.text}</legend>
+              {publishedResponseFor(p.key) ? <p className="rc-ci-said-did-prompt">Last time, some of you said this was difficult. We made an update. Is it better now?</p> : null}
               <div className="rc-seg rc-ci-seg" role="radiogroup" aria-label={p.text}>
                 {PULSE_ANSWERS.map((a, j) => (
                   <button key={a.key} ref={i === 0 && j === 0 ? first : null} type="button" role="radio" aria-checked={answers[p.key] === a.key}
@@ -195,10 +241,10 @@ export function CheckInSheet({ onClose, onSubmitted }: { onClose: () => void; on
                 <b>Share with my name</b><span>{MANAGER} can see your answers and offer direct help.</span>
               </button>
               <button type="button" role="radio" aria-checked={named === false} className={cx('rc-ci-opt', named === false && 'is-on')} onClick={() => setNamed(false)}>
-                <b>Share anonymously</b><span>Your feedback contributes to cohort insights.</span>
+                <b>Share anonymously</b><span>Your name and answers stay out of individual manager views; themes contribute to cohort insights.</span>
               </button>
             </div>
-            <p className="rc-ci-privacy-note">Anonymous cohort insights are only shown when at least {MIN_GROUP} people have checked in.</p>
+            <p className="rc-ci-privacy-note">Anonymous themes and response counts are only shown when at least {MIN_GROUP} people have checked in.</p>
           </fieldset>
           {named === true ? <p className="rc-ci-preview"><Icon name="ready" size={14} /><span><b>{MANAGER} will see:</b> {preview}</span></p> : null}
           {submitError ? <p className="rc-ci-error" role="alert">{submitError}</p> : null}

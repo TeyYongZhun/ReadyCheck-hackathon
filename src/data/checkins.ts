@@ -146,5 +146,6 @@ export const SEED_CHECKINS: CheckIn[] = [
 export const SEED_ACTIONS: SupportAction[] = [
   { id: 'act-fn', person: 'fn', label: '15-min priorities chat', owner: 'Rachel Goh', when: checkinDateDaysAgo(5), status: 'done', milestone: 'week1' },
   { id: 'act-kc', person: 'kc', label: 'Ask Ana to follow up on the VPN certificate', owner: 'Ana Okafor', when: checkinDateDaysAgo(5), status: 'done', milestone: 'week1' },
+  { id: 'act-cohort-tools', theme: 'tools', label: 'Updated the access guide and shared it with the cohort', owner: 'Rachel Goh', when: checkinDateDaysAgo(1), status: 'done', milestone: 'week1' },
   { id: 'act-jw', theme: 'Workload concerns', label: 'Spread week-1 trainings over two weeks', owner: 'Sofia Hart', when: 'Next cohort', status: 'planned', milestone: 'week1' },
 ];

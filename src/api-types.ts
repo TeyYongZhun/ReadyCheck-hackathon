@@ -67,11 +67,13 @@ export interface MaterialExtractResponse {
 export interface CheckinInsightsRequest {
   cohort: number;
   responses: number;
+  focusDimension?: string;
+  focusMilestone?: MilestoneKey;
   totals: Record<MilestoneKey, Record<CorePulseKey, Record<PulseAnswer, number>>>;
   anonymousNotes: string[];
   people: { id: string; named: true; milestone: MilestoneKey; answers: Record<PulseKey, PulseAnswer>; followUps?: Partial<Record<PulseKey, string>>; note?: string; signals: string[] }[];
 }
 export interface CheckinInsightsResponse {
-  themes: { name: string; count: number; summary: string; action: string }[];
+  themes: { name: string; count: number; summary: string; action: string; note: string }[];
   people: { id: string; why: string; action: string }[];
 }

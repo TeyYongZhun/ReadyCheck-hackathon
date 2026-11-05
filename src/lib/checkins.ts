@@ -1,7 +1,7 @@
 // Check-in maths shared by the employee card, the manager's Check-ins tab and Home.
 // Only voluntary inputs: check-ins people chose to send and the questions they chose to ask.
 import type { CheckIn, CorePulseKey, MilestoneKey, NewHire, PulseAnswer, SupportAction } from '../types';
-import { CHECKIN_MILESTONES, CORE_PULSE, daysSince, milestoneOrder, questionsForMilestone, windowOf } from '../data/checkins';
+import { CHECKIN_MILESTONES, CORE_PULSE, MIN_GROUP, daysSince, milestoneOrder, questionsForMilestone, windowOf } from '../data/checkins';
 
 export type Totals = Record<CorePulseKey, Record<PulseAnswer, number>>;
 
@@ -124,5 +124,34 @@ export function followUpResults(checkins: CheckIn[], actions: SupportAction[], c
       return [{ p, from: before.answers[p.key], to: after.answers[p.key], status }];
     });
     return dimensions.length ? [{ action: x, hire, afterMilestone: after.milestone, dimensions }] : [];
+  });
+}
+
+/** Group-level comparison for a published response and the next milestone's same pulse dimension. */
+export function groupFollowUp(checkins: CheckIn[], actions: SupportAction[]) {
+  return actions.filter((action) => action.status === 'done' && action.pulse).flatMap((action) => {
+    const nextMilestone = CHECKIN_MILESTONES.find((milestone) => milestone.order === milestoneOrder(action.milestone) + 1);
+    if (!nextMilestone) return [];
+    const at = (milestone: MilestoneKey) => {
+      const byPerson = new Map<string, CheckIn>();
+      checkins.filter((checkin) => checkin.milestone === milestone).forEach((checkin) => byPerson.set(checkin.person, checkin));
+      return byPerson;
+    };
+    const before = at(action.milestone);
+    const after = at(nextMilestone.key);
+    const matched = [...before.entries()].flatMap(([person, beforeCheckin]) => {
+      const afterCheckin = after.get(person);
+      return afterCheckin ? [{ before: beforeCheckin, after: afterCheckin }] : [];
+    });
+    const anonymous = matched.filter(({ before: a, after: b }) => !a.named || !b.named).length;
+    if (matched.length < MIN_GROUP || anonymous === 1) return [];
+    const measure = (list: { answers: CheckIn['answers'] }[]) => {
+      const applicable = list.filter((checkin) => checkin.answers[action.pulse!] !== 'na');
+      return { difficult: applicable.filter((checkin) => checkin.answers[action.pulse!] === 'partly' || checkin.answers[action.pulse!] === 'notyet').length, total: applicable.length };
+    };
+    const beforeMeasure = measure(matched.map(({ before: checkin }) => checkin));
+    const afterMeasure = measure(matched.map(({ after: checkin }) => checkin));
+    if (!beforeMeasure.total || !afterMeasure.total) return [];
+    return [{ action, pulse: action.pulse!, fromMilestone: action.milestone, toMilestone: nextMilestone.key, before: beforeMeasure, after: afterMeasure }];
   });
 }

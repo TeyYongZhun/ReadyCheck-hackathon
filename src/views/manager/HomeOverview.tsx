@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Pic, QueueTicket, Room } from '../../types';
 import { HOME, QUEUE, ROOMS, SLA_MINUTES, THEMES_BY_KEY } from '../../data/command';
-import { useApp } from '../../state/AppState';
 import { MIN_PER_TICKET, SAMPLE_EXPERT_WAIT, type Impact } from '../../lib/impact';
 //import { BusinessCase } from './BusinessCase';
 import { DEFAULT_WEEK, addDays, isoDate, rangeLabel, weekData, weekStart } from '../../data/homeWeeks';
@@ -111,8 +110,6 @@ export function HomeOverview({ visible, pics, waiting, rooms, tickets, impact, c
   onOpenNeeds: () => void;
   onOpenCheckins: () => void;
 }) {
-  const app = useApp();
-  const followUps = { planned: app.actions.filter((a) => a.status === 'planned').length, done: app.actions.filter((a) => a.status === 'done').length };
   const [span, setSpan] = useState<'daily' | 'weekly'>('daily');
   const [week, setWeek] = useState<Date>(DEFAULT_WEEK);
   const W = weekData(week);
