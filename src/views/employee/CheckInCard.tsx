@@ -14,13 +14,13 @@ const ACTION_ANSWERS: { key: ActionFollowUp['answer']; label: string; tone: stri
   { key: 'better', label: 'Better', tone: 'is-yes' },
   { key: 'notyet', label: 'Not yet', tone: 'is-notyet' },
 ];
-/** Sample answers in question order. Week 2 shows Mira's Week 1 login problem resolved, so the manager view has a result to read. */
+/** Sample answers in question order, following the demo script: Mira is unsure what's expected at Week 1, and it's better at Week 2. */
 const QUICK_DEMO: Partial<Record<MilestoneKey, { answers: PulseAnswer[]; followUps: Partial<Record<PulseKey, string>>; reply?: string }>> = {
-  week1: { answers: ['yes', 'partly', 'yes', 'yes'], followUps: { tools: "I haven't received the login credentials for our user testing platform." } },
+  week1: { answers: ['partly', 'yes', 'yes', 'yes'], followUps: { clarity: "I'm not sure what's expected of me in my first month." } },
   week2: {
     answers: ['yes', 'yes', 'yes', 'partly'],
     followUps: { workload: 'Training sessions overlap with my first project this week.' },
-    reply: 'I followed the guide and can log in to the user testing platform now.',
+    reply: "It's much clearer now. I know what's expected of me this month.",
   },
 };
 const repliesOf = (checkin?: CheckIn): Record<string, ActionFollowUp> =>
@@ -137,7 +137,7 @@ export function CheckInSheet({ onClose, onSubmitted }: { onClose: () => void; on
     const sample = QUICK_DEMO[app.demoMilestone] ?? QUICK_DEMO.week1!;
     setAnswers(Object.fromEntries(questions.map((question, index) => [question.key, sample.answers[index]])));
     setFollowUps(sample.followUps);
-    setReplies(Object.fromEntries(pendingFollowUps.map((item) => [item.id, { actionId: item.id, answer: 'better' as const, comment: item.hasAction ? sample.reply : undefined }])));
+    setReplies(Object.fromEntries(pendingFollowUps.map((item) => [item.id, { actionId: item.id, answer: 'better' as const, comment: sample.reply }])));
     setNote('');
     setSubmitError('');
   }

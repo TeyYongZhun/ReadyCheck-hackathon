@@ -115,31 +115,32 @@ export const COHORT_LABEL = firstMonth === lastMonth ? `${firstMonth} cohort` : 
 
 const a = (clarity: PulseAnswer, tools: PulseAnswer, support: PulseAnswer, workload: PulseAnswer) => ({ clarity, tools, support, workload });
 
+// Role Clarity is the demo story: 5 of 8 report it here, so Mira's check-in makes it six of nine. Other topics stay at 3.
 // Every check-in is dated after the person joined and inside its milestone window:
 // Week 1 for Farah/Kumar/Jun Wei is on their day 6 (6 days ago); Week 2 is on their day 11 (1 day ago).
 export const SEED_CHECKINS: CheckIn[] = [
   // Earlier milestone check-ins. Farah and Kumar were reached out to afterwards.
-  { id: 'ci-fn-1', person: 'fn', milestone: 'week1', at: checkinDateDaysAgo(6), named: true, answers: a('notyet', 'partly', 'yes', 'notyet'),
+  { id: 'ci-fn-1', person: 'fn', milestone: 'week1', at: checkinDateDaysAgo(6), named: true, answers: a('notyet', 'partly', 'yes', 'yes'),
     note: 'Tak pasti apa KPI saya untuk bulan pertama.' },
-  { id: 'ci-kc-1', person: 'kc', milestone: 'week1', at: checkinDateDaysAgo(6), named: true, answers: a('partly', 'notyet', 'partly', 'partly'),
+  { id: 'ci-kc-1', person: 'kc', milestone: 'week1', at: checkinDateDaysAgo(6), named: true, answers: a('partly', 'notyet', 'partly', 'yes'),
     note: 'Waited two days for my VPN certificate, so I couldn’t run any tests.' },
   { id: 'ci-jw-1', person: 'jw', milestone: 'week1', at: checkinDateDaysAgo(6), named: false, answers: a('partly', 'partly', 'notyet', 'partly'),
     note: 'On-call shadowing plus three trainings in week one is a lot.' },
   { id: 'ci-fn-2', person: 'fn', milestone: 'week2', at: checkinDateDaysAgo(1), named: true, answers: a('yes', 'partly', 'yes', 'partly'),
     note: 'Goals are clear now after the chat with my lead.',
-    actionFollowUps: [{ actionId: 'act-fn', answer: 'better', comment: 'I know what to focus on this month now.' }, { actionId: 'act-cohort-tools', answer: 'better' }] },
+    actionFollowUps: [{ actionId: 'act-fn', answer: 'better', comment: 'I know what to focus on this month now.' }, { actionId: 'act-cohort-tools', answer: 'better' }, { actionId: 'difficulty:week1:clarity', answer: 'better', comment: 'My lead walked me through my goals for the month.' }] },
   // Kumar went anonymous at Week 2, so his reply about his own action stays out of the manager's individual view.
   { id: 'ci-kc-2', person: 'kc', milestone: 'week2', at: checkinDateDaysAgo(1), named: false, answers: a('yes', 'partly', 'yes', 'partly'),
     note: 'Sorted once Ana re-issued the certificate.',
-    actionFollowUps: [{ actionId: 'act-kc', answer: 'better' }, { actionId: 'act-cohort-tools', answer: 'better', comment: 'The guide made it easier to find what I needed.' }] },
+    actionFollowUps: [{ actionId: 'act-kc', answer: 'better' }, { actionId: 'act-cohort-tools', answer: 'better', comment: 'The guide made it easier to find what I needed.' }, { actionId: 'difficulty:week1:clarity', answer: 'better' }] },
   { id: 'ci-jw-2', person: 'jw', milestone: 'week2', at: checkinDateDaysAgo(1), named: false, answers: a('yes', 'partly', 'partly', 'partly'),
     note: 'Still a lot of training stacked into the same week.',
-    actionFollowUps: [{ actionId: 'act-cohort-tools', answer: 'notyet', comment: 'Still not sure which access to request first.' }] },
-  { id: 'ci-ah-1', person: 'ah', milestone: 'week1', at: checkinDateDaysAgo(1), named: true, answers: a('notyet', 'partly', 'yes', 'notyet'),
+    actionFollowUps: [{ actionId: 'act-cohort-tools', answer: 'notyet', comment: 'Still not sure which access to request first.' }, { actionId: 'difficulty:week1:clarity', answer: 'notyet', comment: 'Still unsure how my work will be measured.' }] },
+  { id: 'ci-ah-1', person: 'ah', milestone: 'week1', at: checkinDateDaysAgo(1), named: true, answers: a('notyet', 'yes', 'yes', 'yes'),
     note: 'Saya belum jumpa manager saya lagi minggu ni.' },
-  { id: 'ci-yl-1', person: 'yl', milestone: 'week1', at: checkinDateDaysAgo(1), named: false, answers: a('notyet', 'yes', 'partly', 'notyet'),
+  { id: 'ci-yl-1', person: 'yl', milestone: 'week1', at: checkinDateDaysAgo(1), named: false, answers: a('notyet', 'yes', 'partly', 'partly'),
     note: '不太清楚第一个月的目标是什么，也还没有收到任何反馈。' },
-  { id: 'ci-dw-1', person: 'dw', milestone: 'week1', at: checkinDateDaysAgo(1), named: false, answers: a('yes', 'partly', 'yes', 'yes') },
+  { id: 'ci-dw-1', person: 'dw', milestone: 'week1', at: checkinDateDaysAgo(1), named: false, answers: a('yes', 'yes', 'yes', 'yes') },
   { id: 'ci-sa-1', person: 'sa', milestone: 'week1', at: checkinDateDaysAgo(1), named: true, answers: a('yes', 'yes', 'yes', 'partly') },
   { id: 'ci-pn-1', person: 'pn', milestone: 'week1', at: checkinDateDaysAgo(1), named: true, answers: a('yes', 'yes', 'yes', 'yes'),
     note: 'Still waiting on my lab access badge.' },

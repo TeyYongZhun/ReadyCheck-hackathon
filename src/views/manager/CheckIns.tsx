@@ -263,6 +263,9 @@ const PRESET_ACTIONS: Record<string, string[]> = {
   ],
 };
 
+/** The guide preselected when publishing, so employees have something to open from the message. */
+const SUGGESTED_GUIDE: Record<string, string> = { 'Role Clarity': 'kb-seed-role', 'Tools & Resources': 'kb-seed-access' };
+
 /** Sample "AI" drafts of the message employees see. Past tense, because it is published after the action is complete. */
 const PRESET_UPDATES: Record<string, string[]> = {
   'Role Clarity': [
@@ -726,7 +729,7 @@ export function CheckIns() {
                                   <button type="button" className="rc-btn-ghost is-sm" onClick={() => {
                                     setPublishingActionId(action.id);
                                     setPublicNote(action.publicNote ?? aiTheme?.note ?? guidance.note);
-                                    setPublicGuideId(action.resourceId ?? '');
+                                    setPublicGuideId(action.publishedAt ? action.resourceId ?? '' : SUGGESTED_GUIDE[question.dimension] ?? '');
                                   }}>{action.publishedAt ? 'Edit message' : 'Review and publish'}</button>
                                 ) : <p className="rc-ci-stage-muted">Complete the action in step 2 before telling your cohort.</p>}
                               </>

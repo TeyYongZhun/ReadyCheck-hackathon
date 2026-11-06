@@ -169,6 +169,16 @@ function repliesTo(checkins: CheckIn[], actionId: string) {
 }
 
 /**
+ * Replies to an action, plus earlier replies about the same difficulty once anyone has replied to the action
+ * itself. Those earlier replies are why one person's reply can reach MIN_GROUP without being shown alone.
+ */
+function repliesFor(checkins: CheckIn[], action: SupportAction) {
+  const own = repliesTo(checkins, action.id);
+  if (!own.length || action.person || !action.pulse) return own;
+  return [...repliesTo(checkins, difficultyId(action.milestone, action.pulse)), ...own];
+}
+
+/**
  * Replies to a cohort action stay hidden below MIN_GROUP, and also when exactly one is unidentified:
  * the rest could otherwise be subtracted to reveal that one answer.
  */
@@ -192,13 +202,15 @@ export function followUpFeed(checkins: CheckIn[], actions: SupportAction[], coho
     }))
     .sort((a, b) => Number(!a.hire) - Number(!b.hire) || a.answer.localeCompare(b.answer) || (a.comment ?? '').localeCompare(b.comment ?? ''));
   const forActions = actions.filter((action) => action.status === 'done').flatMap((action) => {
-    const all = repliesTo(checkins, action.id);
+    const all = repliesFor(checkins, action);
     const shown = action.person ? all.filter(({ checkin }) => checkin.person === action.person && checkin.named) : all;
     if (action.person ? !shown.length : !action.publishedAt || !canShowReplies(all)) return [];
     return [{ id: action.id, topic: actionTopic(action), label: action.label as string | undefined, milestone: action.milestone, replies: rowsOf(shown) }];
   });
   const ids = new Set(checkins.flatMap((checkin) => (checkin.actionFollowUps ?? []).map((reply) => reply.actionId)));
-  const forDifficulties = [...ids].filter((id) => id.startsWith(DIFFICULTY)).flatMap((id) => {
+  const merged = actions.filter((action) => !action.person && action.pulse && repliesTo(checkins, action.id).length)
+    .map((action) => difficultyId(action.milestone, action.pulse!));
+  const forDifficulties = [...ids].filter((id) => id.startsWith(DIFFICULTY) && !merged.includes(id)).flatMap((id) => {
     const all = repliesTo(checkins, id);
     if (!canShowReplies(all)) return [];
     return [{ id, ...difficultyOf(id), label: undefined, replies: rowsOf(all) }];
@@ -209,7 +221,7 @@ export function followUpFeed(checkins: CheckIn[], actions: SupportAction[], coho
 /** Totals of the replies to a published cohort action, under the same rule as the replies themselves. */
 export function groupFollowUp(checkins: CheckIn[], actions: SupportAction[]) {
   return actions.filter((action) => !action.person && action.status === 'done' && action.pulse && action.publishedAt).flatMap((action) => {
-    const replies = repliesTo(checkins, action.id);
+    const replies = repliesFor(checkins, action);
     if (!canShowReplies(replies)) return [];
     return [{ action, improved: replies.filter(({ reply }) => reply.answer === 'better').length, responded: replies.length }];
   });

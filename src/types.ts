@@ -112,6 +112,8 @@ export interface KbItem {
   sample?: boolean;
   files?: Pick<Attachment, 'name' | 'kind' | 'size' | 'url' | 'mimeType'>[];
   allowEmployeeAccess?: boolean;
+  /** Written to share in a team update. It answers questions that match it, but is never a topic's default answer. */
+  cohortGuide?: boolean;
 }
 
 /** The languages an employee can ask in: English, Bahasa Melayu, Chinese, Tamil. */

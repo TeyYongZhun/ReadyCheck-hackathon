@@ -67,7 +67,8 @@ function bestApproved(query: string, live: KbItem[]): KbItem | undefined {
   const words = (text: string) => new Set(text.toLowerCase().match(/[a-z0-9]{4,}/g) ?? []);
   const q = words(query);
   const scored = live.map((k) => {
-    const c = words([k.title, k.problem, ...k.steps].join(' '));
+    // A cohort guide's steps use everyday onboarding words, so only its title counts as a match.
+    const c = words(k.cohortGuide ? k.title : [k.title, k.problem, ...k.steps].join(' '));
     return { k, hits: [...q].filter((w) => c.has(w)).length };
   }).filter((x) => x.hits >= 2).sort((a, b) => b.hits - a.hits);
   return scored[0]?.k;
@@ -126,7 +127,7 @@ export async function resolveAnswer(query: string, files: string[], knowledge: K
   // Offline: a manager-approved card that covers the question wins, then a built-in company scenario.
   // Anything else is "I don't know", so it goes to a human expert.
   const hint = OFFLINE_HINTS.find(([re]) => re.test(query))?.[1];
-  const approved = bestApproved(query, live) ?? (hint ? live.find((k) => k.theme === hint) : undefined);
+  const approved = bestApproved(query, live) ?? (hint ? live.find((k) => k.theme === hint && !k.cohortGuide) : undefined);
   if (approved) return answerFromKnowledge(approved);
   const s = SCENARIOS.find((scenario) => scenario.match.test(query));
   const sTheme = s ? SCEN_THEME[s.key as keyof typeof SCEN_THEME] : null;
@@ -150,6 +151,6 @@ export async function resolveAnswer(query: string, files: string[], knowledge: K
     },
     source: 'offline',
   };
-  const k = live.find((x) => x.theme === sTheme);
+  const k = live.find((x) => x.theme === sTheme && !x.cohortGuide);
   return { heading: s.heading, theme: sTheme, queue: s.queue, expert: s.expert, card: k ? learnedCard(k) : sCard, source: 'offline' };
 }
